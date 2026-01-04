@@ -1,4 +1,4 @@
-using EuroTrans.Domain.Milestones;
+using EuroTrans.Domain.Shipments;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
@@ -12,20 +12,38 @@ public class MilestoneConfiguration : IEntityTypeConfiguration<Milestone>
 
         builder.HasKey(m => m.Id);
 
-        builder.Property(s => s.Type)
-        .HasConversion<string>()
-        .IsRequired();
+        builder.Property(m => m.Id)
+            .HasColumnName("id")
+            .ValueGeneratedNever();
 
+        builder.Property(m => m.ShipmentId)
+            .HasColumnName("shipment_id")
+            .IsRequired();
 
-        builder.Property(m => m.Timestamp).IsRequired();
-        builder.Property(m => m.Type).IsRequired();
-        builder.Property(m => m.Note);
+        builder.Property(m => m.CreatedByEmployeeId)
+            .HasColumnName("created_by_employee_id")
+            .IsRequired();
 
-        builder.Property(m => m.LocationAddress).IsRequired();
-        builder.Property(m => m.LocationCity).IsRequired();
-        builder.Property(m => m.LocationCountry).IsRequired();
-        builder.Property(m => m.LocationPostalCode).IsRequired();
-        builder.Property(m => m.LocationLat).IsRequired();
-        builder.Property(m => m.LocationLng).IsRequired();
+        builder.Property(m => m.Type)
+            .HasColumnName("type")
+            .HasConversion<string>()
+            .IsRequired();
+
+        builder.Property(m => m.Note)
+            .HasColumnName("note")
+            .HasMaxLength(1000);
+
+        builder.Property(m => m.LocationLat)
+            .HasColumnName("location_lat")
+            .IsRequired();
+
+        builder.Property(m => m.LocationLng)
+            .HasColumnName("location_lng")
+            .IsRequired();
+
+        builder.Property(m => m.TimestampUtc)
+            .HasColumnName("timestamp")
+            .IsRequired();
     }
+
 }

@@ -1,7 +1,4 @@
-using EuroTrans.Domain.Activities;
-using EuroTrans.Domain.Drivers;
 using EuroTrans.Domain.Employees;
-using EuroTrans.Domain.Milestones;
 using EuroTrans.Domain.Shipments;
 using EuroTrans.Domain.Trucks;
 using Microsoft.EntityFrameworkCore;
@@ -19,6 +16,7 @@ public class AppDbContext : DbContext
     public DbSet<Shipment> Shipments => Set<Shipment>();
     public DbSet<Milestone> Milestones => Set<Milestone>();
     public DbSet<Activity> Activities => Set<Activity>();
+    public DbSet<Document> Documents => Set<Document>();
 
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)

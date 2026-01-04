@@ -1,43 +1,29 @@
-using EuroTrans.Domain.Enums;
-using EuroTrans.Domain.Shipments;
+using EuroTrans.Domain.Common;
 
 namespace EuroTrans.Domain.Trucks;
 
-public class Truck
+public class Truck : AggregateRoot
 {
-    public Guid Id { get; set; }
+    public string PlateNumber { get; private set; } = string.Empty;
+    public string Model { get; private set; } = string.Empty;
+    public float Capacity { get; private set; }
+    public TruckStatus Status { get; private set; }
+    public DateTime CreatedAtUtc { get; private set; }
 
-    public string PlateNumber { get; set; } = null!;
-    public string Model { get; set; } = null!;
-    public float Capacity { get; set; }
-    public TruckStatus Status { get; set; }
+    private Truck() { }
 
-    public DateTime CreatedAt { get; set; }
-
-    // Navigation
-    public ICollection<Shipment> Shipments { get; set; } = [];
-
-    public void Assign()
+    public Truck(Guid id, string plateNumber, string model, float capacity, DateTime createdAtUtc)
+        : base(id)
     {
-        TruckRules.CanAssign(this);
-        Status = TruckStatus.InUse;
-    }
-
-    public void Release()
-    {
-        Status = TruckStatus.Available;
-    }
-
-    public void UpdateDetails(string model, float capacity)
-    {
-        TruckRules.CanUpdate(this);
-
+        PlateNumber = plateNumber;
         Model = model;
         Capacity = capacity;
+        Status = TruckStatus.Available;
+        CreatedAtUtc = createdAtUtc;
     }
 
-    public void EnsureCanDelete()
-    {
-        TruckRules.CanDelete(this);
-    }
+    public void MarkAvailable() => Status = TruckStatus.Available;
+    public void MarkInUse() => Status = TruckStatus.InUse;
+    public void MarkMaintenance() => Status = TruckStatus.Maintenance;
 }
+

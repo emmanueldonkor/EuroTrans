@@ -10,23 +10,36 @@ public class TruckConfiguration : IEntityTypeConfiguration<Truck>
     {
         builder.ToTable("trucks");
 
-        builder.Property(s => s.Status)
-        .HasConversion<string>()
-        .IsRequired();
-
         builder.HasKey(t => t.Id);
 
-        builder.Property(t => t.PlateNumber).IsRequired();
-        builder.Property(t => t.Model).IsRequired();
-        builder.Property(t => t.Capacity).IsRequired();
-        builder.Property(t => t.Status).IsRequired();
-        builder.Property(t => t.CreatedAt).IsRequired();
+        builder.Property(t => t.Id)
+            .HasColumnName("id")
+            .ValueGeneratedNever();
+
+        builder.Property(t => t.PlateNumber)
+            .HasColumnName("plate_number")
+            .IsRequired()
+            .HasMaxLength(50);
 
         builder.HasIndex(t => t.PlateNumber).IsUnique();
 
-        builder.HasMany(t => t.Shipments)
-            .WithOne(s => s.Truck)
-            .HasForeignKey(s => s.TruckId)
-            .OnDelete(DeleteBehavior.SetNull);
+        builder.Property(t => t.Model)
+            .HasColumnName("model")
+            .IsRequired()
+            .HasMaxLength(200);
+
+        builder.Property(t => t.Capacity)
+            .HasColumnName("capacity")
+            .IsRequired();
+
+        builder.Property(t => t.Status)
+            .HasColumnName("status")
+            .HasConversion<string>()
+            .IsRequired();
+
+        builder.Property(t => t.CreatedAtUtc)
+            .HasColumnName("created_at")
+            .IsRequired();
     }
+
 }

@@ -1,115 +1,199 @@
-using EuroTrans.Domain.Activities;
 using EuroTrans.Domain.Common;
-using EuroTrans.Domain.Drivers;
-using EuroTrans.Domain.Enums;
-using EuroTrans.Domain.Milestones;
+using EuroTrans.Domain.Common.Exceptions;
+using EuroTrans.Domain.Employees;
+using EuroTrans.Domain.Shipments.Enums;
+using EuroTrans.Domain.Shipments.ValueObjects;
 using EuroTrans.Domain.Trucks;
 
 namespace EuroTrans.Domain.Shipments;
 
-public class Shipment
+public class Shipment : AggregateRoot
 {
-    public Guid Id { get; set; }
+    public string TrackingId { get; private set; } = string.Empty;
+    public ShipmentStatus Status { get; private set; }
 
-    public string TrackingId { get; set; } = null!;
-    public ShipmentStatus Status { get; set; }
+    public Cargo? Cargo { get; private set; }
+    public Address? OriginAddress { get; private set; }
+    public GeoLocation? OriginLocation { get; private set; } 
+    public Address? DestinationAddress { get; private set; }
+    public GeoLocation? DestinationLocation { get; private set; }
 
-    public string CargoDescription { get; set; } = null!;
-    public float CargoWeight { get; set; }
-    public float CargoVolume { get; set; }
+    public Guid? DriverId { get; private set; }
+    public Guid? TruckId { get; private set; }
 
-    // Origin
-    public string OriginAddress { get; set; } = null!;
-    public string OriginCity { get; set; } = null!;
-    public string OriginCountry { get; set; } = null!;
-    public string OriginPostalCode { get; set; } = null!;
-    public float OriginLat { get; set; }
-    public float OriginLng { get; set; }
+    public DateTime CreatedAtUtc { get; private set; }
+    public DateTime? UpdatedAtUtc { get; private set; }
+    public DateTime? StartedAtUtc { get; private set; }
+    public DateTime? DeliveredAtUtc { get; private set; }
+    public DateTime? EstimatedDeliveryDateUtc { get; private set; }
 
-    // Destination
-    public string DestinationAddress { get; set; } = null!;
-    public string DestinationCity { get; set; } = null!;
-    public string DestinationCountry { get; set; } = null!;
-    public string DestinationPostalCode { get; set; } = null!;
-    public float DestinationLat { get; set; }
-    public float DestinationLng { get; set; }
+    private readonly List<Activity> activities = [];
+    private readonly List<Milestone> milestones = [];
+    private readonly List<Document> documents = [];
 
-    public string? CurrentLocationJson { get; set; }
+    public Driver? Driver { get; private set; }
+    public Truck? Truck { get; private set; }
 
-    public Guid? DriverId { get; set; }
-    public Guid? TruckId { get; set; }
+    public IReadOnlyCollection<Activity> Activities => activities;
+    public IReadOnlyCollection<Milestone> Milestones => milestones;
+    public IReadOnlyCollection<Document> Documents => documents;
 
-    public DateTime CreatedAt { get; set; }
-    public DateTime? UpdatedAt { get; set; }
-    public DateTime? StartedAt { get; set; }
-    public DateTime? DeliveredAt { get; set; }
-    public DateTime? EstimatedDeliveryDate { get; set; }
+    private Shipment() { }
 
-    public string? ProofOfDeliveryUrl { get; set; }
-
-    // Navigation
-    public Driver? Driver { get; set; }
-    public Truck? Truck { get; set; }
-    public ICollection<Milestone> Milestones { get; set; } = [];
-    public ICollection<Activity> Activities { get; set; } = [];
-
-
-     public void Publish()
+    private Shipment(
+        Guid id,
+        string trackingId,
+        Cargo cargo,
+        Address originAddress,
+        GeoLocation originLocation,
+        Address destinationAddress,
+        GeoLocation destinationLocation,
+        DateTime createdAtUtc,
+        DateTime? estimatedDeliveryDateUtc)
+        : base(id)
     {
-        ShipmentRules.MustBeDraft(this);
+        TrackingId = trackingId;
+        Cargo = cargo;
+        OriginAddress = originAddress;
+        OriginLocation = originLocation;
+        DestinationAddress = destinationAddress;
+        DestinationLocation = destinationLocation;
+        CreatedAtUtc = createdAtUtc;
+        EstimatedDeliveryDateUtc = estimatedDeliveryDateUtc;
+
         Status = ShipmentStatus.Unassigned;
-        UpdatedAt = DateTime.UtcNow;
     }
 
-    public void Assign(Guid driverId, Guid truckId)
+    public static Shipment CreateDraft(
+        Guid id,
+        string trackingId,
+        Cargo cargo,
+        Address originAddress,
+        GeoLocation originLocation,
+        Address destinationAddress,
+        GeoLocation destinationLocation,
+        DateTime createdAtUtc,
+        DateTime? estimatedDeliveryDateUtc,
+        Guid managerId,
+        DateTime timestampUtc)
     {
-        ShipmentRules.CanAssign(this);
+        var shipment = new Shipment(
+            id,
+            trackingId,
+            cargo,
+            originAddress,
+            originLocation,
+            destinationAddress,
+            destinationLocation,
+            createdAtUtc,
+            estimatedDeliveryDateUtc);
+
+        shipment.AddActivity(managerId, ActivityType.Created, "Shipment created", timestampUtc);
+        return shipment;
+    }
+
+    public void Assign(Guid managerId, Guid driverId, Guid truckId, DateTime timestampUtc)
+    {
+        if (Status != ShipmentStatus.Unassigned)
+            throw new DomainException("Shipment must be unassigned to assign driver and truck.");
 
         DriverId = driverId;
         TruckId = truckId;
         Status = ShipmentStatus.Assigned;
-        UpdatedAt = DateTime.UtcNow;
+        UpdatedAtUtc = timestampUtc;
+
+        AddActivity(managerId, ActivityType.Assigned, "Shipment assigned to driver and truck", timestampUtc);
     }
 
-    // ---------- JOURNEY ----------
-
-    public void StartJourney(Guid driverId)
+    public void Start(Guid driverId, DateTime timestampUtc)
     {
-        ShipmentRules.CanStartJourney(this, driverId);
-        StartedAt = DateTime.UtcNow;
-        UpdatedAt = DateTime.UtcNow;
+        if (Status != ShipmentStatus.Assigned)
+            throw new DomainException("Shipment must be assigned to start.");
+        if (DriverId != driverId)
+            throw new DomainException("Only assigned driver can start the shipment.");
+
+        Status = ShipmentStatus.InTransit;
+        StartedAtUtc = timestampUtc;
+        UpdatedAtUtc = timestampUtc;
+
+        AddActivity(driverId, ActivityType.Started, "Shipment started", timestampUtc);
     }
 
-    public void UpdateLocation(string locationJson)
+    public void AddMilestone(
+        Guid driverId,
+        MilestoneType type,
+        string note,
+        GeoLocation location,
+        DateTime timestampUtc)
     {
-        ShipmentRules.CanUpdateLocation(this);
-        CurrentLocationJson = locationJson;
-        UpdatedAt = DateTime.UtcNow;
+        if (Status != ShipmentStatus.InTransit)
+            throw new DomainException("Milestones can only be added in-transit.");
+        if (DriverId != driverId)
+            throw new DomainException("Only assigned driver can add milestones.");
+
+        var milestone = new Milestone(
+            Guid.NewGuid(),
+            Id,
+            driverId,
+            type,
+            note,
+            location,
+            timestampUtc);
+
+        milestones.Add(milestone);
+        UpdatedAtUtc = timestampUtc;
     }
 
-    // ---------- DELIVERY ----------
-
-    public void UploadProofOfDelivery(string podUrl)
+    public void Deliver(
+        Guid driverId,
+        string proofOfDeliveryUrl,
+        DateTime timestampUtc)
     {
-        if (!string.IsNullOrWhiteSpace(ProofOfDeliveryUrl))
-            throw new DomainException("Proof of delivery already uploaded.");
+        if (Status != ShipmentStatus.InTransit)
+            throw new DomainException("Shipment must be in-transit to deliver.");
+        if (DriverId != driverId)
+            throw new DomainException("Only assigned driver can deliver.");
 
-        ProofOfDeliveryUrl = podUrl;
-        UpdatedAt = DateTime.UtcNow;
-    }
-
-    public void Deliver()
-    {
-        ShipmentRules.CanDeliver(this);
         Status = ShipmentStatus.Delivered;
-        DeliveredAt = DateTime.UtcNow;
-        UpdatedAt = DateTime.UtcNow;
+        DeliveredAtUtc = timestampUtc;
+        UpdatedAtUtc = timestampUtc;
+
+        var pod = new Document(
+            Guid.NewGuid(),
+            Id,
+            driverId,
+            DocumentType.ProofOfDelivery,
+            proofOfDeliveryUrl,
+            timestampUtc);
+
+        documents.Add(pod);
+
+        AddActivity(driverId, ActivityType.Delivered, "Shipment delivered", timestampUtc);
     }
 
-    // ---------- DELETE ----------
-
-    public void EnsureCanDelete()
+    public void Cancel(Guid managerId, DateTime timestampUtc)
     {
-        ShipmentRules.CanDelete(this);
+        if (Status == ShipmentStatus.Delivered)
+            throw new DomainException("Delivered shipment cannot be cancelled.");
+
+        Status = ShipmentStatus.Cancelled;
+        UpdatedAtUtc = timestampUtc;
+
+        // domain rule: driver/truck released will be handled in application layer
+        AddActivity(managerId, ActivityType.Cancelled, "Shipment cancelled", timestampUtc);
+    }
+
+    private void AddActivity(Guid employeeId, ActivityType type, string description, DateTime timestampUtc)
+    {
+        var activity = new Activity(
+            Guid.NewGuid(),
+            Id,
+            employeeId,
+            type,
+            description,
+            timestampUtc);
+
+        activities.Add(activity);
     }
 }
+

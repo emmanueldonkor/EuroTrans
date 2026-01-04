@@ -1,19 +1,42 @@
-using EuroTrans.Domain.Activities;
-using EuroTrans.Domain.Drivers;
-using EuroTrans.Domain.Enums;
+using EuroTrans.Domain.Common;
+using EuroTrans.Domain.Employees.Enums;
 
 namespace EuroTrans.Domain.Employees;
 
-public class Employee
+public class Employee : AggregateRoot
 {
-    public Guid Id { get; set; }
+    public string Auth0UserId { get; private set; }
+    public string Name { get; private set; }
+    public string Email { get; private set; }
+    public EmployeeRole Role { get; private set; }
+    public string? AvatarUrl { get; private set; }
+    public bool IsActive { get; private set; }
+    public DateTime CreatedAtUtc { get; private set; }
 
-    public string Name { get; set; } = null!;
-    public string Email { get; set; } = null!;
-    public EmployeeRole Role { get; set; }
-    public DateTime CreatedAt { get; set; }
+    // navigation
+    public Driver? Driver { get; private set; }
 
-    // Navigation
-    public Driver? Driver { get; set; }
-    public ICollection<Activity> Activities { get; set; } = [];
+   // private Employee() { }
+
+    public Employee(
+        Guid id,
+        string auth0UserId,
+        string name,
+        string email,
+        EmployeeRole role,
+        string? avatarUrl,
+        DateTime createdAtUtc)
+        : base(id)
+    {
+        Auth0UserId = auth0UserId;
+        Name = name;
+        Email = email;
+        Role = role;
+        AvatarUrl = avatarUrl;
+        IsActive = true;
+        CreatedAtUtc = createdAtUtc;
+    }
+
+    public void Deactivate() => IsActive = false;
+    public void Activate() => IsActive = true;
 }

@@ -1,4 +1,4 @@
-using EuroTrans.Domain.Drivers;
+using EuroTrans.Domain.Employees;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
@@ -12,22 +12,27 @@ public class DriverConfiguration : IEntityTypeConfiguration<Driver>
 
         builder.HasKey(d => d.Id);
 
-        builder.Property(s => s.Status)
-        .HasConversion<string>()
-        .IsRequired();
+        builder.Property(d => d.Id)
+            .HasColumnName("employee_id") 
+            .ValueGeneratedNever();
 
-        builder.Property(d => d.Phone).IsRequired();
-        builder.Property(d => d.LicenseNumber).IsRequired();
-        builder.Property(d => d.Status).IsRequired();
+        builder.HasOne(d => d.Employee)
+            .WithOne(e => e.Driver)
+            .HasForeignKey<Driver>(d => d.Id); 
 
-        builder.HasOne(d => d.CurrentShipment)
-            .WithOne()
-            .HasForeignKey<Driver>(d => d.CurrentShipmentId)
-            .OnDelete(DeleteBehavior.SetNull);
+        builder.Property(d => d.Phone)
+            .HasColumnName("phone")
+            .IsRequired()
+            .HasMaxLength(50);
 
-        builder.HasMany(d => d.Shipments)
-            .WithOne(s => s.Driver)
-            .HasForeignKey(s => s.DriverId)
-            .OnDelete(DeleteBehavior.SetNull);
+        builder.Property(d => d.LicenseNumber)
+            .HasColumnName("license_number")
+            .IsRequired()
+            .HasMaxLength(100);
+
+        builder.Property(d => d.Status)
+            .HasColumnName("status")
+            .HasConversion<string>()
+            .IsRequired();
     }
 }
