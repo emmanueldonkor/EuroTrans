@@ -1,4 +1,5 @@
 using EuroTrans.Domain.Common;
+using EuroTrans.Domain.Common.Exceptions;
 using EuroTrans.Domain.Employees.Enums;
 
 namespace EuroTrans.Domain.Employees;
@@ -16,7 +17,7 @@ public class Employee : AggregateRoot
     // navigation
     public Driver? Driver { get; private set; }
 
-   // private Employee() { }
+    // private Employee() { }
 
     public Employee(
         Guid id,
@@ -39,4 +40,15 @@ public class Employee : AggregateRoot
 
     public void Deactivate() => IsActive = false;
     public void Activate() => IsActive = true;
+
+    public void SetDriver(Driver driver)
+    {
+        if (Role != EmployeeRole.Driver) throw new DomainException("Only employees with Driver role can have a driver profile.");
+        Driver = driver;
+    }
+    public void UpdateFromIdentity(string name, string email)
+    {
+        Name = name;
+        Email = email;
+    }
 }

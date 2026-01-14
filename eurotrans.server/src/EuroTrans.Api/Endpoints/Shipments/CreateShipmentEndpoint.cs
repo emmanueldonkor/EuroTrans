@@ -1,7 +1,7 @@
 using EuroTrans.Application.features.Shipments.CreateShipment;
 using FluentValidation;
 
-namespace EuroTrans.Api.Endpoints;
+namespace EuroTrans.Api.Endpoints.Shipments;
 
 public static class CreateShipmentEndpoint
 {
@@ -22,7 +22,6 @@ public static class CreateShipmentEndpoint
      return Results.Created($"/api/shipments/{id}", new { id });
  })
  .RequireAuthorization("manager");
-
 
     }
 }

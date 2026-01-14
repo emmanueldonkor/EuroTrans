@@ -42,6 +42,6 @@ if (app.Environment.IsDevelopment())
 
 app.UseHttpsRedirection();
 
-app.MapCreateShipmentEndpoint();
+app.MapAllEndpoints();
 app.Run();
 

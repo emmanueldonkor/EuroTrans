@@ -7,5 +7,6 @@ public enum ActivityType
     Started = 3,
     Delivered = 4,
     Updated = 5,
-    Cancelled = 6
+    Cancelled = 6,
+    MilestoneAdded = 7
 }

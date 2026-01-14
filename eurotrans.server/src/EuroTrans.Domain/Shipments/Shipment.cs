@@ -120,29 +120,39 @@ public class Shipment : AggregateRoot
     }
 
     public void AddMilestone(
-        Guid driverId,
-        MilestoneType type,
-        string note,
-        GeoLocation location,
-        DateTime timestampUtc)
-    {
-        if (Status != ShipmentStatus.InTransit)
-            throw new DomainException("Milestones can only be added in-transit.");
-        if (DriverId != driverId)
-            throw new DomainException("Only assigned driver can add milestones.");
+    Guid driverId,
+    double latitude,
+    double longitude,
+    string note,
+    DateTime timestampUtc)
+{
+    if (Status != ShipmentStatus.InTransit)
+        throw new DomainException("Milestones can only be added while shipment is in transit.");
 
-        var milestone = new Milestone(
-            Guid.NewGuid(),
-            Id,
-            driverId,
-            type,
-            note,
-            location,
-            timestampUtc);
+    if (DriverId != driverId)
+        throw new DomainException("Only the assigned driver can add milestones.");
 
-        milestones.Add(milestone);
-        UpdatedAtUtc = timestampUtc;
-    }
+    var milestone = new Milestone(
+        id: Guid.NewGuid(),
+        shipmentId: Id,
+        createdByEmployeeId: driverId,
+        note: note,
+        latitude: latitude,
+        longitude: longitude,
+        timestampUtc: timestampUtc
+    );
+
+    milestones.Add(milestone);
+
+    AddActivity(
+        employeeId: driverId,
+        type: ActivityType.MilestoneAdded,
+        description: $"Milestone added: {note}",
+        timestampUtc: timestampUtc
+    );
+}
+
+
 
     public void Deliver(
         Guid driverId,

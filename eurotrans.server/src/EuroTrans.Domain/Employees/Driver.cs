@@ -6,8 +6,8 @@ namespace EuroTrans.Domain.Employees;
 public class Driver : AggregateRoot
 {
     public Guid EmployeeId { get; private set; }
-    public string Phone { get; private set; }
-    public string LicenseNumber { get; private set; }
+    public string? Phone { get; private set; }
+    public string? LicenseNumber { get; private set; }
     public DriverStatus Status { get; private set; }
 
     // navigation
@@ -15,7 +15,7 @@ public class Driver : AggregateRoot
 
     //private Driver() { }
 
-    public Driver(Guid employeeId, string phone, string licenseNumber)
+    public Driver(Guid employeeId, string? phone, string? licenseNumber)
     {
         Id = employeeId; // PK = FK
         EmployeeId = employeeId;
@@ -27,4 +27,11 @@ public class Driver : AggregateRoot
     public void SetAvailable() => Status = DriverStatus.Available;
     public void SetOnDuty() => Status = DriverStatus.OnDuty;
     public void SetOffDuty() => Status = DriverStatus.OffDuty;
+
+    public void UpdateProfile(string? licenseNumber, string? phone) 
+    { 
+        LicenseNumber = licenseNumber!;
+        Phone = phone!; 
+    }
+    public void SetStatus(DriverStatus status) { Status = status; }
 }
