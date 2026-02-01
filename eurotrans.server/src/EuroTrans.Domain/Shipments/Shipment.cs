@@ -1,5 +1,5 @@
+using ErrorOr;
 using EuroTrans.Domain.Common;
-using EuroTrans.Domain.Common.Exceptions;
 using EuroTrans.Domain.Employees;
 using EuroTrans.Domain.Shipments.Enums;
 using EuroTrans.Domain.Shipments.ValueObjects;
@@ -14,7 +14,7 @@ public class Shipment : AggregateRoot
 
     public Cargo? Cargo { get; private set; }
     public Address? OriginAddress { get; private set; }
-    public GeoLocation? OriginLocation { get; private set; } 
+    public GeoLocation? OriginLocation { get; private set; }
     public Address? DestinationAddress { get; private set; }
     public GeoLocation? DestinationLocation { get; private set; }
 
@@ -92,105 +92,89 @@ public class Shipment : AggregateRoot
         return shipment;
     }
 
-    public void Assign(Guid managerId, Guid driverId, Guid truckId, DateTime timestampUtc)
+    public ErrorOr<Success> Assign(Guid managerId, Guid driverId, Guid truckId, DateTime timestampUtc)
     {
         if (Status != ShipmentStatus.Unassigned)
-            throw new DomainException("Shipment must be unassigned to assign driver and truck.");
+            return Error.Conflict("Shipment.AssignError", "Shipment must be unassigned to assign driver and truck.");
 
         DriverId = driverId;
         TruckId = truckId;
         Status = ShipmentStatus.Assigned;
         UpdatedAtUtc = timestampUtc;
 
-        AddActivity(managerId, ActivityType.Assigned, "Shipment assigned to driver and truck", timestampUtc);
+        AddActivity(managerId, ActivityType.Assigned, "Shipment assigned", timestampUtc);
+        return Result.Success;
     }
 
-    public void Start(Guid driverId, DateTime timestampUtc)
+    public ErrorOr<Success> Start(Guid driverId, DateTime timestampUtc)
     {
         if (Status != ShipmentStatus.Assigned)
-            throw new DomainException("Shipment must be assigned to start.");
+            return Error.Conflict("Shipment.InvalidStatus", "Shipment must be assigned to start.");
+
         if (DriverId != driverId)
-            throw new DomainException("Only assigned driver can start the shipment.");
+            return Error.Forbidden("Shipment.Unauthorized", "Only assigned driver can start the shipment.");
 
         Status = ShipmentStatus.InTransit;
         StartedAtUtc = timestampUtc;
         UpdatedAtUtc = timestampUtc;
 
         AddActivity(driverId, ActivityType.Started, "Shipment started", timestampUtc);
+        return Result.Success;
     }
 
-    public void AddMilestone(
-    Guid driverId,
-    double latitude,
-    double longitude,
-    string note,
-    DateTime timestampUtc)
-{
-    if (Status != ShipmentStatus.InTransit)
-        throw new DomainException("Milestones can only be added while shipment is in transit.");
-
-    if (DriverId != driverId)
-        throw new DomainException("Only the assigned driver can add milestones.");
-
-    var milestone = new Milestone(
-        id: Guid.NewGuid(),
-        shipmentId: Id,
-        createdByEmployeeId: driverId,
-        note: note,
-        latitude: latitude,
-        longitude: longitude,
-        timestampUtc: timestampUtc
-    );
-
-    milestones.Add(milestone);
-
-    AddActivity(
-        employeeId: driverId,
-        type: ActivityType.MilestoneAdded,
-        description: $"Milestone added: {note}",
-        timestampUtc: timestampUtc
-    );
-}
-
-
-
-    public void Deliver(
-        Guid driverId,
-        string proofOfDeliveryUrl,
-        DateTime timestampUtc)
+    public ErrorOr<Success> AddMilestone(Guid driverId, double lat, double lon, string note, DateTime timestampUtc)
     {
         if (Status != ShipmentStatus.InTransit)
-            throw new DomainException("Shipment must be in-transit to deliver.");
+            return Error.Conflict("Shipment.InvalidStatus", "Milestones can only be added while in transit.");
+
         if (DriverId != driverId)
-            throw new DomainException("Only assigned driver can deliver.");
+            return Error.Forbidden("Shipment.Unauthorized", "Only the assigned driver can add milestones.");
+
+        var milestone = new Milestone(Guid.NewGuid(), Id, driverId, note, lat, lon, timestampUtc);
+        milestones.Add(milestone);
+
+        AddActivity(driverId, ActivityType.MilestoneAdded, $"Milestone: {note}", timestampUtc);
+        return Result.Success;
+    }
+
+    public ErrorOr<Success> Deliver(Guid driverId, string proofOfDeliveryUrl, DateTime timestampUtc)
+    {
+        if (Status != ShipmentStatus.InTransit)
+            return Error.Validation("Shipment.InvalidStatus",
+             "Shipment must be in-transit to deliver.");
+
+        if (DriverId != driverId)
+            return Error.Forbidden("Shipment.Unauthorized",
+            "Only assigned driver can deliver.");
 
         Status = ShipmentStatus.Delivered;
         DeliveredAtUtc = timestampUtc;
         UpdatedAtUtc = timestampUtc;
 
-        var pod = new Document(
-            Guid.NewGuid(),
-            Id,
-            driverId,
-            DocumentType.ProofOfDelivery,
-            proofOfDeliveryUrl,
-            timestampUtc);
-
+        var pod = new Document(Guid.NewGuid(), Id, driverId, DocumentType.ProofOfDelivery, proofOfDeliveryUrl, timestampUtc);
         documents.Add(pod);
 
         AddActivity(driverId, ActivityType.Delivered, "Shipment delivered", timestampUtc);
-    }
+        return Result.Success;
+    }   
 
-    public void Cancel(Guid managerId, DateTime timestampUtc)
+    public ErrorOr<Success> Cancel(Guid managerId, DateTime timestampUtc)
     {
         if (Status == ShipmentStatus.Delivered)
-            throw new DomainException("Delivered shipment cannot be cancelled.");
+        {
+            return Error.Conflict(
+                code: "Shipment.InvalidStatus",
+                description: "Shipment cannot be cancelled after it is delivered."
+            );
+        }
 
         Status = ShipmentStatus.Cancelled;
         UpdatedAtUtc = timestampUtc;
 
         // domain rule: driver/truck released will be handled in application layer
         AddActivity(managerId, ActivityType.Cancelled, "Shipment cancelled", timestampUtc);
+
+        return Result.Success;
     }
 
     private void AddActivity(Guid employeeId, ActivityType type, string description, DateTime timestampUtc)
@@ -206,4 +190,5 @@ public class Shipment : AggregateRoot
         activities.Add(activity);
     }
 }
+
 
