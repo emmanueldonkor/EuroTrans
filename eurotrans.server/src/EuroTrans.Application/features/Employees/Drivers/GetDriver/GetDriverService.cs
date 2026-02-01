@@ -1,4 +1,4 @@
-using EuroTrans.Domain.Common.Exceptions;
+using ErrorOr;
 using EuroTrans.Domain.Employees.Enums;
 
 namespace EuroTrans.Application.features.Employees.Drivers.GetDriver;
@@ -12,16 +12,18 @@ public class GetDriverService
         this.employees = employees;
     }
 
-    public async Task<GetDriverResponse> GetAsync(Guid id)
+    public async Task<ErrorOr<GetDriverResponse>> GetAsync(Guid id)
     {
-        var employee = await employees.GetByIdAsync(id)
-            ?? throw new DomainException("Driver not found.");
+        var employee = await employees.GetByIdAsync(id);
+
+        if (employee is null)
+            return Error.NotFound(description: "Driver not found.");
 
         if (employee.Role != EmployeeRole.Driver)
-            throw new DomainException("Employee is not a driver.");
+            return Error.Validation(description: "Employee is not a driver.");
 
         if (employee.Driver == null)
-            throw new DomainException("Driver profile missing.");
+            return Error.Unexpected(description: "Driver profile missing.");
 
         return new GetDriverResponse(
             EmployeeId: employee.Id,

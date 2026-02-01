@@ -1,5 +1,5 @@
+using ErrorOr;
 using EuroTrans.Application.Common.Interfaces;
-using EuroTrans.Domain.Common.Exceptions;
 using EuroTrans.Domain.Shipments;
 using EuroTrans.Domain.Shipments.ValueObjects;
 
@@ -24,10 +24,10 @@ public class CreateShipmentService
         this.clock = clock;
     }
 
-    public async Task<Guid> CreateAsync(CreateShipmentRequest request)
+    public async Task<ErrorOr<Guid>> CreateAsync(CreateShipmentRequest request)
     {
         if (!currentUser.IsManager)
-            throw new DomainException("Only managers can create shipments.");
+            return Error.Forbidden(description: "Only managers can create shipments.");
 
         var trackingId = $"ET-{DateTime.UtcNow:yyyy}-{Random.Shared.Next(1000, 9999)}";
 

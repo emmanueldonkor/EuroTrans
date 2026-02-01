@@ -1,4 +1,4 @@
-using EuroTrans.Domain.Common.Exceptions;
+using ErrorOr;
 using EuroTrans.Domain.Employees;
 using EuroTrans.Domain.Employees.Enums;
 
@@ -30,7 +30,7 @@ public class SyncUserService
         {
             "driver" => EmployeeRole.Driver,
             "manager" => EmployeeRole.Manager,
-            _ => throw new DomainException($"Unsupported role '{request.Role}'.")
+            _ => EmployeeRole.Driver
         };
 
         var employeeId = Guid.NewGuid();

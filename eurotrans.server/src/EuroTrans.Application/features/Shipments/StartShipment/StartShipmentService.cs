@@ -1,3 +1,4 @@
+using ErrorOr;
 using EuroTrans.Application.Common.Interfaces;
 
 namespace EuroTrans.Application.features.Shipments.StartShipment;
@@ -21,17 +22,22 @@ public class StartShipmentService
         this.clock = clock;
     }
 
-    public async Task StartAsync(Guid shipmentId)
+    public async Task<ErrorOr<Success>> StartAsync(Guid shipmentId)
     {
         if (!currentUser.IsDriver)
-            throw new DomainException("Only drivers can start shipments.");
+            return Error.Forbidden(description: "Only drivers can start shipments.");
 
-        var shipment = await shipments.GetByIdAsync(shipmentId)
-            ?? throw new DomainException("Shipment not found.");
+        var shipment = await shipments.GetByIdAsync(shipmentId);
+        if (shipment is null)
+            return Error.NotFound(description: "Shipment not found.");
 
-        // DOMAIN LOGIC
-        shipment.Start(currentUser.Id, clock.UtcNow);
+        var result = shipment.Start(currentUser.Id, clock.UtcNow);
+
+        if (result.IsError)
+            return result.Errors;
 
         await uow.SaveChangesAsync();
+
+        return Result.Success;
     }
 }

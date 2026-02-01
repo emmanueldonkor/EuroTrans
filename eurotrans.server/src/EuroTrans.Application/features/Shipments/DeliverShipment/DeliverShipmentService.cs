@@ -1,11 +1,14 @@
+using ErrorOr;
 using EuroTrans.Application.Common.Interfaces;
+using EuroTrans.Application.features.Employees;
+using EuroTrans.Application.features.Trucks;
 
 namespace EuroTrans.Application.features.Shipments.DeliverShipment;
 
 public class DeliverShipmentService
 {
     private readonly IShipmentRepository shipments;
-    private readonly IDriverRepository drivers;
+    private readonly IEmployeeRepository drivers;
     private readonly ITruckRepository trucks;
     private readonly IUnitOfWork uow;
     private readonly ICurrentUser currentUser;
@@ -13,7 +16,7 @@ public class DeliverShipmentService
 
     public DeliverShipmentService(
         IShipmentRepository shipments,
-        IDriverRepository drivers,
+        IEmployeeRepository drivers,
         ITruckRepository trucks,
         IUnitOfWork uow,
         ICurrentUser currentUser,
@@ -27,24 +30,30 @@ public class DeliverShipmentService
         this.clock = clock;
     }
 
-    public async Task DeliverAsync(Guid shipmentId, DeliverShipmentRequest request)
+    public async Task<ErrorOr<Success>> DeliverAsync(Guid shipmentId, DeliverShipmentRequest request)
     {
+
         if (!currentUser.IsDriver)
-            throw new DomainException("Only drivers can deliver shipments.");
+            return Error.Forbidden(description: "Only drivers can deliver shipments.");
 
-        var shipment = await shipments.GetByIdAsync(shipmentId)
-            ?? throw new DomainException("Shipment not found.");
 
-        // DOMAIN LOGIC
-        shipment.Deliver(currentUser.Id, request.ProofOfDeliveryUrl, clock.UtcNow);
+        var shipment = await shipments.GetByIdAsync(shipmentId);
+        if (shipment is null)
+            return Error.NotFound(description: "Shipment not found.");
 
-        // Release driver + truck
+        var result = shipment.Deliver(currentUser.Id, request.ProofOfDeliveryUrl, clock.UtcNow);
+
+        if (result.IsError)
+            return result.Errors;
+
         var driver = await drivers.GetByIdAsync(shipment.DriverId!.Value);
         var truck = await trucks.GetByIdAsync(shipment.TruckId!.Value);
 
-        driver.SetAvailable();
-        truck.MarkAvailable();
+        driver?.Driver?.SetAvailable();
+        truck?.MarkAvailable();
 
         await uow.SaveChangesAsync();
+
+        return Result.Success;
     }
 }

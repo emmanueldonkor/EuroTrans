@@ -1,3 +1,4 @@
+using ErrorOr;
 using EuroTrans.Application.Common.Interfaces;
 
 namespace EuroTrans.Application.features.Shipments.GetShipment;
@@ -15,14 +16,15 @@ public class GetShipmentService
         this.currentUser = currentUser;
     }
 
-    public async Task<GetShipmentResponse> GetAsync(Guid id)
+    public async Task<ErrorOr<GetShipmentResponse>> GetAsync(Guid id)
     {
-        var shipment = await shipments.GetByIdAsync(id)
-            ?? throw new DomainException("Shipment not found.");
+        var shipment = await shipments.GetByIdAsync(id);
 
-        // Drivers can only view their own shipments
+        if (shipment is null)
+            return Error.NotFound(description: "Shipment not found.");
+
         if (currentUser.IsDriver && shipment.DriverId != currentUser.Id)
-            throw new DomainException("You are not allowed to view this shipment.");
+            return Error.Forbidden(description: "You are not allowed to view this shipment.");
 
         return new GetShipmentResponse(
             shipment.Id,

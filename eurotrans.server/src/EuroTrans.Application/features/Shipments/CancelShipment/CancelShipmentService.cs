@@ -1,3 +1,4 @@
+using ErrorOr;
 using EuroTrans.Application.Common.Interfaces;
 using EuroTrans.Application.features.Employees;
 using EuroTrans.Application.features.Trucks;
@@ -29,30 +30,34 @@ public class CancelShipmentService
         this.clock = clock;
     }
 
-    public async Task CancelAsync(Guid shipmentId)
+    public async Task<ErrorOr<Success>> CancelAsync(Guid shipmentId)
     {
+
         if (!currentUser.IsManager)
-            throw new DomainException("Only managers can cancel shipments.");
+            return Error.Forbidden(description: "Only managers can cancel shipments.");
 
-        var shipment = await shipments.GetByIdAsync(shipmentId)
-            ?? throw new DomainException("Shipment not found.");
+        var shipment = await shipments.GetByIdAsync(shipmentId);
+        if (shipment is null)
+            return Error.NotFound(description: "Shipment not found.");
 
-        // DOMAIN LOGIC
-        shipment.Cancel(currentUser.Id, clock.UtcNow);
+        var cancelResult = shipment.Cancel(currentUser.Id, clock.UtcNow);
 
-        // If shipment was assigned, release driver + truck
+        if (cancelResult.IsError)
+            return cancelResult.Errors;
+
         if (shipment.DriverId.HasValue)
         {
             var driver = await drivers.GetByIdAsync(shipment.DriverId.Value);
-            driver.SetAvailable();
+            driver?.Driver?.SetAvailable();
         }
 
         if (shipment.TruckId.HasValue)
         {
             var truck = await trucks.GetByIdAsync(shipment.TruckId.Value);
-            truck.MarkAvailable();
+            truck?.MarkAvailable();
         }
 
         await uow.SaveChangesAsync();
+        return Result.Success;
     }
 }

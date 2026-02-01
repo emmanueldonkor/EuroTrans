@@ -1,3 +1,4 @@
+using ErrorOr;
 using EuroTrans.Application.Common.Interfaces;
 
 namespace EuroTrans.Application.features.Shipments.Milestone;
@@ -9,11 +10,11 @@ public class MilestoneService
     private readonly ICurrentUser currentUser;
     private readonly IDateTimeProvider clock;
 
-    public AddMilestoneService(
-        IShipmentRepository shipments,
-        IUnitOfWork uow,
-        ICurrentUser currentUser,
-        IDateTimeProvider clock)
+    public MilestoneService(
+       IShipmentRepository shipments,
+       IUnitOfWork uow,
+       ICurrentUser currentUser,
+       IDateTimeProvider clock)
     {
         this.shipments = shipments;
         this.uow = uow;
@@ -21,23 +22,28 @@ public class MilestoneService
         this.clock = clock;
     }
 
-    public async Task AddAsync(Guid shipmentId, MilestoneRequest request)
+    public async Task<ErrorOr<Success>> AddAsync(Guid shipmentId, MilestoneRequest request)
     {
         if (!currentUser.IsDriver)
-            throw new DomainException("Only drivers can add milestones.");
+            return Error.Forbidden(description: "Only drivers can add milestones.");
 
-        var shipment = await shipments.GetByIdAsync(shipmentId)
-            ?? throw new DomainException("Shipment not found.");
+        var shipment = await shipments.GetByIdAsync(shipmentId);
+        if (shipment is null)
+            return Error.NotFound(description: "Shipment not found.");
 
-        // DOMAIN LOGIC
-        shipment.AddMilestone(
+        var result = shipment.AddMilestone(
             driverId: currentUser.Id,
-            latitude: request.Latitude,
-            longitude: request.Longitude,
+            lat: request.Latitude,
+            lon: request.Longitude,
             note: request.Note,
             timestampUtc: clock.UtcNow
         );
 
+        if (result.IsError)
+            return result.Errors;
+
         await uow.SaveChangesAsync();
+
+        return Result.Success;
     }
 }

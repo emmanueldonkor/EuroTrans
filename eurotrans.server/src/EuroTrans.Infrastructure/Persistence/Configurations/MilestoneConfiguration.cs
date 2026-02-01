@@ -24,10 +24,10 @@ public class MilestoneConfiguration : IEntityTypeConfiguration<Milestone>
             .HasColumnName("created_by_employee_id")
             .IsRequired();
 
-        builder.Property(m => m.Type)
+       /* builder.Property(m => m.Type)
             .HasColumnName("type")
             .HasConversion<string>()
-            .IsRequired();
+            .IsRequired(); */
 
         builder.Property(m => m.Note)
             .HasColumnName("note")

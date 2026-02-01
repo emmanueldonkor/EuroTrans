@@ -19,7 +19,7 @@ public class GetDriversService
             Email: e.Email,
             AvatarUrl: e.AvatarUrl,
             Status: e.Driver!.Status,
-            LicenseNumber: e.Driver!.LicenseNumber,
+            LicenseNumber: e.Driver.LicenseNumber!,
             IsActive: e.IsActive
         )).ToList();
     }
