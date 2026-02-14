@@ -1,5 +1,6 @@
 using EuroTrans.Application.features.Shipments.Milestone;
 using FluentValidation;
+using Microsoft.AspNetCore.Mvc;
 
 namespace EuroTrans.Api.Endpoints.Shipments;
 
@@ -10,7 +11,7 @@ public static class MilestoneEndpoint
         app.MapPost("/api/shipments/{id}/milestones", async (
             Guid id,
             MilestoneRequest request,
-            MilestoneService service,
+          [FromServices]  MilestoneService service,
             IValidator<MilestoneRequest> validator) =>
         {
             var validation = await validator.ValidateAsync(request);
@@ -20,6 +21,6 @@ public static class MilestoneEndpoint
             await service.AddAsync(id, request);
             return Results.Ok();
         })
-        .RequireAuthorization("driver");
+         .RequireAuthorization("driver", "shipments:write");;
     }
 }

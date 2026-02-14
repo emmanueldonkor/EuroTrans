@@ -12,6 +12,7 @@ public class DeliverShipmentService
     private readonly ITruckRepository trucks;
     private readonly IUnitOfWork uow;
     private readonly ICurrentUser currentUser;
+    private readonly ICurrentEmployeeProvider currentEmployeeProvider;
     private readonly IDateTimeProvider clock;
 
     public DeliverShipmentService(
@@ -20,6 +21,7 @@ public class DeliverShipmentService
         ITruckRepository trucks,
         IUnitOfWork uow,
         ICurrentUser currentUser,
+        ICurrentEmployeeProvider currentEmployeeProvider,
         IDateTimeProvider clock)
     {
         this.shipments = shipments;
@@ -27,6 +29,7 @@ public class DeliverShipmentService
         this.trucks = trucks;
         this.uow = uow;
         this.currentUser = currentUser;
+        this.currentEmployeeProvider = currentEmployeeProvider;
         this.clock = clock;
     }
 
@@ -36,12 +39,15 @@ public class DeliverShipmentService
         if (!currentUser.IsDriver)
             return Error.Forbidden(description: "Only drivers can deliver shipments.");
 
+        var employeeIdResult = await currentEmployeeProvider.GetEmployeeIdAsync();
+        if (employeeIdResult.IsError)
+            return employeeIdResult.Errors;
 
         var shipment = await shipments.GetByIdAsync(shipmentId);
         if (shipment is null)
             return Error.NotFound(description: "Shipment not found.");
 
-        var result = shipment.Deliver(currentUser.Id, request.ProofOfDeliveryUrl, clock.UtcNow);
+        var result = shipment.Deliver(employeeIdResult.Value, request.ProofOfDeliveryUrl, clock.UtcNow);
 
         if (result.IsError)
             return result.Errors;

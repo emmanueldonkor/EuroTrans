@@ -14,6 +14,7 @@ public class AssignShipmentService
     private readonly ITruckRepository trucks;
     private readonly IUnitOfWork uow;
     private readonly ICurrentUser currentUser;
+    private readonly ICurrentEmployeeProvider currentEmployeeProvider;
     private readonly IDateTimeProvider clock;
 
     public AssignShipmentService(
@@ -22,6 +23,7 @@ public class AssignShipmentService
         ITruckRepository trucks,
         IUnitOfWork uow,
         ICurrentUser currentUser,
+        ICurrentEmployeeProvider currentEmployeeProvider,
         IDateTimeProvider clock)
     {
         this.shipments = shipments;
@@ -29,6 +31,7 @@ public class AssignShipmentService
         this.trucks = trucks;
         this.uow = uow;
         this.currentUser = currentUser;
+        this.currentEmployeeProvider = currentEmployeeProvider;
         this.clock = clock;
     }
 
@@ -36,6 +39,10 @@ public class AssignShipmentService
     {
         if (!currentUser.IsManager)
             return Error.Forbidden(description: "Only managers can assign shipments.");
+
+        var employeeIdResult = await currentEmployeeProvider.GetEmployeeIdAsync();
+        if (employeeIdResult.IsError)
+            return employeeIdResult.Errors;
 
         var shipment = await shipments.GetByIdAsync(shipmentId);
         if (shipment is null) return Error.NotFound(description: "Shipment not found.");
@@ -53,7 +60,7 @@ public class AssignShipmentService
         if (truck.Status != TruckStatus.Available)
             return Error.Conflict(description: "Truck is not available.");
 
-        var result = shipment.Assign(currentUser.Id, driver.Id, truck.Id, clock.UtcNow);
+        var result = shipment.Assign(employeeIdResult.Value, driver.Id, truck.Id, clock.UtcNow);
 
         if (result.IsError) return result.Errors;
 

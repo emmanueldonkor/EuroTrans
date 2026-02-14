@@ -1,5 +1,6 @@
 using EuroTrans.Application.features.Shipments.GetShipments;
 using FluentValidation;
+using Microsoft.AspNetCore.Mvc;
 
 namespace EuroTrans.Api.Endpoints.Shipments;
 
@@ -9,7 +10,7 @@ public static class GetShipmentsEndpoint
     {
         app.MapGet("/api/shipments", async (
             [AsParameters] GetShipmentsRequest request,
-            GetShipmentsService service,
+          [FromServices]  GetShipmentsService service,
             IValidator<GetShipmentsRequest> validator) =>
         {
             var validation = await validator.ValidateAsync(request);
@@ -19,6 +20,6 @@ public static class GetShipmentsEndpoint
             var result = await service.GetAsync(request);
             return Results.Ok(result);
         })
-        .RequireAuthorization();
+        .RequireAuthorization("shipments:read");
     }
 }

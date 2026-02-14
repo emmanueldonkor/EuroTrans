@@ -1,3 +1,4 @@
+using ErrorOr;
 using EuroTrans.Application.Common.Interfaces;
 
 namespace EuroTrans.Application.features.Shipments.GetShipments;
@@ -6,22 +7,31 @@ public class GetShipmentsService
 {
     private readonly IShipmentRepository shipments;
     private readonly ICurrentUser currentUser;
+    private readonly ICurrentEmployeeProvider currentEmployeeProvider;
 
     public GetShipmentsService(
         IShipmentRepository shipments,
-        ICurrentUser currentUser)
+        ICurrentUser currentUser,
+        ICurrentEmployeeProvider currentEmployeeProvider)
     {
         this.shipments = shipments;
         this.currentUser = currentUser;
+        this.currentEmployeeProvider = currentEmployeeProvider;
     }
 
-    public async Task<List<GetShipmentResponse>> GetAsync(GetShipmentsRequest request)
+    public async Task<ErrorOr<List<GetShipmentResponse>>> GetAsync(GetShipmentsRequest request)
     {
         Guid? driverFilter = request.DriverId;
 
         // Drivers can ONLY see their own shipments
         if (currentUser.IsDriver)
-            driverFilter = currentUser.Id;
+        {
+            var employeeIdResult = await currentEmployeeProvider.GetEmployeeIdAsync();
+            if (employeeIdResult.IsError)
+                return employeeIdResult.Errors;
+
+            driverFilter = employeeIdResult.Value;
+        }
 
         // Managers can filter by driverId if they want
         // If manager doesn't pass driverId, it stays null

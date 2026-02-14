@@ -8,13 +8,16 @@ public class GetShipmentActivitiesService
 {
     private readonly IShipmentRepository shipments;
     private readonly ICurrentUser currentUser;
+    private readonly ICurrentEmployeeProvider currentEmployeeProvider;
 
     public GetShipmentActivitiesService(
         IShipmentRepository shipments,
-        ICurrentUser currentUser)
+        ICurrentUser currentUser,
+        ICurrentEmployeeProvider currentEmployeeProvider)
     {
         this.shipments = shipments;
         this.currentUser = currentUser;
+        this.currentEmployeeProvider = currentEmployeeProvider;
     }
 
     public async Task<ErrorOr<List<GetShipmentActivitiesResponse>>> GetAsync(Guid shipmentId)
@@ -24,8 +27,15 @@ public class GetShipmentActivitiesService
         if (shipment is null)
             return Error.NotFound(description: "Shipment not found.");
 
-        if (currentUser.IsDriver && shipment.DriverId != currentUser.Id)
-            return Error.Forbidden(description: "You are not allowed to view this shipment.");
+        if (currentUser.IsDriver)
+        {
+            var employeeIdResult = await currentEmployeeProvider.GetEmployeeIdAsync();
+            if (employeeIdResult.IsError)
+                return employeeIdResult.Errors;
+
+            if (shipment.DriverId != employeeIdResult.Value)
+                return Error.Forbidden(description: "You are not allowed to view this shipment.");
+        }
 
         return shipment.Activities
             .OrderBy(a => a.TimestampUtc)

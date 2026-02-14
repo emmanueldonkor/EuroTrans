@@ -1,5 +1,6 @@
 using EuroTrans.Application.features.Shipments.StartShipment;
 using FluentValidation;
+using Microsoft.AspNetCore.Mvc;
 
 namespace EuroTrans.Api.Endpoints.Shipments;
 
@@ -9,7 +10,7 @@ public static class StartShipmentEndpoint
     {
         app.MapPost("/api/shipments/{id}/start", async (
             Guid id,
-            StartShipmentService service,
+           [FromServices] StartShipmentService service,
             IValidator<Guid> validator) =>
         {
             var validation = await validator.ValidateAsync(id);
@@ -19,6 +20,6 @@ public static class StartShipmentEndpoint
             await service.StartAsync(id);
             return Results.Ok();
         })
-        .RequireAuthorization("driver");
+         .RequireAuthorization("driver", "shipments:write");;
     }
 }

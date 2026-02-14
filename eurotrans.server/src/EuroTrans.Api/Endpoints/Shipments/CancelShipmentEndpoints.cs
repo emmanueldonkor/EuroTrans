@@ -1,5 +1,6 @@
 using EuroTrans.Application.features.Shipments.CancelShipment;
 using FluentValidation;
+using Microsoft.AspNetCore.Mvc;
 
 namespace EuroTrans.Api.Endpoints.Shipments;
 
@@ -9,7 +10,7 @@ public static class CancelShipmentEndpoint
     {
         app.MapPost("/api/shipments/{id}/cancel", async (
             Guid id,
-            CancelShipmentService service,
+          [FromServices]  CancelShipmentService service,
             IValidator<Guid> validator) =>
         {
             var validation = await validator.ValidateAsync(id);
@@ -19,6 +20,6 @@ public static class CancelShipmentEndpoint
             await service.CancelAsync(id);
             return Results.Ok();
         })
-        .RequireAuthorization("manager");
+        .RequireAuthorization("manager", "shipments:write");;
     }
 }

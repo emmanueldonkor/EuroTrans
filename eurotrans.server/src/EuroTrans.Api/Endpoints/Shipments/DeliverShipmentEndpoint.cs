@@ -1,5 +1,6 @@
 using EuroTrans.Application.Common.Interfaces;
 using EuroTrans.Application.features.Shipments.DeliverShipment;
+using Microsoft.AspNetCore.Mvc;
 using FluentValidation;
 
 namespace EuroTrans.Api.Endpoints.Shipments;
@@ -12,8 +13,8 @@ public static class DeliverShipmentEndpoint
         app.MapPost("/api/shipments/{id}/deliver", async (
             Guid id,
             IFormFile file,
-            DeliverShipmentService service,
-            IPodService podService,
+            [FromServices] DeliverShipmentService service,
+            [FromServices] IPodService podService,
             IValidator<DeliverShipmentRequest> validator) =>
         {
             if (file == null || file.Length == 0)
@@ -37,7 +38,7 @@ public static class DeliverShipmentEndpoint
 
             return Results.Ok(new { message = "Shipment delivered", proofUrl = url });
         })
-        .RequireAuthorization("driver");
+        .RequireAuthorization("driver", "shipments:write");;
     }
 }
 

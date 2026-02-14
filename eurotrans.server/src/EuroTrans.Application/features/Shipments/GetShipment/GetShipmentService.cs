@@ -7,13 +7,17 @@ public class GetShipmentService
 {
     private readonly IShipmentRepository shipments;
     private readonly ICurrentUser currentUser;
+    private readonly ICurrentEmployeeProvider currentEmployeeProvider;
 
     public GetShipmentService(
         IShipmentRepository shipments,
-        ICurrentUser currentUser)
+        ICurrentUser currentUser,
+        ICurrentEmployeeProvider currentEmployeeProvider
+        )
     {
         this.shipments = shipments;
         this.currentUser = currentUser;
+        this.currentEmployeeProvider = currentEmployeeProvider;
     }
 
     public async Task<ErrorOr<GetShipmentResponse>> GetAsync(Guid id)
@@ -23,9 +27,15 @@ public class GetShipmentService
         if (shipment is null)
             return Error.NotFound(description: "Shipment not found.");
 
-        if (currentUser.IsDriver && shipment.DriverId != currentUser.Id)
-            return Error.Forbidden(description: "You are not allowed to view this shipment.");
+        if (currentUser.IsDriver)
+        {
+            var employeeIdResult = await currentEmployeeProvider.GetEmployeeIdAsync();
+            if (employeeIdResult.IsError)
+                return employeeIdResult.Errors;
 
+            if (shipment.DriverId != employeeIdResult.Value)
+                return Error.Forbidden(description: "You are not allowed to view this shipment.");
+        }
         return new GetShipmentResponse(
             shipment.Id,
             shipment.TrackingId,

@@ -12,6 +12,7 @@ public class CancelShipmentService
     private readonly ITruckRepository trucks;
     private readonly IUnitOfWork uow;
     private readonly ICurrentUser currentUser;
+    private readonly ICurrentEmployeeProvider currentEmployeeProvider;
     private readonly IDateTimeProvider clock;
 
     public CancelShipmentService(
@@ -20,6 +21,7 @@ public class CancelShipmentService
         ITruckRepository trucks,
         IUnitOfWork uow,
         ICurrentUser currentUser,
+        ICurrentEmployeeProvider currentEmployeeProvider,
         IDateTimeProvider clock)
     {
         this.shipments = shipments;
@@ -27,6 +29,7 @@ public class CancelShipmentService
         this.trucks = trucks;
         this.uow = uow;
         this.currentUser = currentUser;
+        this.currentEmployeeProvider = currentEmployeeProvider;
         this.clock = clock;
     }
 
@@ -36,11 +39,15 @@ public class CancelShipmentService
         if (!currentUser.IsManager)
             return Error.Forbidden(description: "Only managers can cancel shipments.");
 
+        var employeeIdResult = await currentEmployeeProvider.GetEmployeeIdAsync();
+        if (employeeIdResult.IsError)
+            return employeeIdResult.Errors;
+
         var shipment = await shipments.GetByIdAsync(shipmentId);
         if (shipment is null)
             return Error.NotFound(description: "Shipment not found.");
 
-        var cancelResult = shipment.Cancel(currentUser.Id, clock.UtcNow);
+        var cancelResult = shipment.Cancel(employeeIdResult.Value, clock.UtcNow);
 
         if (cancelResult.IsError)
             return cancelResult.Errors;

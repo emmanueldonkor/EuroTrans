@@ -8,17 +8,20 @@ public class MilestoneService
     private readonly IShipmentRepository shipments;
     private readonly IUnitOfWork uow;
     private readonly ICurrentUser currentUser;
+    private readonly ICurrentEmployeeProvider currentEmployeeProvider;
     private readonly IDateTimeProvider clock;
 
     public MilestoneService(
        IShipmentRepository shipments,
        IUnitOfWork uow,
        ICurrentUser currentUser,
+       ICurrentEmployeeProvider currentEmployeeProvider,
        IDateTimeProvider clock)
     {
         this.shipments = shipments;
         this.uow = uow;
         this.currentUser = currentUser;
+        this.currentEmployeeProvider = currentEmployeeProvider;
         this.clock = clock;
     }
 
@@ -27,12 +30,16 @@ public class MilestoneService
         if (!currentUser.IsDriver)
             return Error.Forbidden(description: "Only drivers can add milestones.");
 
+        var employeeIdResult = await currentEmployeeProvider.GetEmployeeIdAsync();
+        if (employeeIdResult.IsError)
+            return employeeIdResult.Errors;
+
         var shipment = await shipments.GetByIdAsync(shipmentId);
         if (shipment is null)
             return Error.NotFound(description: "Shipment not found.");
 
         var result = shipment.AddMilestone(
-            driverId: currentUser.Id,
+            driverId: employeeIdResult.Value,
             lat: request.Latitude,
             lon: request.Longitude,
             note: request.Note,

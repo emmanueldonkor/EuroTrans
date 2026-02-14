@@ -10,17 +10,20 @@ public class CreateShipmentService
     private readonly IShipmentRepository shipments;
     private readonly IUnitOfWork uow;
     private readonly ICurrentUser currentUser;
+    private readonly ICurrentEmployeeProvider currentEmployeeProvider;
     private readonly IDateTimeProvider clock;
 
     public CreateShipmentService(
         IShipmentRepository shipments,
         IUnitOfWork uow,
         ICurrentUser currentUser,
+        ICurrentEmployeeProvider currentEmployeeProvider,
         IDateTimeProvider clock)
     {
         this.shipments = shipments;
         this.uow = uow;
         this.currentUser = currentUser;
+        this.currentEmployeeProvider = currentEmployeeProvider;
         this.clock = clock;
     }
 
@@ -28,6 +31,10 @@ public class CreateShipmentService
     {
         if (!currentUser.IsManager)
             return Error.Forbidden(description: "Only managers can create shipments.");
+
+        var employeeIdResult = await currentEmployeeProvider.GetEmployeeIdAsync();
+        if (employeeIdResult.IsError)
+            return employeeIdResult.Errors;
 
         var trackingId = $"ET-{DateTime.UtcNow:yyyy}-{Random.Shared.Next(1000, 9999)}";
 
@@ -41,7 +48,7 @@ public class CreateShipmentService
             destinationLocation: new GeoLocation(0, 0),
             createdAtUtc: clock.UtcNow,
             estimatedDeliveryDateUtc: request.EstimatedDeliveryDate,
-            managerId: currentUser.Id,
+            managerId: employeeIdResult.Value,
             timestampUtc: clock.UtcNow
         );
 
