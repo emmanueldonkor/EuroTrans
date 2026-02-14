@@ -1,6 +1,9 @@
 using EuroTrans.Application.Common.Interfaces;
 using EuroTrans.Application.features;
 using EuroTrans.Application.features.Shipments;
+using EuroTrans.Application.features.Employees;
+using EuroTrans.Application.features.Shipments;
+using EuroTrans.Application.features.Trucks;
 using EuroTrans.Infrastructure.Persistence;
 using EuroTrans.Infrastructure.Repositories;
 using EuroTrans.Infrastructure.Storage;
@@ -14,6 +17,8 @@ public static class DependencyInjection
     {
         services.AddScoped<IUnitOfWork, UnitOfWork>();
         services.AddScoped<IShipmentRepository, ShipmentRepository>();
+        services.AddScoped<IEmployeeRepository, EmployeeRepository>();
+        services.AddScoped<ITruckRepository, TruckRepository>();
         services.AddScoped<IDateTimeProvider, DateTimeProvider>();
         services.AddScoped<IPodService, PodService>();
         return services;

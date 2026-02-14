@@ -1,4 +1,6 @@
 using System.Reflection;
+using EuroTrans.Application.Common;
+using EuroTrans.Application.Common.Interfaces;
 using EuroTrans.Application.features.Employees.Drivers.GetDriver;
 using EuroTrans.Application.features.Employees.User;
 using EuroTrans.Application.features.Shipments.AssignShipment;
@@ -10,6 +12,10 @@ using EuroTrans.Application.features.Shipments.GetShipmentActivities;
 using EuroTrans.Application.features.Shipments.GetShipments;
 using EuroTrans.Application.features.Shipments.Milestone;
 using EuroTrans.Application.features.Shipments.StartShipment;
+using EuroTrans.Application.features.Trucks.CreateTruck;
+using EuroTrans.Application.features.Trucks.DeleteTruck;
+using EuroTrans.Application.features.Trucks.GetTrucks;
+using EuroTrans.Application.features.Trucks.UpdateTruck;
 using FluentValidation;
 using Microsoft.Extensions.DependencyInjection;
 
@@ -19,6 +25,7 @@ public static class DependencyInjection
 {
     public static IServiceCollection AddApplication(this IServiceCollection services)
     {
+        services.AddScoped<ICurrentEmployeeProvider, CurrentEmployeeProvider>();
         services.AddScoped<CreateShipmentService>();
         services.AddScoped<AssignShipmentService>();
         services.AddScoped<StartShipmentService>();
@@ -31,6 +38,10 @@ public static class DependencyInjection
         services.AddScoped<GetDriverService>();
         services.AddScoped<GetDriverService>();
         services.AddScoped<SyncUserService>();
+        services.AddScoped<CreateTruckService>();
+        services.AddScoped<GetTrucksService>();
+        services.AddScoped<UpdateTruckStatusService>();
+        services.AddScoped<DeleteTruckService>();
         services.AddValidatorsFromAssembly(
             Assembly.GetExecutingAssembly());
         return services;

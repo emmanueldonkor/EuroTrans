@@ -34,16 +34,21 @@ builder.Services.AddAuth0ApiAuthentication(options =>
     options.Domain = builder.Configuration["Auth0:Domain"];
     options.JwtBearerOptions = new JwtBearerOptions
     {
-        Audience = builder.Configuration["Auth0:Audience"]
+        Audience = builder.Configuration["Auth0:Audience"],
+        TokenValidationParameters =
+        {
+            RoleClaimType  = $"{builder.Configuration["Auth0:Audience"]}/roles"
+        }
     };
 });
 
 builder.Services.AddAuthorizationBuilder()
-    .AddPolicy("read:messages", policy =>
-        policy.Requirements.Add(new HasScopeRequirement("read:messages", domain)))
-    .AddPolicy("write:messages", policy =>
-        policy.Requirements.Add(new HasScopeRequirement("write:messages", domain)));
-
+    .AddPolicy("manager", p => p.RequireRole("manager"))
+    .AddPolicy("driver", p => p.RequireRole("driver"))
+    .AddPolicy("read:shipments", p =>
+        p.Requirements.Add(new HasScopeRequirement("read:shipments", domain)))
+    .AddPolicy("write:shipments", p =>
+        p.Requirements.Add(new HasScopeRequirement("write:shipments", domain)));
 
 var app = builder.Build();
 

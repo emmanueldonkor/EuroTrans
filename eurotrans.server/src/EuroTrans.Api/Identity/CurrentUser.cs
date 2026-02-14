@@ -11,14 +11,8 @@ public class CurrentUser : ICurrentUser
         httpContextAccessor = accessor;
     }
 
-    public Guid Id
-    {
-        get
-        {
-            var claim = httpContextAccessor.HttpContext?.User?.FindFirst("sub");
-            return claim != null ? Guid.Parse(claim.Value) : Guid.Empty;
-        }
-    }
+     public string Auth0UserId =>
+        httpContextAccessor.HttpContext?.User?.FindFirst("sub")?.Value ?? string.Empty;
 
     public bool IsManager =>
         httpContextAccessor.HttpContext?.User?.IsInRole("manager") ?? false;

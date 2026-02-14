@@ -1,6 +1,17 @@
 @EuroTrans.Api_HostAddress = http://localhost:5002
 
-GET {{EuroTrans.Api_HostAddress}}/weatherforecast/
+# Get Trucks (Public?)
+GET {{EuroTrans.Api_HostAddress}}/api/trucks
 Accept: application/json
 
 ###
+
+# Get Drivers
+GET {{EuroTrans.Api_HostAddress}}/api/drivers
+Accept: application/json
+
+###
+
+# Get Shipments
+GET {{EuroTrans.Api_HostAddress}}/api/shipments
+Accept: application/json

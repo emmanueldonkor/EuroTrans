@@ -1,5 +1,6 @@
 using EuroTrans.Api.Endpoints.Employees;
 using EuroTrans.Api.Endpoints.Shipments;
+using EuroTrans.Api.Endpoints.Trucks;
 
 namespace EuroTrans.Api.Endpoints;
 
@@ -22,5 +23,11 @@ public static class AllEndpoints
         app.MapGetDriversEndpoint();
         app.MapGetDriverEndpoint();
         app.MapSyncUserEndpoint();
+
+        //Truck Endpoints
+        app.MapCreateTruckEndpoint();
+        app.MapGetTrucksEndpoint();
+        app.MapUpdateTruckStatusEndpoint();
+        app.MapDeleteTruckEndpoint();
     }
 }
