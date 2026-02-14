@@ -19,11 +19,9 @@ public class TruckRepository : ITruckRepository
         return await db.Trucks.FirstOrDefaultAsync(t => t.Id == id);
     }
 
-    public async Task<List<Truck>> GetAvailableAsync()
+    public async Task<List<Truck>> GetAllAsync()
     {
-        return await db.Trucks
-            .Where(t => t.Status == TruckStatus.Available)
-            .ToListAsync();
+        return await db.Trucks.ToListAsync();
     }
 
     public async Task AddAsync(Truck truck)
@@ -36,4 +34,10 @@ public class TruckRepository : ITruckRepository
         db.Trucks.Update(truck);
         return Task.CompletedTask;
     }
+    public Task DeleteAsync(Truck truck)
+    {
+        db.Trucks.Remove(truck);
+        return Task.CompletedTask;
+    }
+
 }

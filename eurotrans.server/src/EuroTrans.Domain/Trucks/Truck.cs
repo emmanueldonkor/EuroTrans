@@ -12,7 +12,7 @@ public class Truck : AggregateRoot
 
     private Truck() { }
 
-    public Truck(Guid id, string plateNumber, string model, float capacity, DateTime createdAtUtc)
+    public Truck(Guid id, string plateNumber, string model, float capacity, DateTime createdAtUtc, TruckStatus status)
         : base(id)
     {
         PlateNumber = plateNumber;
@@ -20,10 +20,18 @@ public class Truck : AggregateRoot
         Capacity = capacity;
         Status = TruckStatus.Available;
         CreatedAtUtc = createdAtUtc;
+        Status = status;
     }
 
     public void MarkAvailable() => Status = TruckStatus.Available;
     public void MarkInUse() => Status = TruckStatus.InUse;
     public void MarkMaintenance() => Status = TruckStatus.Maintenance;
+    public void SetStatus(TruckStatus status)
+    {
+        if (Status != TruckStatus.InUse)
+        {
+            Status = status;
+        }
+    }
 }
 
