@@ -1,5 +1,6 @@
 using EuroTrans.Application.features.Employees.Drivers.GetDriver;
 using FluentValidation;
+using Microsoft.AspNetCore.Mvc;
 
 namespace EuroTrans.Api.Endpoints.Employees;
 
@@ -9,7 +10,7 @@ public static class GetDriverEndpoint
     {
         app.MapGet("/api/drivers/{id}", async (
             Guid id,
-            GetDriverService service,
+           [FromServices] GetDriverService service,
             IValidator<Guid> validator) =>
         {
             var validation = await validator.ValidateAsync(id);
@@ -19,6 +20,6 @@ public static class GetDriverEndpoint
             var result = await service.GetAsync(id);
             return Results.Ok(result);
         })
-        .RequireAuthorization("manager"); 
+        .RequireAuthorization("manager", "employees:read"); ; 
     }
 }

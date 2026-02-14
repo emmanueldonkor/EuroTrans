@@ -1,4 +1,5 @@
 using EuroTrans.Application.features.Employees.User;
+using Microsoft.AspNetCore.Mvc;
 
 namespace EuroTrans.Api.Endpoints.Employees;
 
@@ -8,7 +9,7 @@ public static class SyncUserEndpoint
     {
         app.MapPost("/api/auth/sync-user", async (
             SyncUserRequest request,
-            SyncUserService service) =>
+           [FromServices] SyncUserService service) =>
         {
             // later: verify caller (Auth0 M2M token / API key)
             var id = await service.SyncAsync(request);
