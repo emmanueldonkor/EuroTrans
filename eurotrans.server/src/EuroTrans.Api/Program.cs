@@ -1,3 +1,4 @@
+using System.Text.Json.Serialization;
 using Auth0.AspNetCore.Authentication.Api;
 using EuroTrans.Api.Endpoints;
 using EuroTrans.Api.Identity;
@@ -26,6 +27,11 @@ builder.Services.AddHttpContextAccessor();
 builder.Services.AddScoped<ICurrentUser, CurrentUser>();
 
 builder.Services.AddFluentValidationAutoValidation();
+
+builder.Services.ConfigureHttpJsonOptions(options =>
+{
+    options.SerializerOptions.Converters.Add(new JsonStringEnumConverter());
+});
 
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();

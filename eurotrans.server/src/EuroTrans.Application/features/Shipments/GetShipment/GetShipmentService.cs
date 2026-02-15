@@ -57,7 +57,15 @@ public class GetShipmentService
                 shipment.DestinationAddress.PostalCode
             ),
             shipment.CreatedAtUtc,
+            shipment.UpdatedAtUtc,
+            shipment.StartedAtUtc,
+            shipment.DeliveredAtUtc,
             shipment.EstimatedDeliveryDateUtc,
+            shipment.Documents
+                .Where(d => d.Type == Domain.Shipments.Enums.DocumentType.ProofOfDelivery)
+                .OrderByDescending(d => d.UploadedAtUtc)
+                .Select(d => d.Url)
+                .FirstOrDefault(),
             shipment.DriverId,
             shipment.TruckId,
             shipment.Milestones.Select(m => new MilestoneDto(

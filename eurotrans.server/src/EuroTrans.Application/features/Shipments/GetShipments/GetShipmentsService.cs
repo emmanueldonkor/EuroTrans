@@ -48,7 +48,16 @@ public class GetShipmentsService
             s.TrackingId,
             s.Status,
             s.Cargo!.Description,
+            new AddressSummaryDto(
+                s.OriginAddress!.City,
+                s.OriginAddress.Country
+            ),
+            new AddressSummaryDto(
+                s.DestinationAddress!.City,
+                s.DestinationAddress.Country
+            ),
             s.CreatedAtUtc,
+            s.UpdatedAtUtc,
             s.EstimatedDeliveryDateUtc,
             s.DriverId,
             s.TruckId

@@ -22,6 +22,7 @@ public static class AllEndpoints
         //Employees Endpoints
         app.MapGetDriversEndpoint();
         app.MapGetDriverEndpoint();
+        app.MapUpdateDriverStatusEndpoint();
         app.MapSyncUserEndpoint();
 
         //Truck Endpoints

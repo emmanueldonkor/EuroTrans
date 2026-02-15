@@ -7,6 +7,7 @@ public record GetDriversResponse(
     string Name,
     string Email,
     string? AvatarUrl,
+    string? Phone,
     DriverStatus Status,
     string LicenseNumber,
     bool IsActive

@@ -271,9 +271,7 @@ export default function DriverShipmentDetailPage() {
     setUploadingProof(true)
 
     try {
-      const proofUrl = await api.uploadProofOfDelivery(selectedFile)
-
-      await api.deliverShipment(shipment.id, proofUrl)
+      await api.deliverShipment(shipment.id, selectedFile)
 
       toast({
         title: "Delivery Confirmed",
