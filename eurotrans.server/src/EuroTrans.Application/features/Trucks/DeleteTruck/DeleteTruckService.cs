@@ -14,9 +14,9 @@ public class DeleteTruckService
         this.uow = uow;
     }
 
-    public async Task<ErrorOr<Deleted>> DeleteAsync(Guid id)
+    public async Task<ErrorOr<Deleted>> DeleteAsync(Guid id, CancellationToken ct = default)
     {
-        var truck = await trucks.GetByIdAsync(id);
+        var truck = await trucks.GetByIdAsync(id, ct);
     
         if (truck is null)
             return Error.NotFound(description: "Truck not found.");
@@ -24,8 +24,8 @@ public class DeleteTruckService
         if (truck.Status == TruckStatus.InUse)
             return Error.Conflict(description: "Truck cannot be deleted while in use.");
 
-       await trucks.DeleteAsync(truck);
-       await uow.SaveChangesAsync();
+       await trucks.DeleteAsync(truck, ct);
+       await uow.SaveChangesAsync(ct);
 
         return Result.Deleted;
     }

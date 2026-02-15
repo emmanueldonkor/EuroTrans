@@ -14,16 +14,16 @@ public class UpdateTruckStatusService
         this.uow = uow;
     }
 
-    public async Task<ErrorOr<Success>> UpdateAsync(Guid id, TruckStatus status)
+    public async Task<ErrorOr<Success>> UpdateAsync(Guid id, TruckStatus status, CancellationToken ct = default)
     {
-        var truck = await trucks.GetByIdAsync(id);
+        var truck = await trucks.GetByIdAsync(id, ct);
 
         if (truck is null)
             return Error.NotFound(description: "Truck not found.");
 
         truck.SetStatus(status);
 
-        await uow.SaveChangesAsync();
+        await uow.SaveChangesAsync(ct);
 
         return Result.Success;
     }

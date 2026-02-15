@@ -11,8 +11,8 @@ public class GetTrucksService
         this.trucks = trucks;
     }
 
-    public async Task<List<Truck>> GetAsync()
+    public async Task<List<Truck>> GetAsync(CancellationToken ct = default)
     {
-        return await trucks.GetAllAsync();
+        return await trucks.GetAllAsync(ct);
     }
 }

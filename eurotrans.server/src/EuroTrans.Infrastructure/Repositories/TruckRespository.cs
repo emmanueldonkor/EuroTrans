@@ -14,27 +14,27 @@ public class TruckRepository : ITruckRepository
         this.db = db;
     }
 
-    public async Task<Truck?> GetByIdAsync(Guid id)
+    public async Task<Truck?> GetByIdAsync(Guid id, CancellationToken ct = default)
     {
-        return await db.Trucks.FirstOrDefaultAsync(t => t.Id == id);
+        return await db.Trucks.FirstOrDefaultAsync(t => t.Id == id, ct);
     }
 
-    public async Task<List<Truck>> GetAllAsync()
+    public async Task<List<Truck>> GetAllAsync(CancellationToken ct = default)
     {
-        return await db.Trucks.ToListAsync();
+        return await db.Trucks.ToListAsync(ct);
     }
 
-    public async Task AddAsync(Truck truck)
+    public async Task AddAsync(Truck truck, CancellationToken ct = default)
     {
-        await db.Trucks.AddAsync(truck);
+        await db.Trucks.AddAsync(truck, ct);
     }
 
-    public Task UpdateAsync(Truck truck)
+    public Task UpdateAsync(Truck truck, CancellationToken ct = default)
     {
         db.Trucks.Update(truck);
         return Task.CompletedTask;
     }
-    public Task DeleteAsync(Truck truck)
+    public Task DeleteAsync(Truck truck, CancellationToken ct = default)
     {
         db.Trucks.Remove(truck);
         return Task.CompletedTask;

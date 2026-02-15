@@ -4,9 +4,9 @@ namespace EuroTrans.Application.features.Trucks;
 
 public interface ITruckRepository
 {
-    Task<Truck?> GetByIdAsync(Guid id);
-    Task<List<Truck>> GetAllAsync();
-    Task AddAsync(Truck truck);
-    Task UpdateAsync(Truck truck);
-    Task DeleteAsync(Truck truck);
+    Task<Truck?> GetByIdAsync(Guid id, CancellationToken ct = default);
+    Task<List<Truck>> GetAllAsync(CancellationToken ct = default);
+    Task AddAsync(Truck truck, CancellationToken ct = default);
+    Task UpdateAsync(Truck truck, CancellationToken ct = default);
+    Task DeleteAsync(Truck truck, CancellationToken ct = default);
 }

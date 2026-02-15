@@ -7,11 +7,11 @@ public static class GetTrucksEndpoint
 {
     public static void MapGetTrucksEndpoint(this IEndpointRouteBuilder app)
     {
-        app.MapGet("/api/trucks", async ([FromServices] GetTrucksService service) =>
+        app.MapGet("/api/trucks", async ([FromServices] GetTrucksService service, CancellationToken ct) =>
         {
-            var trucks = await service.GetAsync();
+            var trucks = await service.GetAsync(ct);
             return Results.Ok(trucks);
         })
-        .RequireAuthorization("manager");
+        .RequireAuthorization("manager", "read:trucks");
     }
 }

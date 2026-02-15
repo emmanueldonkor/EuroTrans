@@ -13,7 +13,7 @@ public class CreateTruckService
         this.uow = uow;
     }
 
-    public async Task<Guid> CreateAsync(CreateTruckRequest request)
+    public async Task<Guid> CreateAsync(CreateTruckRequest request, CancellationToken ct = default)
     {
         var truck = new Truck(
             id: Guid.NewGuid(),
@@ -24,8 +24,8 @@ public class CreateTruckService
             status: request.Status
         );
 
-        await trucks.AddAsync(truck);
-        await uow.SaveChangesAsync();
+        await trucks.AddAsync(truck, ct);
+        await uow.SaveChangesAsync(ct);
 
         return truck.Id;
     }

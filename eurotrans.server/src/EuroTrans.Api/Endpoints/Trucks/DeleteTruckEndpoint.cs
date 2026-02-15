@@ -9,11 +9,12 @@ public static class DeleteTruckEndpoint
     {
         app.MapDelete("/api/trucks/{id}", async (
             Guid id,
-          [FromServices]  DeleteTruckService service) =>
+          [FromServices]  DeleteTruckService service,
+            CancellationToken ct) =>
         {
-            await service.DeleteAsync(id);
+            await service.DeleteAsync(id, ct);
             return Results.NoContent();
         })
-        .RequireAuthorization("manager");
+        .RequireAuthorization("manager", "write:trucks");
     }
 }

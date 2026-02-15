@@ -11,15 +11,16 @@ public static class CreateTruckEndpoint
         app.MapPost("/api/trucks", async (
             CreateTruckRequest request,
            [FromServices] CreateTruckService service,
+            CancellationToken ct,
             IValidator<CreateTruckRequest> validator) =>
         {
-            var validation = await validator.ValidateAsync(request);
+            var validation = await validator.ValidateAsync(request, ct);
             if (!validation.IsValid)
                 return Results.BadRequest(validation.Errors);
 
-            var id = await service.CreateAsync(request);
+            var id = await service.CreateAsync(request, ct);
             return Results.Created($"/api/trucks/{id}", new { Id = id });
         })
-        .RequireAuthorization("manager");
+        .RequireAuthorization("manager", "write:trucks");
     }
 }

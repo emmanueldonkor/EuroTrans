@@ -10,11 +10,12 @@ public static class UpdateTruckStatusEndpoint
         app.MapPut("/api/trucks/{id}/status", async (
             Guid id,
             UpdateTruckStatusRequest request,
-          [FromServices]  UpdateTruckStatusService service) =>
+          [FromServices]  UpdateTruckStatusService service,
+            CancellationToken ct) =>
         {
-            await service.UpdateAsync(id, request.Status);
+            await service.UpdateAsync(id, request.Status, ct);
             return Results.NoContent();
         })
-        .RequireAuthorization("manager");
+        .RequireAuthorization("manager", "write:trucks");
     }
 }
