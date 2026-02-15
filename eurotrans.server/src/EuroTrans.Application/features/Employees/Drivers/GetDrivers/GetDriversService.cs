@@ -1,3 +1,5 @@
+using ErrorOr;
+
 namespace EuroTrans.Application.features.Employees.Drivers.GetDrivers;
 
 public class GetDriversService
@@ -9,7 +11,7 @@ public class GetDriversService
         this.employees = employees;
     }
 
-    public async Task<List<GetDriversResponse>> GetAsync(CancellationToken ct = default)
+    public async Task<ErrorOr<List<GetDriversResponse>>> GetAsync(CancellationToken ct = default)
     {
         var drivers = await employees.GetDriversAsync(ct);
 
