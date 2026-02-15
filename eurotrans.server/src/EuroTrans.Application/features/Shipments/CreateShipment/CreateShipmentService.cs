@@ -12,19 +12,22 @@ public class CreateShipmentService
     private readonly ICurrentUser currentUser;
     private readonly ICurrentEmployeeProvider currentEmployeeProvider;
     private readonly IDateTimeProvider clock;
+    private readonly ITrackingIdGenerator trackingIdGenerator;
 
     public CreateShipmentService(
         IShipmentRepository shipments,
         IUnitOfWork uow,
         ICurrentUser currentUser,
         ICurrentEmployeeProvider currentEmployeeProvider,
-        IDateTimeProvider clock)
+        IDateTimeProvider clock,
+        ITrackingIdGenerator trackingIdGenerator)
     {
         this.shipments = shipments;
         this.uow = uow;
         this.currentUser = currentUser;
         this.currentEmployeeProvider = currentEmployeeProvider;
         this.clock = clock;
+        this.trackingIdGenerator = trackingIdGenerator;
     }
 
     public async Task<ErrorOr<Guid>> CreateAsync(CreateShipmentRequest request, CancellationToken ct = default)
@@ -36,25 +39,38 @@ public class CreateShipmentService
         if (employeeIdResult.IsError)
             return employeeIdResult.Errors;
 
-        var trackingId = $"ET-{DateTime.UtcNow:yyyy}-{Random.Shared.Next(1000, 9999)}";
+        int maxRetries = 3;
+        for (int i = 0; i < maxRetries; i++)
+        {
+            try
+            {
+                var trackingId = trackingIdGenerator.Generate();
 
-        var shipment = Shipment.CreateDraft(
-            id: Guid.NewGuid(),
-            trackingId: trackingId,
-            cargo: new Cargo(request.Cargo.Description, request.Cargo.Weight, request.Cargo.Volume),
-            originAddress: new Address(request.Origin.AddressLine, request.Origin.City, request.Origin.Country, request.Origin.PostalCode),
-            originLocation: new GeoLocation(0, 0),
-            destinationAddress: new Address(request.Destination.AddressLine, request.Destination.City, request.Destination.Country, request.Destination.PostalCode),
-            destinationLocation: new GeoLocation(0, 0),
-            createdAtUtc: clock.UtcNow,
-            estimatedDeliveryDateUtc: request.EstimatedDeliveryDate,
-            managerId: employeeIdResult.Value,
-            timestampUtc: clock.UtcNow
-        );
+                var shipment = Shipment.CreateDraft(
+                    id: Guid.NewGuid(),
+                    trackingId: trackingId,
+                    cargo: new Cargo(request.Cargo.Description, request.Cargo.Weight, request.Cargo.Volume),
+                    originAddress: new Address(request.Origin.AddressLine, request.Origin.City, request.Origin.Country, request.Origin.PostalCode),
+                    originLocation: new GeoLocation(0, 0),
+                    destinationAddress: new Address(request.Destination.AddressLine, request.Destination.City, request.Destination.Country, request.Destination.PostalCode),
+                    destinationLocation: new GeoLocation(0, 0),
+                    createdAtUtc: clock.UtcNow,
+                    estimatedDeliveryDateUtc: request.EstimatedDeliveryDate,
+                    managerId: employeeIdResult.Value,
+                    timestampUtc: clock.UtcNow
+                );
 
-        await shipments.AddAsync(shipment, ct);
-        await uow.SaveChangesAsync(ct);
+                await shipments.AddAsync(shipment, ct);
+                await uow.SaveChangesAsync(ct);
 
-        return shipment.Id;
+                return shipment.Id;
+            }
+            catch (Exception)
+            {
+                if (i == maxRetries - 1) throw; 
+            }
+        }
+
+        return Error.Unexpected(description: "Failed to generate a unique tracking ID.");
     }
 }

@@ -6,6 +6,7 @@ using EuroTrans.Application.features.Shipments;
 using EuroTrans.Application.features.Trucks;
 using EuroTrans.Infrastructure.Persistence;
 using EuroTrans.Infrastructure.Repositories;
+using EuroTrans.Infrastructure.Services;
 using EuroTrans.Infrastructure.Storage;
 using Microsoft.Extensions.DependencyInjection;
 
@@ -21,6 +22,7 @@ public static class DependencyInjection
         services.AddScoped<ITruckRepository, TruckRepository>();
         services.AddScoped<IDateTimeProvider, DateTimeProvider>();
         services.AddScoped<IPodService, PodService>();
+        services.AddScoped<ITrackingIdGenerator, TrackingIdGenerator>();
         return services;
     }
 }
