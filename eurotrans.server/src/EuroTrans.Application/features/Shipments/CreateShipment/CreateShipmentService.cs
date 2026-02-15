@@ -2,7 +2,6 @@ using ErrorOr;
 using EuroTrans.Application.Common.Interfaces;
 using EuroTrans.Domain.Shipments;
 using EuroTrans.Domain.Shipments.ValueObjects;
-using Microsoft.EntityFrameworkCore;
 
 namespace EuroTrans.Application.features.Shipments.CreateShipment;
 
@@ -34,44 +33,32 @@ public class CreateShipmentService
     public async Task<ErrorOr<Guid>> CreateAsync(CreateShipmentRequest request, CancellationToken ct = default)
     {
         if (!currentUser.IsManager)
-            return Error.Forbidden(description: "Only managers can create shipments.");
+            return Error.Forbidden("Only managers can create shipments.");
 
         var employeeIdResult = await currentEmployeeProvider.GetEmployeeIdAsync();
         if (employeeIdResult.IsError)
             return employeeIdResult.Errors;
 
-        const int maxRetries = 3;
-        for (int i = 0; i < maxRetries; i++)
-        {
-            try
-            {
-                var trackingId = trackingIdGenerator.Generate();
+        var trackingId = trackingIdGenerator.Generate();
 
-                var shipment = Shipment.CreateDraft(
-                    id: Guid.NewGuid(),
-                    trackingId: trackingId,
-                    cargo: new Cargo(request.Cargo.Description, request.Cargo.Weight, request.Cargo.Volume),
-                    originAddress: new Address(request.Origin.AddressLine, request.Origin.City, request.Origin.Country, request.Origin.PostalCode),
-                    originLocation: new GeoLocation(0, 0),
-                    destinationAddress: new Address(request.Destination.AddressLine, request.Destination.City, request.Destination.Country, request.Destination.PostalCode),
-                    destinationLocation: new GeoLocation(0, 0),
-                    createdAtUtc: clock.UtcNow,
-                    estimatedDeliveryDateUtc: request.EstimatedDeliveryDate,
-                    managerId: employeeIdResult.Value,
-                    timestampUtc: clock.UtcNow
-                );
+        var shipment = Shipment.CreateDraft(
+            id: Guid.NewGuid(),
+            trackingId: trackingId,
+            cargo: new Cargo(request.Cargo.Description, request.Cargo.Weight, request.Cargo.Volume),
+            originAddress: new Address(request.Origin.AddressLine, request.Origin.City, request.Origin.Country, request.Origin.PostalCode),
+            originLocation: new GeoLocation(0, 0),
+            destinationAddress: new Address(request.Destination.AddressLine, request.Destination.City, request.Destination.Country, request.Destination.PostalCode),
+            destinationLocation: new GeoLocation(0, 0),
+            createdAtUtc: clock.UtcNow,
+            estimatedDeliveryDateUtc: request.EstimatedDeliveryDate,
+            managerId: employeeIdResult.Value,
+            timestampUtc: clock.UtcNow
+        );
 
-                await shipments.AddAsync(shipment, ct);
-                await uow.SaveChangesAsync(ct);
+        await shipments.AddAsync(shipment, ct);
+        await uow.SaveChangesAsync(ct);
 
-                return shipment.Id;
-            }
-            catch (DbUpdateException) when (i < maxRetries - 1)
-            {
-                // Retry only for persistence conflicts such as unique tracking id collisions.
-            }
-        }
-
-        return Error.Conflict(description: "Failed to generate a unique tracking ID after multiple attempts.");
+        return shipment.Id;
     }
+
 }
