@@ -1,3 +1,4 @@
+using ErrorOr;
 using EuroTrans.Domain.Trucks;
 
 namespace EuroTrans.Application.features.Trucks.CreateTruck;
@@ -13,7 +14,7 @@ public class CreateTruckService
         this.uow = uow;
     }
 
-    public async Task<Guid> CreateAsync(CreateTruckRequest request, CancellationToken ct = default)
+    public async Task<ErrorOr<Guid>> CreateAsync(CreateTruckRequest request, CancellationToken ct = default)
     {
         var truck = new Truck(
             id: Guid.NewGuid(),
