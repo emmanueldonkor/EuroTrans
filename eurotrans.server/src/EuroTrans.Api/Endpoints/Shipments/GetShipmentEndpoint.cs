@@ -1,3 +1,4 @@
+using EuroTrans.Api.Common.Mapping;
 using EuroTrans.Application.features.Shipments.GetShipment;
 using FluentValidation;
 using Microsoft.AspNetCore.Mvc;
@@ -16,10 +17,12 @@ public static class GetShipmentEndpoint
         {
             var validation = await validator.ValidateAsync(id, ct);
             if (!validation.IsValid)
-                return Results.BadRequest(validation.Errors);
+                return Results.ValidationProblem(validation.ToDictionary());
 
             var result = await service.GetAsync(id, ct);
-            return Results.Ok(result);
+            return result.Match(
+                shipment => Results.Ok(shipment),
+                errors => errors.ToProblem());
         })
          .RequireAuthorization("read:shipments");;
     }

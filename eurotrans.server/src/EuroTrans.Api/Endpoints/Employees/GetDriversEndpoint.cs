@@ -1,3 +1,4 @@
+using EuroTrans.Api.Common.Mapping;
 using EuroTrans.Application.features.Employees.Drivers.GetDrivers;
 using Microsoft.AspNetCore.Mvc;
 
@@ -12,7 +13,9 @@ public static class GetDriversEndpoint
          CancellationToken ct) =>
         {
             var result = await service.GetAsync(ct);
-            return Results.Ok(result);
+            return result.Match(
+                drivers => Results.Ok(drivers),
+                errors => errors.ToProblem());
         })
         .RequireAuthorization("manager", "read:employees"); ; 
     }

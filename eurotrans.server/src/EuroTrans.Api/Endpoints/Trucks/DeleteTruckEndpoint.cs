@@ -1,3 +1,4 @@
+using EuroTrans.Api.Common.Mapping;
 using EuroTrans.Application.features.Trucks.DeleteTruck;
 using Microsoft.AspNetCore.Mvc;
 
@@ -12,8 +13,10 @@ public static class DeleteTruckEndpoint
           [FromServices]  DeleteTruckService service,
             CancellationToken ct) =>
         {
-            await service.DeleteAsync(id, ct);
-            return Results.NoContent();
+            var result = await service.DeleteAsync(id, ct);
+            return result.Match(
+                _ => Results.NoContent(),
+                errors => errors.ToProblem());
         })
         .RequireAuthorization("manager", "write:trucks");
     }

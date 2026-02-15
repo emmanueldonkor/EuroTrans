@@ -1,3 +1,4 @@
+using EuroTrans.Api.Common.Mapping;
 using EuroTrans.Application.features.Trucks.CreateTruck;
 using FluentValidation;
 using Microsoft.AspNetCore.Mvc;
@@ -16,10 +17,12 @@ public static class CreateTruckEndpoint
         {
             var validation = await validator.ValidateAsync(request, ct);
             if (!validation.IsValid)
-                return Results.BadRequest(validation.Errors);
+                return Results.ValidationProblem(validation.ToDictionary());
 
-            var id = await service.CreateAsync(request, ct);
-            return Results.Created($"/api/trucks/{id}", new { Id = id });
+            var result = await service.CreateAsync(request, ct);
+            return result.Match(
+                id => Results.Created($"/api/trucks/{id}", new { Id = id }),
+                errors => errors.ToProblem());
         })
         .RequireAuthorization("manager", "write:trucks");
     }

@@ -1,3 +1,4 @@
+using EuroTrans.Api.Common.Mapping;
 using EuroTrans.Application.Common.Interfaces;
 using EuroTrans.Application.features.Shipments.DeliverShipment;
 using Microsoft.AspNetCore.Mvc;
@@ -32,12 +33,14 @@ public static class DeliverShipmentEndpoint
             // 3. Validate
             var validation = await validator.ValidateAsync(request, ct);
             if (!validation.IsValid)
-                return Results.BadRequest(validation.Errors);
+                return Results.ValidationProblem(validation.ToDictionary());
 
             // 4. Call the domain/application service
-            await service.DeliverAsync(id, request, ct);
+            var result = await service.DeliverAsync(id, request, ct);
 
-            return Results.Ok(new { message = "Shipment delivered", proofUrl = url });
+            return result.Match(
+                _ => Results.Ok(new { message = "Shipment delivered", proofUrl = url }),
+                errors => errors.ToProblem());
         })
         .RequireAuthorization("driver", "write:shipments");;
     }

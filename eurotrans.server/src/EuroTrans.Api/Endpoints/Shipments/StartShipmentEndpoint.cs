@@ -1,3 +1,4 @@
+using EuroTrans.Api.Common.Mapping;
 using EuroTrans.Application.features.Shipments.StartShipment;
 using FluentValidation;
 using Microsoft.AspNetCore.Mvc;
@@ -16,10 +17,12 @@ public static class StartShipmentEndpoint
         {
             var validation = await validator.ValidateAsync(id, ct);
             if (!validation.IsValid)
-                return Results.BadRequest(validation.Errors);
+                return Results.ValidationProblem(validation.ToDictionary());
 
-            await service.StartAsync(id, ct);
-            return Results.Ok();
+            var result = await service.StartAsync(id, ct);
+            return result.Match(
+                _ => Results.Ok(),
+                errors => errors.ToProblem());
         })
          .RequireAuthorization("driver", "write:shipments");;
     }

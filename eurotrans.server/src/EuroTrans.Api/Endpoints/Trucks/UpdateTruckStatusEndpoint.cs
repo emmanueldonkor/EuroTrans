@@ -1,3 +1,4 @@
+using EuroTrans.Api.Common.Mapping;
 using EuroTrans.Application.features.Trucks.UpdateTruck;
 using Microsoft.AspNetCore.Mvc;
 
@@ -13,8 +14,10 @@ public static class UpdateTruckStatusEndpoint
           [FromServices]  UpdateTruckStatusService service,
             CancellationToken ct) =>
         {
-            await service.UpdateAsync(id, request.Status, ct);
-            return Results.NoContent();
+            var result = await service.UpdateAsync(id, request.Status, ct);
+            return result.Match(
+                _ => Results.NoContent(),
+                errors => errors.ToProblem());
         })
         .RequireAuthorization("manager", "write:trucks");
     }

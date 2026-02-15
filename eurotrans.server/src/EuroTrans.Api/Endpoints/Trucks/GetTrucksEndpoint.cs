@@ -1,3 +1,4 @@
+using EuroTrans.Api.Common.Mapping;
 using EuroTrans.Application.features.Trucks.GetTrucks;
 using Microsoft.AspNetCore.Mvc;
 
@@ -9,8 +10,10 @@ public static class GetTrucksEndpoint
     {
         app.MapGet("/api/trucks", async ([FromServices] GetTrucksService service, CancellationToken ct) =>
         {
-            var trucks = await service.GetAsync(ct);
-            return Results.Ok(trucks);
+            var result = await service.GetAsync(ct);
+            return result.Match(
+                trucks => Results.Ok(trucks),
+                errors => errors.ToProblem());
         })
         .RequireAuthorization("manager", "read:trucks");
     }

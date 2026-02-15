@@ -1,3 +1,4 @@
+using EuroTrans.Api.Common.Mapping;
 using EuroTrans.Application.features.Employees.User;
 using FluentValidation;
 using Microsoft.AspNetCore.Mvc;
@@ -16,10 +17,12 @@ public static class SyncUserEndpoint
 {
     var validation = await validator.ValidateAsync(request, ct);
     if (!validation.IsValid)
-        return Results.BadRequest(validation.Errors);
+        return Results.ValidationProblem(validation.ToDictionary());
 
-    var id = await service.SyncAsync(request, ct);
-    return Results.Ok(new { EmployeeId = id });
+    var result = await service.SyncAsync(request, ct);
+    return result.Match(
+        id => Results.Ok(new { EmployeeId = id }),
+        errors => errors.ToProblem());
 })
 .RequireAuthorization("sync:users");
 
