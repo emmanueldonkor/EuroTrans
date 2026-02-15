@@ -10,15 +10,18 @@ public class EnsureCurrentUserService
     private readonly IEmployeeRepository employees;
     private readonly IUnitOfWork uow;
     private readonly ICurrentUser currentUser;
+    private readonly IDateTimeProvider clock;
 
     public EnsureCurrentUserService(
         IEmployeeRepository employees,
         IUnitOfWork uow,
-        ICurrentUser currentUser)
+        ICurrentUser currentUser,
+        IDateTimeProvider clock)
     {
         this.employees = employees;
         this.uow = uow;
         this.currentUser = currentUser;
+        this.clock = clock;
     }
 
     public async Task<ErrorOr<Guid>> EnsureAsync(CancellationToken ct = default)
@@ -59,7 +62,7 @@ public class EnsureCurrentUserService
             email: currentUser.Email,
             role: role.Value,
             avatarUrl: null,
-            createdAtUtc: DateTime.UtcNow
+            createdAtUtc: clock.UtcNow
         );
 
         if (role == EmployeeRole.Driver)

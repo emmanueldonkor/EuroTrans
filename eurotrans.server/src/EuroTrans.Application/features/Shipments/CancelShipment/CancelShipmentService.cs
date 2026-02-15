@@ -11,7 +11,6 @@ public class CancelShipmentService
     private readonly IEmployeeRepository drivers;
     private readonly ITruckRepository trucks;
     private readonly IUnitOfWork uow;
-    private readonly ICurrentUser currentUser;
     private readonly ICurrentEmployeeProvider currentEmployeeProvider;
     private readonly IDateTimeProvider clock;
 
@@ -20,7 +19,6 @@ public class CancelShipmentService
         IEmployeeRepository drivers,
         ITruckRepository trucks,
         IUnitOfWork uow,
-        ICurrentUser currentUser,
         ICurrentEmployeeProvider currentEmployeeProvider,
         IDateTimeProvider clock)
     {
@@ -28,17 +26,12 @@ public class CancelShipmentService
         this.drivers = drivers;
         this.trucks = trucks;
         this.uow = uow;
-        this.currentUser = currentUser;
         this.currentEmployeeProvider = currentEmployeeProvider;
         this.clock = clock;
     }
 
     public async Task<ErrorOr<Success>> CancelAsync(Guid shipmentId, CancellationToken ct = default)
     {
-
-        if (!currentUser.IsManager)
-            return Error.Forbidden(description: "Only managers can cancel shipments.");
-
         var employeeIdResult = await currentEmployeeProvider.GetEmployeeIdAsync();
         if (employeeIdResult.IsError)
             return employeeIdResult.Errors;

@@ -7,29 +7,23 @@ public class MilestoneService
 {
     private readonly IShipmentRepository shipments;
     private readonly IUnitOfWork uow;
-    private readonly ICurrentUser currentUser;
     private readonly ICurrentEmployeeProvider currentEmployeeProvider;
     private readonly IDateTimeProvider clock;
 
     public MilestoneService(
        IShipmentRepository shipments,
        IUnitOfWork uow,
-       ICurrentUser currentUser,
        ICurrentEmployeeProvider currentEmployeeProvider,
        IDateTimeProvider clock)
     {
         this.shipments = shipments;
         this.uow = uow;
-        this.currentUser = currentUser;
         this.currentEmployeeProvider = currentEmployeeProvider;
         this.clock = clock;
     }
 
     public async Task<ErrorOr<Success>> AddAsync(Guid shipmentId, MilestoneRequest request, CancellationToken ct = default)
     {
-        if (!currentUser.IsDriver)
-            return Error.Forbidden(description: "Only drivers can add milestones.");
-
         var employeeIdResult = await currentEmployeeProvider.GetEmployeeIdAsync();
         if (employeeIdResult.IsError)
             return employeeIdResult.Errors;

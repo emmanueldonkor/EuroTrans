@@ -2,6 +2,7 @@ using ErrorOr;
 using EuroTrans.Application.Common.Interfaces;
 using EuroTrans.Domain.Shipments;
 using EuroTrans.Domain.Shipments.ValueObjects;
+using Microsoft.EntityFrameworkCore;
 
 namespace EuroTrans.Application.features.Shipments.CreateShipment;
 
@@ -9,7 +10,6 @@ public class CreateShipmentService
 {
     private readonly IShipmentRepository shipments;
     private readonly IUnitOfWork uow;
-    private readonly ICurrentUser currentUser;
     private readonly ICurrentEmployeeProvider currentEmployeeProvider;
     private readonly IDateTimeProvider clock;
     private readonly ITrackingIdGenerator trackingIdGenerator;
@@ -17,14 +17,12 @@ public class CreateShipmentService
     public CreateShipmentService(
         IShipmentRepository shipments,
         IUnitOfWork uow,
-        ICurrentUser currentUser,
         ICurrentEmployeeProvider currentEmployeeProvider,
         IDateTimeProvider clock,
         ITrackingIdGenerator trackingIdGenerator)
     {
         this.shipments = shipments;
         this.uow = uow;
-        this.currentUser = currentUser;
         this.currentEmployeeProvider = currentEmployeeProvider;
         this.clock = clock;
         this.trackingIdGenerator = trackingIdGenerator;
@@ -32,14 +30,11 @@ public class CreateShipmentService
 
     public async Task<ErrorOr<Guid>> CreateAsync(CreateShipmentRequest request, CancellationToken ct = default)
     {
-        if (!currentUser.IsManager)
-            return Error.Forbidden(description: "Only managers can create shipments.");
-
         var employeeIdResult = await currentEmployeeProvider.GetEmployeeIdAsync();
         if (employeeIdResult.IsError)
             return employeeIdResult.Errors;
 
-        int maxRetries = 3;
+        const int maxRetries = 3;
         for (int i = 0; i < maxRetries; i++)
         {
             try
@@ -65,12 +60,12 @@ public class CreateShipmentService
 
                 return shipment.Id;
             }
-            catch (Exception)
+            catch (DbUpdateException) when (i < maxRetries - 1)
             {
-                if (i == maxRetries - 1) throw; 
+                // Retry only for persistence conflicts such as unique tracking id collisions.
             }
         }
 
-        return Error.Unexpected(description: "Failed to generate a unique tracking ID.");
+        return Error.Conflict(description: "Failed to generate a unique tracking ID after multiple attempts.");
     }
 }

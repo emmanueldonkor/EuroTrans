@@ -19,11 +19,10 @@ public class GetShipmentsService
         this.currentEmployeeProvider = currentEmployeeProvider;
     }
 
-    public async Task<ErrorOr<List<GetShipmentResponse>>> GetAsync(GetShipmentsRequest request, CancellationToken ct = default)
+    public async Task<ErrorOr<GetShipmentsResponse>> GetAsync(GetShipmentsRequest request, CancellationToken ct = default)
     {
         Guid? driverFilter = request.DriverId;
 
-        // Drivers can ONLY see their own shipments
         if (currentUser.IsDriver)
         {
             var employeeIdResult = await currentEmployeeProvider.GetEmployeeIdAsync();
@@ -33,19 +32,18 @@ public class GetShipmentsService
             driverFilter = employeeIdResult.Value;
         }
 
-        // Managers can filter by driverId if they want
-        // If manager doesn't pass driverId, it stays null
-
-        var shipments = await this.shipments.GetFilteredAsync(
+        var (items, totalCount) = await this.shipments.GetFilteredAsync(
             status: request.Status,
             driverId: driverFilter,
             startDate: request.StartDate,
             endDate: request.EndDate,
-            search: request.Search, 
+            search: request.Search,
+            page: request.Page,
+            pageSize: request.PageSize,
             ct: ct
         );
 
-        return shipments.Select(s => new GetShipmentResponse(
+        var mappedItems = items.Select(s => new GetShipmentsItemResponse(
             s.Id,
             s.TrackingId,
             s.Status,
@@ -55,5 +53,7 @@ public class GetShipmentsService
             s.DriverId,
             s.TruckId
         )).ToList();
+
+        return new GetShipmentsResponse(mappedItems, totalCount, request.Page, request.PageSize);
     }
 }

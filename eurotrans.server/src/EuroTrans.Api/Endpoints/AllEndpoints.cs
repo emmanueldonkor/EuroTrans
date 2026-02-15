@@ -13,7 +13,7 @@ public static class AllEndpoints
         app.MapAssignShipmentEndpoint();
         app.MapStartShipmentEndpoint();
         app.MapCancelShipmentEndpoint();
-        app. MapDeliverShipmentEndpoint();
+        app.MapDeliverShipmentEndpoint();
         app.MapAddMilestoneEndpoint();
         app.MapGetShipmentsEndpoint();
         app.MapGetShipmentEndpoint();

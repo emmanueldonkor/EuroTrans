@@ -2,7 +2,6 @@ using EuroTrans.Application.Common.Interfaces;
 using EuroTrans.Application.features;
 using EuroTrans.Application.features.Shipments;
 using EuroTrans.Application.features.Employees;
-using EuroTrans.Application.features.Shipments;
 using EuroTrans.Application.features.Trucks;
 using EuroTrans.Infrastructure.Persistence;
 using EuroTrans.Infrastructure.Repositories;

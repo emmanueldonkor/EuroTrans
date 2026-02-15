@@ -13,7 +13,6 @@ public class AssignShipmentService
     private readonly IEmployeeRepository drivers;
     private readonly ITruckRepository trucks;
     private readonly IUnitOfWork uow;
-    private readonly ICurrentUser currentUser;
     private readonly ICurrentEmployeeProvider currentEmployeeProvider;
     private readonly IDateTimeProvider clock;
 
@@ -22,7 +21,6 @@ public class AssignShipmentService
         IEmployeeRepository drivers,
         ITruckRepository trucks,
         IUnitOfWork uow,
-        ICurrentUser currentUser,
         ICurrentEmployeeProvider currentEmployeeProvider,
         IDateTimeProvider clock)
     {
@@ -30,16 +28,12 @@ public class AssignShipmentService
         this.drivers = drivers;
         this.trucks = trucks;
         this.uow = uow;
-        this.currentUser = currentUser;
         this.currentEmployeeProvider = currentEmployeeProvider;
         this.clock = clock;
     }
 
     public async Task<ErrorOr<Success>> AssignAsync(Guid shipmentId, AssignShipmentRequest request, CancellationToken ct = default)
     {
-        if (!currentUser.IsManager)
-            return Error.Forbidden(description: "Only managers can assign shipments.");
-
         var employeeIdResult = await currentEmployeeProvider.GetEmployeeIdAsync();
         if (employeeIdResult.IsError)
             return employeeIdResult.Errors;
@@ -53,8 +47,11 @@ public class AssignShipmentService
         var truck = await trucks.GetByIdAsync(request.TruckId, ct);
         if (truck is null) return Error.NotFound(description: "Truck not found.");
 
-        // 3. Business Rule Checks
-        if (driver.Driver?.Status != DriverStatus.Available)
+        // Business Rule Checks
+        if (driver.Driver is null)
+            return Error.Validation(description: "Selected employee does not have a driver profile.");
+
+        if (driver.Driver.Status != DriverStatus.Available)
             return Error.Conflict(description: "Driver is not available.");
 
         if (truck.Status != TruckStatus.Available)
