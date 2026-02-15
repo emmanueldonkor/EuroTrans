@@ -1,3 +1,4 @@
+using ErrorOr;
 using EuroTrans.Domain.Trucks;
 
 namespace EuroTrans.Application.features.Trucks.GetTrucks;
@@ -11,7 +12,7 @@ public class GetTrucksService
         this.trucks = trucks;
     }
 
-    public async Task<List<Truck>> GetAsync(CancellationToken ct = default)
+    public async Task<ErrorOr<List<Truck>>> GetAsync(CancellationToken ct = default)
     {
         return await trucks.GetAllAsync(ct);
     }
