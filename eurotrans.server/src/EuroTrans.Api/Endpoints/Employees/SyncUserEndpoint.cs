@@ -1,4 +1,5 @@
 using EuroTrans.Application.features.Employees.User;
+using FluentValidation;
 using Microsoft.AspNetCore.Mvc;
 
 namespace EuroTrans.Api.Endpoints.Employees;
@@ -8,12 +9,19 @@ public static class SyncUserEndpoint
     public static void MapSyncUserEndpoint(this IEndpointRouteBuilder app)
     {
         app.MapPost("/api/auth/sync-user", async (
-            SyncUserRequest request,
-           [FromServices] SyncUserService service) =>
-        {
-            // later: verify caller (Auth0 M2M token / API key)
-            var id = await service.SyncAsync(request);
-            return Results.Ok(new { EmployeeId = id });
-        });
+    SyncUserRequest request,
+    [FromServices] SyncUserService service,
+    CancellationToken ct,
+    IValidator<SyncUserRequest> validator) =>
+{
+    var validation = await validator.ValidateAsync(request, ct);
+    if (!validation.IsValid)
+        return Results.BadRequest(validation.Errors);
+
+    var id = await service.SyncAsync(request, ct);
+    return Results.Ok(new { EmployeeId = id });
+})
+.RequireAuthorization("sync:users");
+
     }
 }

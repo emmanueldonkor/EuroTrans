@@ -2,6 +2,7 @@ using System.Reflection;
 using EuroTrans.Application.Common;
 using EuroTrans.Application.Common.Interfaces;
 using EuroTrans.Application.features.Employees.Drivers.GetDriver;
+using EuroTrans.Application.features.Employees.Drivers.GetDrivers;
 using EuroTrans.Application.features.Employees.User;
 using EuroTrans.Application.features.Shipments.AssignShipment;
 using EuroTrans.Application.features.Shipments.CancelShipment;
@@ -36,7 +37,8 @@ public static class DependencyInjection
         services.AddScoped<GetShipmentService>();
         services.AddScoped<GetShipmentActivitiesService>();
         services.AddScoped<GetDriverService>();
-        services.AddScoped<GetDriverService>();
+        services.AddScoped<GetDriversService>();
+         services.AddScoped<EnsureCurrentUserService>();
         services.AddScoped<SyncUserService>();
         services.AddScoped<CreateTruckService>();
         services.AddScoped<GetTrucksService>();

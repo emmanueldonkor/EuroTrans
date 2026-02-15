@@ -1,6 +1,7 @@
 using Auth0.AspNetCore.Authentication.Api;
 using EuroTrans.Api.Endpoints;
 using EuroTrans.Api.Identity;
+using EuroTrans.Api.Middlewares;
 using EuroTrans.Application;
 using EuroTrans.Application.Common.Interfaces;
 using EuroTrans.Infrastructure;
@@ -28,6 +29,7 @@ builder.Services.AddFluentValidationAutoValidation();
 
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
+builder.Services.AddMemoryCache();
 
 builder.Services.AddAuth0ApiAuthentication(options =>
 {
@@ -48,7 +50,17 @@ builder.Services.AddAuthorizationBuilder()
     .AddPolicy("read:shipments", p =>
         p.Requirements.Add(new HasScopeRequirement("read:shipments", domain)))
     .AddPolicy("write:shipments", p =>
-        p.Requirements.Add(new HasScopeRequirement("write:shipments", domain)));
+        p.Requirements.Add(new HasScopeRequirement("write:shipments", domain)))
+    .AddPolicy("sync:users", p =>
+        p.Requirements.Add(new HasScopeRequirement("sync:users", domain)))
+    .AddPolicy("read:trucks", p =>
+        p.Requirements.Add(new HasScopeRequirement("read:trucks", domain)))
+    .AddPolicy("write:trucks", p =>
+        p.Requirements.Add(new HasScopeRequirement("write:trucks", domain)))
+    .AddPolicy("read:employees", p =>
+        p.Requirements.Add(new HasScopeRequirement("read:employees", domain)))
+    .AddPolicy("write:employees", p =>
+        p.Requirements.Add(new HasScopeRequirement("write:employees", domain)));
 
 var app = builder.Build();
 
@@ -68,6 +80,7 @@ if (app.Environment.IsDevelopment())
 app.UseHttpsRedirection();
 
 app.UseAuthentication();
+app.UseMiddleware<EnsureCurrentUserMiddleware>();
 app.UseAuthorization();
 
 app.MapAllEndpoints();

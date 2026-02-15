@@ -1,4 +1,3 @@
-using ErrorOr;
 using EuroTrans.Domain.Employees;
 using EuroTrans.Domain.Employees.Enums;
 
@@ -15,14 +14,14 @@ public class SyncUserService
         this.uow = uow;
     }
 
-    public async Task<Guid> SyncAsync(SyncUserRequest request)
+    public async Task<Guid> SyncAsync(SyncUserRequest request, CancellationToken ct = default)
     {
         // Idempotent: if exists, just update identity info
-        var existing = await employees.GetByAuth0IdAsync(request.Auth0UserId);
+        var existing = await employees.GetByAuth0IdAsync(request.Auth0UserId, ct);
         if (existing != null)
         {
             existing.UpdateFromIdentity(request.Name, request.Email);
-            await uow.SaveChangesAsync();
+            await uow.SaveChangesAsync(ct);
             return existing.Id;
         }
 
@@ -51,8 +50,8 @@ public class SyncUserService
             employee.SetDriver(driver);
         }
 
-        await employees.AddAsync(employee);
-        await uow.SaveChangesAsync();
+        await employees.AddAsync(employee, ct);
+        await uow.SaveChangesAsync(ct);
 
         return employeeId;
     }
