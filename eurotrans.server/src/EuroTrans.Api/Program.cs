@@ -31,6 +31,18 @@ builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 builder.Services.AddMemoryCache();
 
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("Eurotrans", policy =>
+    {
+        policy
+            .WithOrigins("http://localhost:3000")
+            .AllowAnyMethod()
+            .AllowAnyHeader()
+            .AllowCredentials();
+    });
+});
+
 builder.Services.AddAuth0ApiAuthentication(options =>
 {
     options.Domain = builder.Configuration["Auth0:Domain"];
@@ -63,6 +75,8 @@ builder.Services.AddAuthorizationBuilder()
         p.Requirements.Add(new HasScopeRequirement("write:employees", domain)));
 
 var app = builder.Build();
+
+app.UseCors("Eurotrans");
 
 /*using(var scope = app.Services.CreateScope())
 {
