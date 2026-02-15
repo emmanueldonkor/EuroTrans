@@ -15,6 +15,7 @@ public static class DeliverShipmentEndpoint
             IFormFile file,
             [FromServices] DeliverShipmentService service,
             [FromServices] IPodService podService,
+            CancellationToken ct,
             IValidator<DeliverShipmentRequest> validator) =>
         {
             if (file == null || file.Length == 0)
@@ -29,16 +30,16 @@ public static class DeliverShipmentEndpoint
             
 
             // 3. Validate
-            var validation = await validator.ValidateAsync(request);
+            var validation = await validator.ValidateAsync(request, ct);
             if (!validation.IsValid)
                 return Results.BadRequest(validation.Errors);
 
             // 4. Call the domain/application service
-            await service.DeliverAsync(id, request);
+            await service.DeliverAsync(id, request, ct);
 
             return Results.Ok(new { message = "Shipment delivered", proofUrl = url });
         })
-        .RequireAuthorization("driver", "shipments:write");;
+        .RequireAuthorization("driver", "write:shipments");;
     }
 }
 

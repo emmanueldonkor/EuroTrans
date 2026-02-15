@@ -27,7 +27,7 @@ public class CreateShipmentService
         this.clock = clock;
     }
 
-    public async Task<ErrorOr<Guid>> CreateAsync(CreateShipmentRequest request)
+    public async Task<ErrorOr<Guid>> CreateAsync(CreateShipmentRequest request, CancellationToken ct = default)
     {
         if (!currentUser.IsManager)
             return Error.Forbidden(description: "Only managers can create shipments.");
@@ -52,8 +52,8 @@ public class CreateShipmentService
             timestampUtc: clock.UtcNow
         );
 
-        await shipments.AddAsync(shipment);
-        await uow.SaveChangesAsync();
+        await shipments.AddAsync(shipment, ct);
+        await uow.SaveChangesAsync(ct);
 
         return shipment.Id;
     }

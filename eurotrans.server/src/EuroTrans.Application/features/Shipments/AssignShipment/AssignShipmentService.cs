@@ -35,7 +35,7 @@ public class AssignShipmentService
         this.clock = clock;
     }
 
-    public async Task<ErrorOr<Success>> AssignAsync(Guid shipmentId, AssignShipmentRequest request)
+    public async Task<ErrorOr<Success>> AssignAsync(Guid shipmentId, AssignShipmentRequest request, CancellationToken ct = default)
     {
         if (!currentUser.IsManager)
             return Error.Forbidden(description: "Only managers can assign shipments.");
@@ -44,13 +44,13 @@ public class AssignShipmentService
         if (employeeIdResult.IsError)
             return employeeIdResult.Errors;
 
-        var shipment = await shipments.GetByIdAsync(shipmentId);
+        var shipment = await shipments.GetByIdAsync(shipmentId, ct);
         if (shipment is null) return Error.NotFound(description: "Shipment not found.");
 
-        var driver = await drivers.GetByIdAsync(request.DriverId);
+        var driver = await drivers.GetByIdAsync(request.DriverId, ct);
         if (driver is null) return Error.NotFound(description: "Driver not found.");
 
-        var truck = await trucks.GetByIdAsync(request.TruckId);
+        var truck = await trucks.GetByIdAsync(request.TruckId, ct);
         if (truck is null) return Error.NotFound(description: "Truck not found.");
 
         // 3. Business Rule Checks
@@ -67,7 +67,7 @@ public class AssignShipmentService
         driver.Driver.SetOnDuty();
         truck.MarkInUse();
 
-        await uow.SaveChangesAsync();
+        await uow.SaveChangesAsync(ct);
 
         return Result.Success;
     }

@@ -20,6 +20,6 @@ public static class CancelShipmentEndpoint
             await service.CancelAsync(id);
             return Results.Ok();
         })
-        .RequireAuthorization("manager", "shipments:write");;
+        .RequireAuthorization("manager", "write:shipments");;
     }
 }

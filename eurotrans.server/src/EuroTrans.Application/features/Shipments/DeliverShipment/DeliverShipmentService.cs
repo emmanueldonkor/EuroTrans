@@ -33,7 +33,7 @@ public class DeliverShipmentService
         this.clock = clock;
     }
 
-    public async Task<ErrorOr<Success>> DeliverAsync(Guid shipmentId, DeliverShipmentRequest request)
+    public async Task<ErrorOr<Success>> DeliverAsync(Guid shipmentId, DeliverShipmentRequest request, CancellationToken ct = default)
     {
 
         if (!currentUser.IsDriver)
@@ -43,7 +43,7 @@ public class DeliverShipmentService
         if (employeeIdResult.IsError)
             return employeeIdResult.Errors;
 
-        var shipment = await shipments.GetByIdAsync(shipmentId);
+        var shipment = await shipments.GetByIdAsync(shipmentId, ct);
         if (shipment is null)
             return Error.NotFound(description: "Shipment not found.");
 
@@ -52,13 +52,13 @@ public class DeliverShipmentService
         if (result.IsError)
             return result.Errors;
 
-        var driver = await drivers.GetByIdAsync(shipment.DriverId!.Value);
-        var truck = await trucks.GetByIdAsync(shipment.TruckId!.Value);
+        var driver = await drivers.GetByIdAsync(shipment.DriverId!.Value, ct);
+        var truck = await trucks.GetByIdAsync(shipment.TruckId!.Value, ct);
 
         driver?.Driver?.SetAvailable();
         truck?.MarkAvailable();
 
-        await uow.SaveChangesAsync();
+        await uow.SaveChangesAsync(ct);
 
         return Result.Success;
     }

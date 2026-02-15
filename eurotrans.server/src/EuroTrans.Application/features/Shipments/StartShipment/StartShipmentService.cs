@@ -25,7 +25,7 @@ public class StartShipmentService
         this.clock = clock;
     }
 
-    public async Task<ErrorOr<Success>> StartAsync(Guid shipmentId)
+    public async Task<ErrorOr<Success>> StartAsync(Guid shipmentId, CancellationToken ct = default)
     {
         if (!currentUser.IsDriver)
             return Error.Forbidden(description: "Only drivers can start shipments.");
@@ -34,7 +34,7 @@ public class StartShipmentService
         if (employeeIdResult.IsError)
             return employeeIdResult.Errors;
 
-        var shipment = await shipments.GetByIdAsync(shipmentId);
+        var shipment = await shipments.GetByIdAsync(shipmentId, ct);
         if (shipment is null)
             return Error.NotFound(description: "Shipment not found.");
 
@@ -43,7 +43,7 @@ public class StartShipmentService
         if (result.IsError)
             return result.Errors;
 
-        await uow.SaveChangesAsync();
+        await uow.SaveChangesAsync(ct);
 
         return Result.Success;
     }

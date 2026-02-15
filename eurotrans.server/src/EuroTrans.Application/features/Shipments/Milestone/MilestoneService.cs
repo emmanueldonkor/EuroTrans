@@ -25,7 +25,7 @@ public class MilestoneService
         this.clock = clock;
     }
 
-    public async Task<ErrorOr<Success>> AddAsync(Guid shipmentId, MilestoneRequest request)
+    public async Task<ErrorOr<Success>> AddAsync(Guid shipmentId, MilestoneRequest request, CancellationToken ct = default)
     {
         if (!currentUser.IsDriver)
             return Error.Forbidden(description: "Only drivers can add milestones.");
@@ -34,7 +34,7 @@ public class MilestoneService
         if (employeeIdResult.IsError)
             return employeeIdResult.Errors;
 
-        var shipment = await shipments.GetByIdAsync(shipmentId);
+        var shipment = await shipments.GetByIdAsync(shipmentId, ct);
         if (shipment is null)
             return Error.NotFound(description: "Shipment not found.");
 
@@ -49,7 +49,7 @@ public class MilestoneService
         if (result.IsError)
             return result.Errors;
 
-        await uow.SaveChangesAsync();
+        await uow.SaveChangesAsync(ct);
 
         return Result.Success;
     }

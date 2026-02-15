@@ -12,17 +12,18 @@ public static class CreateShipmentEndpoint
         app.MapPost("/api/shipments", async (
          CreateShipmentRequest request,
         [FromServices] CreateShipmentService service,
+         CancellationToken ct,
          IValidator<CreateShipmentRequest> validator) =>
      {
-         var validation = await validator.ValidateAsync(request);
+         var validation = await validator.ValidateAsync(request, ct);
          if (!validation.IsValid)
              return Results.BadRequest(validation.Errors);
 
-         var id = await service.CreateAsync(request);
+         var id = await service.CreateAsync(request, ct);
 
          return Results.Created($"/api/shipments/{id}", new { id });
      })
-    .RequireAuthorization("manager", "shipments:write");;
+    .RequireAuthorization("manager", "write:shipments");;
 
     }
 }

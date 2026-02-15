@@ -19,7 +19,7 @@ public class GetShipmentsService
         this.currentEmployeeProvider = currentEmployeeProvider;
     }
 
-    public async Task<ErrorOr<List<GetShipmentResponse>>> GetAsync(GetShipmentsRequest request)
+    public async Task<ErrorOr<List<GetShipmentResponse>>> GetAsync(GetShipmentsRequest request, CancellationToken ct = default)
     {
         Guid? driverFilter = request.DriverId;
 
@@ -41,7 +41,8 @@ public class GetShipmentsService
             driverId: driverFilter,
             startDate: request.StartDate,
             endDate: request.EndDate,
-            search: request.Search
+            search: request.Search, 
+            ct: ct
         );
 
         return shipments.Select(s => new GetShipmentResponse(

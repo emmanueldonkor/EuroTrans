@@ -20,9 +20,9 @@ public class GetShipmentService
         this.currentEmployeeProvider = currentEmployeeProvider;
     }
 
-    public async Task<ErrorOr<GetShipmentResponse>> GetAsync(Guid id)
+    public async Task<ErrorOr<GetShipmentResponse>> GetAsync(Guid id, CancellationToken ct = default)
     {
-        var shipment = await shipments.GetByIdAsync(id);
+        var shipment = await shipments.GetByIdAsync(id, ct);
 
         if (shipment is null)
             return Error.NotFound(description: "Shipment not found.");

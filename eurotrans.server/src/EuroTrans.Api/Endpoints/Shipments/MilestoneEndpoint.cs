@@ -12,15 +12,16 @@ public static class MilestoneEndpoint
             Guid id,
             MilestoneRequest request,
           [FromServices]  MilestoneService service,
+            CancellationToken ct,
             IValidator<MilestoneRequest> validator) =>
         {
-            var validation = await validator.ValidateAsync(request);
+            var validation = await validator.ValidateAsync(request, ct);
             if (!validation.IsValid)
                 return Results.BadRequest(validation.Errors);
 
-            await service.AddAsync(id, request);
+            await service.AddAsync(id, request, ct);
             return Results.Ok();
         })
-         .RequireAuthorization("driver", "shipments:write");;
+         .RequireAuthorization("driver", "write:shipments");;
     }
 }

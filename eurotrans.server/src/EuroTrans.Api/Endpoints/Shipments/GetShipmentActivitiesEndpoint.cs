@@ -11,15 +11,16 @@ public static class GetShipmentActivitiesEndpoint
         app.MapGet("/api/shipments/{id}/activities", async (
             Guid id,
           [FromServices]  GetShipmentActivitiesService service,
+            CancellationToken ct,
             IValidator<Guid> validator) =>
         {
-            var validation = await validator.ValidateAsync(id);
+            var validation = await validator.ValidateAsync(id, ct);
             if (!validation.IsValid)
                 return Results.BadRequest(validation.Errors);
 
-            var result = await service.GetAsync(id);
+            var result = await service.GetAsync(id, ct);
             return Results.Ok(result);
         })
-        .RequireAuthorization("shipments:read");;
+        .RequireAuthorization("read:shipment");;
     }
 }

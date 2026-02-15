@@ -15,18 +15,18 @@ public class ShipmentRepository : IShipmentRepository
         this.db = db;
     }
 
-    public async Task<Shipment?> GetByIdAsync(Guid id)
+    public async Task<Shipment?> GetByIdAsync(Guid id, CancellationToken ct = default)
     {
         return await db.Shipments
             .Include(s => s.Activities)
             .Include(s => s.Milestones)
             .Include(s => s.Documents)
-            .FirstOrDefaultAsync(s => s.Id == id);
+            .FirstOrDefaultAsync(s => s.Id == id, ct);
     }
 
-    public async Task AddAsync(Shipment shipment)
+    public async Task AddAsync(Shipment shipment, CancellationToken ct = default)
     {
-        await db.Shipments.AddAsync(shipment);
+        await db.Shipments.AddAsync(shipment, ct);
     }
 
     public async Task<List<Shipment>> GetFilteredAsync(
@@ -34,7 +34,8 @@ public class ShipmentRepository : IShipmentRepository
         Guid? driverId,
         DateTime? startDate,
         DateTime? endDate,
-        string? search)
+        string? search, 
+        CancellationToken ct = default)
     {
         var query = db.Shipments.AsQueryable();
 
@@ -55,6 +56,6 @@ public class ShipmentRepository : IShipmentRepository
                 s.TrackingId.Contains(search) ||
                 s.Cargo!.Description.Contains(search));
 
-        return await query.ToListAsync();
+        return await query.ToListAsync(ct);
     }
 }

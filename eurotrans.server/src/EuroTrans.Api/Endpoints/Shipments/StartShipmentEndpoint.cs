@@ -11,15 +11,16 @@ public static class StartShipmentEndpoint
         app.MapPost("/api/shipments/{id}/start", async (
             Guid id,
            [FromServices] StartShipmentService service,
+            CancellationToken ct,
             IValidator<Guid> validator) =>
         {
-            var validation = await validator.ValidateAsync(id);
+            var validation = await validator.ValidateAsync(id, ct);
             if (!validation.IsValid)
                 return Results.BadRequest(validation.Errors);
 
-            await service.StartAsync(id);
+            await service.StartAsync(id, ct);
             return Results.Ok();
         })
-         .RequireAuthorization("driver", "shipments:write");;
+         .RequireAuthorization("driver", "write:shipments");;
     }
 }
