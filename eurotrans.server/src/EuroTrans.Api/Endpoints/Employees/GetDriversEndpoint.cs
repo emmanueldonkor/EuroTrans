@@ -17,6 +17,6 @@ public static class GetDriversEndpoint
                 drivers => Results.Ok(drivers),
                 errors => errors.ToProblem());
         })
-        .RequireAuthorization("manager", "read:employees"); ; 
+        .RequireAuthorization("manager", "read:employees"); 
     }
 }
