@@ -26,7 +26,7 @@ public static class CreateShipmentEndpoint
              id => Results.Created($"/api/shipments/{id}", new { id }),
              errors => errors.ToProblem());
      })
-    .RequireAuthorization("manager", "write:shipments");;
+    .RequireAuthorization("manager", "write:shipments");
 
     }
 }

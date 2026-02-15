@@ -1,4 +1,5 @@
 using ErrorOr;
+using EuroTrans.Application.Common.Interfaces;
 using EuroTrans.Domain.Employees;
 using EuroTrans.Domain.Employees.Enums;
 
@@ -8,16 +9,17 @@ public class SyncUserService
 {
     private readonly IEmployeeRepository employees;
     private readonly IUnitOfWork uow;
+    private readonly IDateTimeProvider clock;
 
-    public SyncUserService(IEmployeeRepository employees, IUnitOfWork uow)
+    public SyncUserService(IEmployeeRepository employees, IUnitOfWork uow, IDateTimeProvider clock)
     {
         this.employees = employees;
         this.uow = uow;
+        this.clock = clock;
     }
 
     public async Task<ErrorOr<Guid>> SyncAsync(SyncUserRequest request, CancellationToken ct = default)
     {
-        // Idempotent: if exists, just update identity info
         var existing = await employees.GetByAuth0IdAsync(request.Auth0UserId, ct);
         if (existing != null)
         {
@@ -42,7 +44,7 @@ public class SyncUserService
             email: request.Email,
             role: role,
             avatarUrl: null,
-            createdAtUtc: DateTime.UtcNow
+            createdAtUtc: clock.UtcNow
         );
 
         if (role == EmployeeRole.Driver)

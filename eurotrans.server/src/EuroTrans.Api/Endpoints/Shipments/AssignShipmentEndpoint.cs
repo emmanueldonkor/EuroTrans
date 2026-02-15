@@ -22,6 +22,6 @@ public static class AssignShipmentEndpoint
                 _ => Results.Ok(),
                 errors => errors.ToProblem());
         })
-        .RequireAuthorization("manager", "write:shipments");;
+        .RequireAuthorization("manager", "write:shipments");
     }
 }

@@ -29,15 +29,17 @@ public class ShipmentRepository : IShipmentRepository
         await db.Shipments.AddAsync(shipment, ct);
     }
 
-    public async Task<List<Shipment>> GetFilteredAsync(
+    public async Task<(List<Shipment> Items, int TotalCount)> GetFilteredAsync(
         ShipmentStatus? status,
         Guid? driverId,
         DateTime? startDate,
         DateTime? endDate,
-        string? search, 
+        string? search,
+        int page,
+        int pageSize,
         CancellationToken ct = default)
     {
-        var query = db.Shipments.AsQueryable();
+        var query = db.Shipments.AsNoTracking().AsQueryable();
 
         if (status.HasValue)
             query = query.Where(s => s.Status == status);
@@ -56,6 +58,14 @@ public class ShipmentRepository : IShipmentRepository
                 s.TrackingId.Contains(search) ||
                 s.Cargo!.Description.Contains(search));
 
-        return await query.ToListAsync(ct);
+        var totalCount = await query.CountAsync(ct);
+
+        var items = await query
+            .OrderByDescending(s => s.CreatedAtUtc)
+            .Skip((page - 1) * pageSize)
+            .Take(pageSize)
+            .ToListAsync(ct);
+
+        return (items, totalCount);
     }
 }

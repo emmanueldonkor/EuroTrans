@@ -7,11 +7,13 @@ public interface IShipmentRepository
 {
     Task<Shipment?> GetByIdAsync(Guid id, CancellationToken ct = default);
     Task AddAsync(Shipment shipment, CancellationToken ct = default);
-    Task<List<Shipment>> GetFilteredAsync(
+    Task<(List<Shipment> Items, int TotalCount)> GetFilteredAsync(
         ShipmentStatus? status,
         Guid? driverId,
         DateTime? startDate,
         DateTime? endDate,
-        string? search, 
-        CancellationToken ct = default);  
+        string? search,
+        int page,
+        int pageSize,
+        CancellationToken ct = default);
 }

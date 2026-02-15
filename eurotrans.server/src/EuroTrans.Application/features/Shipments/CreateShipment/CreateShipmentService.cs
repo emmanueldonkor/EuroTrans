@@ -2,6 +2,7 @@ using ErrorOr;
 using EuroTrans.Application.Common.Interfaces;
 using EuroTrans.Domain.Shipments;
 using EuroTrans.Domain.Shipments.ValueObjects;
+using Microsoft.EntityFrameworkCore;
 
 namespace EuroTrans.Application.features.Shipments.CreateShipment;
 
@@ -39,7 +40,7 @@ public class CreateShipmentService
         if (employeeIdResult.IsError)
             return employeeIdResult.Errors;
 
-        int maxRetries = 3;
+        const int maxRetries = 3;
         for (int i = 0; i < maxRetries; i++)
         {
             try
@@ -65,12 +66,12 @@ public class CreateShipmentService
 
                 return shipment.Id;
             }
-            catch (Exception)
+            catch (DbUpdateException) when (i < maxRetries - 1)
             {
-                if (i == maxRetries - 1) throw; 
+                // Retry only for persistence conflicts such as unique tracking id collisions.
             }
         }
 
-        return Error.Unexpected(description: "Failed to generate a unique tracking ID.");
+        return Error.Conflict(description: "Failed to generate a unique tracking ID after multiple attempts.");
     }
 }

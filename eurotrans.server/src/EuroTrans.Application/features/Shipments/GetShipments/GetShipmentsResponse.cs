@@ -2,7 +2,7 @@ using EuroTrans.Domain.Shipments.Enums;
 
 namespace EuroTrans.Application.features.Shipments.GetShipments;
 
-public record GetShipmentResponse(
+public record GetShipmentsItemResponse(
     Guid Id,
     string TrackingId,
     ShipmentStatus Status,
@@ -11,4 +11,11 @@ public record GetShipmentResponse(
     DateTime? EstimatedDeliveryDateUtc,
     Guid? DriverId,
     Guid? TruckId
+);
+
+public record GetShipmentsResponse(
+    IReadOnlyList<GetShipmentsItemResponse> Items,
+    int TotalCount,
+    int Page,
+    int PageSize
 );
