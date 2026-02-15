@@ -1,3 +1,4 @@
+using EuroTrans.Api.Common.Mapping;
 using EuroTrans.Application.features.Employees.Drivers.GetDriver;
 using FluentValidation;
 using Microsoft.AspNetCore.Mvc;
@@ -16,10 +17,12 @@ public static class GetDriverEndpoint
         {
             var validation = await validator.ValidateAsync(id, ct);
             if (!validation.IsValid)
-                return Results.BadRequest(validation.Errors);
+                return Results.ValidationProblem(validation.ToDictionary());
 
             var result = await service.GetAsync(id, ct);
-            return Results.Ok(result);
+            return result.Match(
+                driver => Results.Ok(driver),
+                errors => errors.ToProblem());
         })
         .RequireAuthorization("manager", "read:employees"); ; 
     }
