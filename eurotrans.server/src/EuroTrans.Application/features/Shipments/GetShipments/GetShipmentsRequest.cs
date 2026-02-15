@@ -7,5 +7,7 @@ public record GetShipmentsRequest(
     Guid? DriverId,
     DateTime? StartDate,
     DateTime? EndDate,
-    string? Search
+    string? Search,
+    int Page = 1,
+    int PageSize = 20
 );

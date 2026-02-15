@@ -54,7 +54,10 @@ public class AssignShipmentService
         if (truck is null) return Error.NotFound(description: "Truck not found.");
 
         // 3. Business Rule Checks
-        if (driver.Driver?.Status != DriverStatus.Available)
+        if (driver.Driver is null)
+            return Error.Validation(description: "Selected employee does not have a driver profile.");
+
+        if (driver.Driver.Status != DriverStatus.Available)
             return Error.Conflict(description: "Driver is not available.");
 
         if (truck.Status != TruckStatus.Available)
