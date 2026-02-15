@@ -32,7 +32,7 @@ public class GetShipmentsService
             driverFilter = employeeIdResult.Value;
         }
 
-        var (items, totalCount) = await this.shipments.GetFilteredAsync(
+        var (items, totalCount) = await shipments.GetFilteredAsync(
             status: request.Status,
             driverId: driverFilter,
             startDate: request.StartDate,

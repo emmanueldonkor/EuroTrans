@@ -25,7 +25,7 @@ public class GetShipmentService
         var shipment = await shipments.GetByIdAsync(id, ct);
 
         if (shipment is null)
-            return Error.NotFound(description: "Shipment not found.");
+            return Error.NotFound("Shipment not found.");
 
         if (currentUser.IsDriver)
         {
@@ -34,8 +34,9 @@ public class GetShipmentService
                 return employeeIdResult.Errors;
 
             if (shipment.DriverId != employeeIdResult.Value)
-                return Error.Forbidden(description: "You are not allowed to view this shipment.");
+                return Error.Forbidden("You are not allowed to view this shipment.");
         }
+
         return new GetShipmentResponse(
             shipment.Id,
             shipment.TrackingId,

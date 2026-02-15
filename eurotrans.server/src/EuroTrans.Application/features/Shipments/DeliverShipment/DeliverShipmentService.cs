@@ -35,20 +35,15 @@ public class DeliverShipmentService
 
     public async Task<ErrorOr<Success>> DeliverAsync(Guid shipmentId, DeliverShipmentRequest request, CancellationToken ct = default)
     {
-
-        if (!currentUser.IsDriver)
-            return Error.Forbidden(description: "Only drivers can deliver shipments.");
-
         var employeeIdResult = await currentEmployeeProvider.GetEmployeeIdAsync();
         if (employeeIdResult.IsError)
             return employeeIdResult.Errors;
 
         var shipment = await shipments.GetByIdAsync(shipmentId, ct);
         if (shipment is null)
-            return Error.NotFound(description: "Shipment not found.");
+            return Error.NotFound("Shipment not found.");
 
         var result = shipment.Deliver(employeeIdResult.Value, request.ProofOfDeliveryUrl, clock.UtcNow);
-
         if (result.IsError)
             return result.Errors;
 
@@ -62,4 +57,5 @@ public class DeliverShipmentService
 
         return Result.Success;
     }
+
 }

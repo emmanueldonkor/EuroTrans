@@ -9,7 +9,6 @@ public class CreateShipmentService
 {
     private readonly IShipmentRepository shipments;
     private readonly IUnitOfWork uow;
-    private readonly ICurrentUser currentUser;
     private readonly ICurrentEmployeeProvider currentEmployeeProvider;
     private readonly IDateTimeProvider clock;
     private readonly ITrackingIdGenerator trackingIdGenerator;
@@ -17,14 +16,12 @@ public class CreateShipmentService
     public CreateShipmentService(
         IShipmentRepository shipments,
         IUnitOfWork uow,
-        ICurrentUser currentUser,
         ICurrentEmployeeProvider currentEmployeeProvider,
         IDateTimeProvider clock,
         ITrackingIdGenerator trackingIdGenerator)
     {
         this.shipments = shipments;
         this.uow = uow;
-        this.currentUser = currentUser;
         this.currentEmployeeProvider = currentEmployeeProvider;
         this.clock = clock;
         this.trackingIdGenerator = trackingIdGenerator;
@@ -32,9 +29,6 @@ public class CreateShipmentService
 
     public async Task<ErrorOr<Guid>> CreateAsync(CreateShipmentRequest request, CancellationToken ct = default)
     {
-        if (!currentUser.IsManager)
-            return Error.Forbidden("Only managers can create shipments.");
-
         var employeeIdResult = await currentEmployeeProvider.GetEmployeeIdAsync();
         if (employeeIdResult.IsError)
             return employeeIdResult.Errors;

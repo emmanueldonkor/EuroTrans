@@ -37,34 +37,30 @@ public class AssignShipmentService
 
     public async Task<ErrorOr<Success>> AssignAsync(Guid shipmentId, AssignShipmentRequest request, CancellationToken ct = default)
     {
-        if (!currentUser.IsManager)
-            return Error.Forbidden(description: "Only managers can assign shipments.");
-
         var employeeIdResult = await currentEmployeeProvider.GetEmployeeIdAsync();
         if (employeeIdResult.IsError)
             return employeeIdResult.Errors;
 
         var shipment = await shipments.GetByIdAsync(shipmentId, ct);
-        if (shipment is null) return Error.NotFound(description: "Shipment not found.");
+        if (shipment is null) return Error.NotFound("Shipment not found.");
 
         var driver = await drivers.GetByIdAsync(request.DriverId, ct);
-        if (driver is null) return Error.NotFound(description: "Driver not found.");
+        if (driver is null) return Error.NotFound("Driver not found.");
 
         var truck = await trucks.GetByIdAsync(request.TruckId, ct);
-        if (truck is null) return Error.NotFound(description: "Truck not found.");
+        if (truck is null) return Error.NotFound("Truck not found.");
 
-        // 3. Business Rule Checks
+        // Business rules
         if (driver.Driver is null)
-            return Error.Validation(description: "Selected employee does not have a driver profile.");
+            return Error.Validation("Selected employee does not have a driver profile.");
 
         if (driver.Driver.Status != DriverStatus.Available)
-            return Error.Conflict(description: "Driver is not available.");
+            return Error.Conflict("Driver is not available.");
 
         if (truck.Status != TruckStatus.Available)
-            return Error.Conflict(description: "Truck is not available.");
+            return Error.Conflict("Truck is not available.");
 
         var result = shipment.Assign(employeeIdResult.Value, driver.Id, truck.Id, clock.UtcNow);
-
         if (result.IsError) return result.Errors;
 
         driver.Driver.SetOnDuty();
@@ -74,4 +70,5 @@ public class AssignShipmentService
 
         return Result.Success;
     }
+
 }
