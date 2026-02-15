@@ -9,9 +9,9 @@ public class GetDriversService
         this.employees = employees;
     }
 
-    public async Task<List<GetDriversResponse>> GetAsync()
+    public async Task<List<GetDriversResponse>> GetAsync(CancellationToken ct = default)
     {
-        var drivers = await employees.GetDriversAsync();
+        var drivers = await employees.GetDriversAsync(ct);
 
         return drivers.Select(e => new GetDriversResponse(
             EmployeeId: e.Id,

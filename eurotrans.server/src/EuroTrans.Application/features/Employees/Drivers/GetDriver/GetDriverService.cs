@@ -12,9 +12,9 @@ public class GetDriverService
         this.employees = employees;
     }
 
-    public async Task<ErrorOr<GetDriverResponse>> GetAsync(Guid id)
+    public async Task<ErrorOr<GetDriverResponse>> GetAsync(Guid id, CancellationToken ct = default)
     {
-        var employee = await employees.GetByIdAsync(id);
+        var employee = await employees.GetByIdAsync(id, ct);
 
         if (employee is null)
             return Error.NotFound(description: "Driver not found.");

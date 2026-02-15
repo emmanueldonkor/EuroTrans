@@ -11,15 +11,16 @@ public static class GetDriverEndpoint
         app.MapGet("/api/drivers/{id}", async (
             Guid id,
            [FromServices] GetDriverService service,
+            CancellationToken ct,
             IValidator<Guid> validator) =>
         {
-            var validation = await validator.ValidateAsync(id);
+            var validation = await validator.ValidateAsync(id, ct);
             if (!validation.IsValid)
                 return Results.BadRequest(validation.Errors);
 
-            var result = await service.GetAsync(id);
+            var result = await service.GetAsync(id, ct);
             return Results.Ok(result);
         })
-        .RequireAuthorization("manager", "employees:read"); ; 
+        .RequireAuthorization("manager", "read:employees"); ; 
     }
 }

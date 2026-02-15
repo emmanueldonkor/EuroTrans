@@ -8,11 +8,12 @@ public static class GetDriversEndpoint
     public static void MapGetDriversEndpoint(this IEndpointRouteBuilder app)
     {
         app.MapGet("/api/drivers", async (
-         [FromServices]  GetDriversService service) =>
+         [FromServices]  GetDriversService service,
+         CancellationToken ct) =>
         {
-            var result = await service.GetAsync();
+            var result = await service.GetAsync(ct);
             return Results.Ok(result);
         })
-        .RequireAuthorization("manager", "employees:read"); ; 
+        .RequireAuthorization("manager", "read:employees"); ; 
     }
 }

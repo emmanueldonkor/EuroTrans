@@ -15,34 +15,34 @@ public class EmployeeRepository : IEmployeeRepository
         this.db = db;
     }
 
-    public async Task<Employee?> GetByIdAsync(Guid id)
+    public async Task<Employee?> GetByIdAsync(Guid id, CancellationToken ct = default)
     {
         return await db.Employees
             .Include(e => e.Driver)
-            .FirstOrDefaultAsync(e => e.Id == id);
+            .FirstOrDefaultAsync(e => e.Id == id, ct);
     }
 
-    public async Task<Employee?> GetByAuth0IdAsync(string auth0UserId)
+    public async Task<Employee?> GetByAuth0IdAsync(string auth0UserId, CancellationToken ct = default)
     {
         return await db.Employees
             .Include(e => e.Driver)
-            .FirstOrDefaultAsync(e => e.Auth0UserId == auth0UserId);
+            .FirstOrDefaultAsync(e => e.Auth0UserId == auth0UserId, ct);
     }
 
-    public async Task<List<Employee>> GetDriversAsync()
+    public async Task<List<Employee>> GetDriversAsync(CancellationToken ct = default)
     {
         return await db.Employees
             .Include(e => e.Driver)
             .Where(e => e.Role == EmployeeRole.Driver)
-            .ToListAsync();
+            .ToListAsync(ct);
     }
 
-    public async Task AddAsync(Employee employee)
+    public async Task AddAsync(Employee employee, CancellationToken ct = default)
     {
-        await db.Employees.AddAsync(employee);
+        await db.Employees.AddAsync(employee, ct);
     }
 
-    public Task UpdateAsync(Employee employee)
+    public Task UpdateAsync(Employee employee, CancellationToken ct = default)
     {
         db.Employees.Update(employee);
         return Task.CompletedTask;
