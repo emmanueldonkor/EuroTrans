@@ -37,9 +37,17 @@ public class TruckConfiguration : IEntityTypeConfiguration<Truck>
             .HasConversion<string>()
             .IsRequired();
 
+        builder.Property(t => t.IsActive)
+            .HasColumnName("is_active")
+            .HasDefaultValue(true)
+            .IsRequired();
+
         builder.Property(t => t.CreatedAtUtc)
             .HasColumnName("created_at")
             .IsRequired();
-    }
 
+        builder.Property(t => t.RowVersion)
+            .IsConcurrencyToken()
+            .IsRequired();
+    }
 }

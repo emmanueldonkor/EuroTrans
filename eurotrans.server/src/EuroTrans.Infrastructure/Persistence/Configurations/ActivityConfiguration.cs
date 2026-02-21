@@ -7,7 +7,7 @@ namespace EuroTrans.Infrastructure.Persistence.Configurations;
 
 public class ActivityConfiguration : IEntityTypeConfiguration<Activity>
 {
-     public void Configure(EntityTypeBuilder<Activity> builder)
+    public void Configure(EntityTypeBuilder<Activity> builder)
     {
         builder.ToTable("activities");
 
@@ -38,10 +38,11 @@ public class ActivityConfiguration : IEntityTypeConfiguration<Activity>
             .HasColumnName("timestamp")
             .IsRequired();
 
-        builder.HasOne<Employee>()
-         .WithMany()
-         .HasForeignKey(a => a.EmployeeId);
 
+        builder.HasOne(a => a.Employee)
+    .WithMany()
+    .HasForeignKey(a => a.EmployeeId)
+    .OnDelete(DeleteBehavior.Restrict);
     }
 
 }

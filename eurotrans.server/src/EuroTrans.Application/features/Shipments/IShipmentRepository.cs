@@ -1,3 +1,4 @@
+using EuroTrans.Application.features.Shipments.GetShipments;
 using EuroTrans.Domain.Shipments;
 using EuroTrans.Domain.Shipments.Enums;
 
@@ -7,13 +8,15 @@ public interface IShipmentRepository
 {
     Task<Shipment?> GetByIdAsync(Guid id, CancellationToken ct = default);
     Task AddAsync(Shipment shipment, CancellationToken ct = default);
-    Task<(List<Shipment> Items, int TotalCount)> GetFilteredAsync(
-        ShipmentStatus? status,
-        Guid? driverId,
-        DateTime? startDate,
-        DateTime? endDate,
-        string? search,
-        int page,
-        int pageSize,
-        CancellationToken ct = default);
+    Task<bool> HasActiveAssignmentForDriverAsync(Guid driverId, CancellationToken ct = default);
+    Task<bool> HasActiveAssignmentForTruckAsync(Guid truckId, CancellationToken ct = default);
+    Task<(List<GetShipmentsItemResponse> Items, int TotalCount)> GetFilteredAsync(
+     ShipmentStatus? status,
+     Guid? driverId,
+     DateTime? startDate,
+     DateTime? endDate,
+     string? search,
+     int page,
+     int pageSize,
+     CancellationToken ct = default);
 }

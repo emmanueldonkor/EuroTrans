@@ -21,9 +21,13 @@ public class UpdateTruckStatusService
         if (truck is null)
             return Error.NotFound(description: "Truck not found.");
 
-        truck.SetStatus(status);
+        var result = truck.SetStatus(status);
+        if (result.IsError)
+            return result.Errors;
 
-        await uow.SaveChangesAsync(ct);
+        var saveResult = await uow.SaveChangesWithConcurrencyCheckAsync(ct);
+        if (saveResult.IsError)
+            return saveResult.Errors;
 
         return Result.Success;
     }

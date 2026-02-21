@@ -1,6 +1,4 @@
-using EuroTrans.Api.Endpoints.Employees;
-using EuroTrans.Api.Endpoints.Shipments;
-using EuroTrans.Api.Endpoints.Trucks;
+using System.Reflection;
 
 namespace EuroTrans.Api.Endpoints;
 
@@ -8,27 +6,33 @@ public static class AllEndpoints
 {
     public static void MapAllEndpoints(this WebApplication app)
     {
-        //Shipment Endpoints
-        app.MapCreateShipmentEndpoint();
-        app.MapAssignShipmentEndpoint();
-        app.MapStartShipmentEndpoint();
-        app.MapCancelShipmentEndpoint();
-        app.MapDeliverShipmentEndpoint();
-        app.MapAddMilestoneEndpoint();
-        app.MapGetShipmentsEndpoint();
-        app.MapGetShipmentEndpoint();
-        app.MapGetShipmentActivitiesEndpoint();
+        var endpointMapMethods = typeof(AllEndpoints).Assembly
+            .GetTypes()
+            .Where(t =>
+                t.IsAbstract &&
+                t.IsSealed &&
+                t != typeof(AllEndpoints) &&
+                t.Namespace is not null &&
+                t.Namespace.StartsWith("EuroTrans.Api.Endpoints", StringComparison.Ordinal) &&
+                t.IsDefined(typeof(ApiEndpointAttribute), inherit: false))
+            .SelectMany(t => t.GetMethods(BindingFlags.Public | BindingFlags.Static))
+            .Where(IsEndpointMapMethod)
+            .OrderBy(m => m.DeclaringType?.FullName, StringComparer.Ordinal)
+            .ThenBy(m => m.Name, StringComparer.Ordinal);
 
-        //Employees Endpoints
-        app.MapGetDriversEndpoint();
-        app.MapGetDriverEndpoint();
-        app.MapUpdateDriverStatusEndpoint();
-        app.MapSyncUserEndpoint();
+        foreach (var method in endpointMapMethods)
+        {
+            method.Invoke(null, [app]);
+        }
+    }
 
-        //Truck Endpoints
-        app.MapCreateTruckEndpoint();
-        app.MapGetTrucksEndpoint();
-        app.MapUpdateTruckStatusEndpoint();
-        app.MapDeleteTruckEndpoint();
+    private static bool IsEndpointMapMethod(MethodInfo method)
+    {
+        if (!method.Name.StartsWith("Map", StringComparison.Ordinal) || method.ReturnType != typeof(void))
+            return false;
+
+        var parameters = method.GetParameters();
+        return parameters.Length == 1 &&
+               typeof(IEndpointRouteBuilder).IsAssignableFrom(parameters[0].ParameterType);
     }
 }

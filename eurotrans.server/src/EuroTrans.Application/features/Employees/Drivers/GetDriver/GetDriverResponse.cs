@@ -10,6 +10,6 @@ public record GetDriverResponse(
     string? Phone,
     bool IsActive,
     DateTime CreatedAtUtc,
-    string LicenseNumber,
+    string? LicenseNumber,
     DriverStatus Status
 );

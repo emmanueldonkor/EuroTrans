@@ -23,20 +23,20 @@ namespace EuroTrans.Infrastructure.Persistence.Migrations
                         .HasColumnType("TEXT")
                         .HasColumnName("employee_id");
 
-                    b.Property<Guid>("EmployeeId")
-                        .HasColumnType("TEXT");
-
                     b.Property<string>("LicenseNumber")
-                        .IsRequired()
                         .HasMaxLength(100)
                         .HasColumnType("TEXT")
                         .HasColumnName("license_number");
 
                     b.Property<string>("Phone")
-                        .IsRequired()
                         .HasMaxLength(50)
                         .HasColumnType("TEXT")
                         .HasColumnName("phone");
+
+                    b.Property<byte[]>("RowVersion")
+                        .IsConcurrencyToken()
+                        .IsRequired()
+                        .HasColumnType("BLOB");
 
                     b.Property<string>("Status")
                         .IsRequired()
@@ -44,9 +44,6 @@ namespace EuroTrans.Infrastructure.Persistence.Migrations
                         .HasColumnName("status");
 
                     b.HasKey("Id");
-
-                    b.HasIndex("EmployeeId")
-                        .IsUnique();
 
                     b.ToTable("drivers", (string)null);
                 });
@@ -98,6 +95,18 @@ namespace EuroTrans.Infrastructure.Persistence.Migrations
                         .IsUnique();
 
                     b.ToTable("employees", (string)null);
+
+                    b.HasData(
+                        new
+                        {
+                            Id = new Guid("aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee"),
+                            Auth0UserId = "google-oauth2|100148582346131912486",
+                            CreatedAtUtc = new DateTime(2026, 2, 20, 0, 0, 0, 0, DateTimeKind.Utc),
+                            Email = "your@email.com",
+                            IsActive = true,
+                            Name = "Emmanuel Donkor",
+                            Role = "Manager"
+                        });
                 });
 
             modelBuilder.Entity("EuroTrans.Domain.Shipments.Activity", b =>
@@ -144,6 +153,10 @@ namespace EuroTrans.Infrastructure.Persistence.Migrations
                         .HasColumnType("TEXT")
                         .HasColumnName("id");
 
+                    b.Property<Guid>("EmployeeId")
+                        .HasColumnType("TEXT")
+                        .HasColumnName("uploaded_by_employee_id");
+
                     b.Property<Guid>("ShipmentId")
                         .HasColumnType("TEXT")
                         .HasColumnName("shipment_id");
@@ -157,10 +170,6 @@ namespace EuroTrans.Infrastructure.Persistence.Migrations
                         .HasColumnType("TEXT")
                         .HasColumnName("uploaded_at");
 
-                    b.Property<Guid>("UploadedByEmployeeId")
-                        .HasColumnType("TEXT")
-                        .HasColumnName("uploaded_by_employee_id");
-
                     b.Property<string>("Url")
                         .IsRequired()
                         .HasMaxLength(1000)
@@ -169,53 +178,11 @@ namespace EuroTrans.Infrastructure.Persistence.Migrations
 
                     b.HasKey("Id");
 
+                    b.HasIndex("EmployeeId");
+
                     b.HasIndex("ShipmentId");
 
                     b.ToTable("documents", (string)null);
-                });
-
-            modelBuilder.Entity("EuroTrans.Domain.Shipments.Milestone", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .HasColumnType("TEXT")
-                        .HasColumnName("id");
-
-                    b.Property<Guid>("CreatedByEmployeeId")
-                        .HasColumnType("TEXT")
-                        .HasColumnName("created_by_employee_id");
-
-                    b.Property<float>("LocationLat")
-                        .HasColumnType("REAL")
-                        .HasColumnName("location_lat");
-
-                    b.Property<float>("LocationLng")
-                        .HasColumnType("REAL")
-                        .HasColumnName("location_lng");
-
-                    b.Property<string>("Note")
-                        .IsRequired()
-                        .HasMaxLength(1000)
-                        .HasColumnType("TEXT")
-                        .HasColumnName("note");
-
-                    b.Property<Guid>("ShipmentId")
-                        .HasColumnType("TEXT")
-                        .HasColumnName("shipment_id");
-
-                    b.Property<DateTime>("TimestampUtc")
-                        .HasColumnType("TEXT")
-                        .HasColumnName("timestamp");
-
-                    b.Property<string>("Type")
-                        .IsRequired()
-                        .HasColumnType("TEXT")
-                        .HasColumnName("type");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("ShipmentId");
-
-                    b.ToTable("milestones", (string)null);
                 });
 
             modelBuilder.Entity("EuroTrans.Domain.Shipments.Shipment", b =>
@@ -239,6 +206,11 @@ namespace EuroTrans.Infrastructure.Persistence.Migrations
                     b.Property<DateTime?>("EstimatedDeliveryDateUtc")
                         .HasColumnType("TEXT")
                         .HasColumnName("estimated_delivery_date");
+
+                    b.Property<byte[]>("RowVersion")
+                        .IsConcurrencyToken()
+                        .IsRequired()
+                        .HasColumnType("BLOB");
 
                     b.Property<DateTime?>("StartedAtUtc")
                         .HasColumnType("TEXT")
@@ -265,12 +237,16 @@ namespace EuroTrans.Infrastructure.Persistence.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("DriverId");
+                    b.HasIndex("DriverId")
+                        .IsUnique()
+                        .HasFilter("driver_id IS NOT NULL AND status IN ('Assigned', 'InTransit')");
 
                     b.HasIndex("TrackingId")
                         .IsUnique();
 
-                    b.HasIndex("TruckId");
+                    b.HasIndex("TruckId")
+                        .IsUnique()
+                        .HasFilter("truck_id IS NOT NULL AND status IN ('Assigned', 'InTransit')");
 
                     b.ToTable("shipments", (string)null);
                 });
@@ -289,6 +265,12 @@ namespace EuroTrans.Infrastructure.Persistence.Migrations
                         .HasColumnType("TEXT")
                         .HasColumnName("created_at");
 
+                    b.Property<bool>("IsActive")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER")
+                        .HasDefaultValue(true)
+                        .HasColumnName("is_active");
+
                     b.Property<string>("Model")
                         .IsRequired()
                         .HasMaxLength(200)
@@ -300,6 +282,11 @@ namespace EuroTrans.Infrastructure.Persistence.Migrations
                         .HasMaxLength(50)
                         .HasColumnType("TEXT")
                         .HasColumnName("plate_number");
+
+                    b.Property<byte[]>("RowVersion")
+                        .IsConcurrencyToken()
+                        .IsRequired()
+                        .HasColumnType("BLOB");
 
                     b.Property<string>("Status")
                         .IsRequired()
@@ -314,11 +301,62 @@ namespace EuroTrans.Infrastructure.Persistence.Migrations
                     b.ToTable("trucks", (string)null);
                 });
 
+            modelBuilder.Entity("Milestone", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("TEXT")
+                        .HasColumnName("id");
+
+                    b.Property<Guid>("EmployeeId")
+                        .HasColumnType("TEXT")
+                        .HasColumnName("created_by_employee_id");
+
+                    b.Property<string>("LocationLabel")
+                        .HasMaxLength(200)
+                        .HasColumnType("TEXT")
+                        .HasColumnName("location_label");
+
+                    b.Property<double>("LocationLat")
+                        .HasColumnType("REAL")
+                        .HasColumnName("location_lat");
+
+                    b.Property<double>("LocationLng")
+                        .HasColumnType("REAL")
+                        .HasColumnName("location_lng");
+
+                    b.Property<string>("Note")
+                        .IsRequired()
+                        .HasMaxLength(1000)
+                        .HasColumnType("TEXT")
+                        .HasColumnName("note");
+
+                    b.Property<Guid>("ShipmentId")
+                        .HasColumnType("TEXT")
+                        .HasColumnName("shipment_id");
+
+                    b.Property<DateTime>("TimestampUtc")
+                        .HasColumnType("TEXT")
+                        .HasColumnName("timestamp");
+
+                    b.Property<string>("Type")
+                        .IsRequired()
+                        .HasColumnType("TEXT")
+                        .HasColumnName("type");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("EmployeeId");
+
+                    b.HasIndex("ShipmentId");
+
+                    b.ToTable("milestones", (string)null);
+                });
+
             modelBuilder.Entity("EuroTrans.Domain.Employees.Driver", b =>
                 {
                     b.HasOne("EuroTrans.Domain.Employees.Employee", "Employee")
                         .WithOne("Driver")
-                        .HasForeignKey("EuroTrans.Domain.Employees.Driver", "EmployeeId")
+                        .HasForeignKey("EuroTrans.Domain.Employees.Driver", "Id")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
@@ -327,46 +365,53 @@ namespace EuroTrans.Infrastructure.Persistence.Migrations
 
             modelBuilder.Entity("EuroTrans.Domain.Shipments.Activity", b =>
                 {
-                    b.HasOne("EuroTrans.Domain.Employees.Employee", null)
+                    b.HasOne("EuroTrans.Domain.Employees.Employee", "Employee")
                         .WithMany()
                         .HasForeignKey("EmployeeId")
-                        .OnDelete(DeleteBehavior.Cascade)
+                        .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
-                    b.HasOne("EuroTrans.Domain.Shipments.Shipment", null)
+                    b.HasOne("EuroTrans.Domain.Shipments.Shipment", "Shipment")
                         .WithMany("Activities")
                         .HasForeignKey("ShipmentId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
+
+                    b.Navigation("Employee");
+
+                    b.Navigation("Shipment");
                 });
 
             modelBuilder.Entity("EuroTrans.Domain.Shipments.Document", b =>
                 {
-                    b.HasOne("EuroTrans.Domain.Shipments.Shipment", null)
+                    b.HasOne("EuroTrans.Domain.Employees.Employee", "Employee")
+                        .WithMany()
+                        .HasForeignKey("EmployeeId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("EuroTrans.Domain.Shipments.Shipment", "Shipment")
                         .WithMany("Documents")
                         .HasForeignKey("ShipmentId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
-                });
 
-            modelBuilder.Entity("EuroTrans.Domain.Shipments.Milestone", b =>
-                {
-                    b.HasOne("EuroTrans.Domain.Shipments.Shipment", null)
-                        .WithMany("Milestones")
-                        .HasForeignKey("ShipmentId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
+                    b.Navigation("Employee");
+
+                    b.Navigation("Shipment");
                 });
 
             modelBuilder.Entity("EuroTrans.Domain.Shipments.Shipment", b =>
                 {
-                    b.HasOne("EuroTrans.Domain.Employees.Driver", null)
+                    b.HasOne("EuroTrans.Domain.Employees.Driver", "Driver")
                         .WithMany()
-                        .HasForeignKey("DriverId");
+                        .HasForeignKey("DriverId")
+                        .OnDelete(DeleteBehavior.Restrict);
 
-                    b.HasOne("EuroTrans.Domain.Trucks.Truck", null)
+                    b.HasOne("EuroTrans.Domain.Trucks.Truck", "Truck")
                         .WithMany()
-                        .HasForeignKey("TruckId");
+                        .HasForeignKey("TruckId")
+                        .OnDelete(DeleteBehavior.Restrict);
 
                     b.OwnsOne("EuroTrans.Domain.Shipments.ValueObjects.Address", "DestinationAddress", b1 =>
                         {
@@ -520,11 +565,34 @@ namespace EuroTrans.Infrastructure.Persistence.Migrations
                     b.Navigation("DestinationLocation")
                         .IsRequired();
 
+                    b.Navigation("Driver");
+
                     b.Navigation("OriginAddress")
                         .IsRequired();
 
                     b.Navigation("OriginLocation")
                         .IsRequired();
+
+                    b.Navigation("Truck");
+                });
+
+            modelBuilder.Entity("Milestone", b =>
+                {
+                    b.HasOne("EuroTrans.Domain.Employees.Employee", "Employee")
+                        .WithMany()
+                        .HasForeignKey("EmployeeId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("EuroTrans.Domain.Shipments.Shipment", "Shipment")
+                        .WithMany("Milestones")
+                        .HasForeignKey("ShipmentId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Employee");
+
+                    b.Navigation("Shipment");
                 });
 
             modelBuilder.Entity("EuroTrans.Domain.Employees.Employee", b =>

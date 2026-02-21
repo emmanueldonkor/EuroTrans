@@ -12,11 +12,11 @@ public class Shipment : AggregateRoot
     public string TrackingId { get; private set; } = string.Empty;
     public ShipmentStatus Status { get; private set; }
 
-    public Cargo? Cargo { get; private set; }
-    public Address? OriginAddress { get; private set; }
-    public GeoLocation? OriginLocation { get; private set; }
-    public Address? DestinationAddress { get; private set; }
-    public GeoLocation? DestinationLocation { get; private set; }
+    public Cargo Cargo { get; private set; } = default!;
+    public Address OriginAddress { get; private set; } = default!;
+    public GeoLocation OriginLocation { get; private set; } = default!;
+    public Address DestinationAddress { get; private set; } = default!;
+    public GeoLocation DestinationLocation { get; private set; } = default!;
 
     public Guid? DriverId { get; private set; }
     public Guid? TruckId { get; private set; }
@@ -26,6 +26,7 @@ public class Shipment : AggregateRoot
     public DateTime? StartedAtUtc { get; private set; }
     public DateTime? DeliveredAtUtc { get; private set; }
     public DateTime? EstimatedDeliveryDateUtc { get; private set; }
+    public byte[] RowVersion { get; private set; } = [];
 
     private readonly List<Activity> activities = [];
     private readonly List<Milestone> milestones = [];
@@ -122,7 +123,14 @@ public class Shipment : AggregateRoot
         return Result.Success;
     }
 
-    public ErrorOr<Success> AddMilestone(Guid driverId, double lat, double lon, string note, DateTime timestampUtc)
+    public ErrorOr<Success> AddMilestone(
+        Guid driverId,
+        double lat,
+        double lon,
+        string note,
+        string? locationLabel,
+        MilestoneType type,
+        DateTime timestampUtc)
     {
         if (Status != ShipmentStatus.InTransit)
             return Error.Conflict("Shipment.InvalidStatus", "Milestones can only be added while in transit.");
@@ -130,10 +138,14 @@ public class Shipment : AggregateRoot
         if (DriverId != driverId)
             return Error.Forbidden("Shipment.Unauthorized", "Only the assigned driver can add milestones.");
 
-        var milestone = new Milestone(Guid.NewGuid(), Id, driverId, note, lat, lon, timestampUtc);
+        var milestone = new Milestone(Guid.NewGuid(), Id, driverId, type, note, locationLabel, lat, lon, timestampUtc);
         milestones.Add(milestone);
 
-        AddActivity(driverId, ActivityType.MilestoneAdded, $"Milestone: {note}", timestampUtc);
+        var description = type == MilestoneType.LocationUpdate
+            ? "Location updated"
+            : $"Milestone: {note}";
+
+        AddActivity(driverId, ActivityType.MilestoneAdded, description, timestampUtc);
         return Result.Success;
     }
 
@@ -156,9 +168,9 @@ public class Shipment : AggregateRoot
 
         AddActivity(driverId, ActivityType.Delivered, "Shipment delivered", timestampUtc);
         return Result.Success;
-    }   
+    }
 
-    public ErrorOr<Success> Cancel(Guid managerId, DateTime timestampUtc)
+    public ErrorOr<Success> Delete(Guid managerId, DateTime timestampUtc)
     {
         if (Status == ShipmentStatus.Delivered)
         {

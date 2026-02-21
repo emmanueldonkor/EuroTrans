@@ -5,25 +5,27 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace EuroTrans.Api.Endpoints.Shipments;
 
+[EuroTrans.Api.Endpoints.ApiEndpoint]
 public static class GetShipmentActivitiesEndpoint
 {
     public static void MapGetShipmentActivitiesEndpoint(this IEndpointRouteBuilder app)
     {
         app.MapGet("/api/shipments/{id}/activities", async (
             Guid id,
-          [FromServices]  GetShipmentActivitiesService service,
+          [FromServices] GetShipmentActivitiesService service,
             CancellationToken ct,
-            IValidator<Guid> validator) =>
+            IValidator<GetShipmentActivitiesRequest> validator) =>
         {
-            var validation = await validator.ValidateAsync(id, ct);
+            var request = new GetShipmentActivitiesRequest(id);
+            var validation = await validator.ValidateAsync(request, ct);
             if (!validation.IsValid)
                 return Results.ValidationProblem(validation.ToDictionary());
 
-            var result = await service.GetAsync(id, ct);
+            var result = await service.GetAsync(request.ShipmentId, ct);
             return result.Match(
                 activities => Results.Ok(activities),
                 errors => errors.ToProblem());
         })
-        .RequireAuthorization("read:shipment");;
+        .RequireAuthorization("read:shipments");
     }
 }

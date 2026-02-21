@@ -35,6 +35,7 @@ public class ShipmentConfiguration : IEntityTypeConfiguration<Shipment>
         {
             cb.Property(c => c.Description)
                 .HasColumnName("cargo_description")
+                .IsRequired()
                 .HasMaxLength(500);
 
             cb.Property(c => c.Weight)
@@ -45,34 +46,39 @@ public class ShipmentConfiguration : IEntityTypeConfiguration<Shipment>
                 .HasColumnName("cargo_volume")
                 .IsRequired();
         });
+        builder.Navigation(s => s.Cargo).IsRequired();
 
         // Origin
         builder.OwnsOne(s => s.OriginAddress, ob =>
         {
-            ob.Property(o => o.AddressLine).HasColumnName("origin_address").HasMaxLength(500);
-            ob.Property(o => o.City).HasColumnName("origin_city").HasMaxLength(200);
-            ob.Property(o => o.Country).HasColumnName("origin_country").HasMaxLength(200);
-            ob.Property(o => o.PostalCode).HasColumnName("origin_postal_code").HasMaxLength(50);
+            ob.Property(o => o.AddressLine).HasColumnName("origin_address").IsRequired().HasMaxLength(500);
+            ob.Property(o => o.City).HasColumnName("origin_city").IsRequired().HasMaxLength(200);
+            ob.Property(o => o.Country).HasColumnName("origin_country").IsRequired().HasMaxLength(200);
+            ob.Property(o => o.PostalCode).HasColumnName("origin_postal_code").IsRequired().HasMaxLength(50);
         });
+        builder.Navigation(s => s.OriginAddress).IsRequired();
         builder.OwnsOne(s => s.OriginLocation, ol =>
         {
-            ol.Property(l => l.Latitude).HasColumnName("origin_lat");
-            ol.Property(l => l.Longitude).HasColumnName("origin_lng");
+            ol.Property(l => l.Latitude).HasColumnName("origin_lat").IsRequired();
+            ol.Property(l => l.Longitude).HasColumnName("origin_lng").IsRequired();
         });
+        builder.Navigation(s => s.OriginLocation).IsRequired();
 
         // Destination
         builder.OwnsOne(s => s.DestinationAddress, db =>
         {
-            db.Property(o => o.AddressLine).HasColumnName("destination_address").HasMaxLength(500);
-            db.Property(o => o.City).HasColumnName("destination_city").HasMaxLength(200);
-            db.Property(o => o.Country).HasColumnName("destination_country").HasMaxLength(200);
-            db.Property(o => o.PostalCode).HasColumnName("destination_postal_code").HasMaxLength(50);
+            db.Property(o => o.AddressLine).HasColumnName("destination_address").IsRequired().HasMaxLength(500);
+            db.Property(o => o.City).HasColumnName("destination_city").IsRequired().HasMaxLength(200);
+            db.Property(o => o.Country).HasColumnName("destination_country").IsRequired().HasMaxLength(200);
+            db.Property(o => o.PostalCode).HasColumnName("destination_postal_code").IsRequired().HasMaxLength(50);
         });
+        builder.Navigation(s => s.DestinationAddress).IsRequired();
         builder.OwnsOne(s => s.DestinationLocation, dl =>
         {
-            dl.Property(l => l.Latitude).HasColumnName("destination_lat");
-            dl.Property(l => l.Longitude).HasColumnName("destination_lng");
+            dl.Property(l => l.Latitude).HasColumnName("destination_lat").IsRequired();
+            dl.Property(l => l.Longitude).HasColumnName("destination_lng").IsRequired();
         });
+        builder.Navigation(s => s.DestinationLocation).IsRequired();
 
         builder.Property(s => s.DriverId)
             .HasColumnName("driver_id");
@@ -97,27 +103,47 @@ public class ShipmentConfiguration : IEntityTypeConfiguration<Shipment>
             .HasColumnName("estimated_delivery_date");
 
         builder.HasMany(s => s.Activities)
-         .WithOne()
+         .WithOne(a => a.Shipment)
          .HasForeignKey(a => a.ShipmentId)
          .OnDelete(DeleteBehavior.Cascade);
 
         builder.HasMany(s => s.Milestones)
-            .WithOne()
+            .WithOne(a => a.Shipment)
             .HasForeignKey(m => m.ShipmentId)
             .OnDelete(DeleteBehavior.Cascade);
 
         builder.HasMany(s => s.Documents)
-            .WithOne()
+            .WithOne(a => a.Shipment)
             .HasForeignKey(d => d.ShipmentId)
             .OnDelete(DeleteBehavior.Cascade);
-        
-        builder.HasOne<Driver>()
-        .WithMany()
-        .HasForeignKey(s => s.DriverId);
 
-        builder.HasOne<Truck>()
+        builder.HasOne(s => s.Driver)
         .WithMany()
-        .HasForeignKey(s => s.TruckId);
+        .HasForeignKey(s => s.DriverId)
+        .OnDelete(DeleteBehavior.Restrict);
+        builder.HasIndex(s => s.DriverId)
+            .HasFilter("driver_id IS NOT NULL AND status IN ('Assigned', 'InTransit')")
+            .IsUnique();
+
+        builder.HasOne(s => s.Truck)
+            .WithMany()
+            .HasForeignKey(s => s.TruckId)
+            .OnDelete(DeleteBehavior.Restrict);
+        builder.HasIndex(s => s.TruckId)
+            .HasFilter("truck_id IS NOT NULL AND status IN ('Assigned', 'InTransit')")
+            .IsUnique();
+
+        builder.Metadata.FindNavigation(nameof(Shipment.Activities))!
+                        .SetPropertyAccessMode(PropertyAccessMode.Field);
+        builder.Metadata.FindNavigation(nameof(Shipment.Milestones))!
+                        .SetPropertyAccessMode(PropertyAccessMode.Field);
+        builder.Metadata.FindNavigation(nameof(Shipment.Documents))!
+                        .SetPropertyAccessMode(PropertyAccessMode.Field);
+
+        builder.Property(s => s.RowVersion)
+            .IsConcurrencyToken()
+            .IsRequired();
+
     }
 
 }

@@ -33,7 +33,7 @@ public class GetDriverService
             Phone: employee.Driver.Phone,
             IsActive: employee.IsActive,
             CreatedAtUtc: employee.CreatedAtUtc,
-            LicenseNumber: employee.Driver.LicenseNumber!,
+            LicenseNumber: employee.Driver.LicenseNumber,
             Status: employee.Driver.Status
         );
     }

@@ -5,25 +5,29 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace EuroTrans.Api.Endpoints.Shipments;
 
+[EuroTrans.Api.Endpoints.ApiEndpoint]
 public static class StartShipmentEndpoint
 {
     public static void MapStartShipmentEndpoint(this IEndpointRouteBuilder app)
     {
         app.MapPost("/api/shipments/{id}/start", async (
             Guid id,
-           [FromServices] StartShipmentService service,
-            CancellationToken ct,
-            IValidator<Guid> validator) =>
+            [FromServices] StartShipmentService service,
+            IValidator<StartShipmentRequest> validator,
+            CancellationToken ct) =>
         {
-            var validation = await validator.ValidateAsync(id, ct);
+            var request = new StartShipmentRequest(id);
+            var validation = await validator.ValidateAsync(request, ct);
             if (!validation.IsValid)
                 return Results.ValidationProblem(validation.ToDictionary());
 
-            var result = await service.StartAsync(id, ct);
+            var result = await service.StartAsync(request.ShipmentId, ct);
+
             return result.Match(
                 _ => Results.Ok(),
-                errors => errors.ToProblem());
+                errors => errors.ToProblem()
+            );
         })
-         .RequireAuthorization("driver", "write:shipments");;
+        .RequireAuthorization("driver", "write:shipments");
     }
 }

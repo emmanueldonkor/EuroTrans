@@ -6,9 +6,7 @@ public record GetDriversResponse(
     Guid EmployeeId,
     string Name,
     string Email,
-    string? AvatarUrl,
     string? Phone,
     DriverStatus Status,
-    string LicenseNumber,
-    bool IsActive
+    string? LicenseNumber
 );

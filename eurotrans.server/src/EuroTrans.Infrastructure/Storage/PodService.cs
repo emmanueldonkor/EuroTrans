@@ -1,7 +1,6 @@
 using Azure.Storage.Blobs;
 using Azure.Storage.Blobs.Models;
 using EuroTrans.Application.Common.Interfaces;
-using Microsoft.Extensions.Configuration;
 
 namespace EuroTrans.Infrastructure.Storage;
 
@@ -9,13 +8,9 @@ public class PodService : IPodService
 {
     private readonly BlobContainerClient container;
 
-    public PodService(IConfiguration config)
+    public PodService(BlobContainerClient container)
     {
-        var connectionString = config["AzureStorage:ConnectionString"];
-        var containerName = config["AzureStorage:Container"];
-
-        container = new BlobContainerClient(connectionString, containerName);
-        container.CreateIfNotExists(PublicAccessType.Blob);
+        this.container = container;
     }
 
     public async Task<string> UploadAsync(Stream fileStream, string fileName, string contentType)
@@ -29,5 +24,25 @@ public class PodService : IPodService
         });
 
         return blobClient.Uri.ToString();
+    }
+
+    public async Task DeleteAsync(string fileUrl, CancellationToken ct = default)
+    {
+        if (string.IsNullOrWhiteSpace(fileUrl))
+            return;
+
+        if (!Uri.TryCreate(fileUrl, UriKind.Absolute, out var uri))
+            return;
+
+        var blobPath = uri.AbsolutePath.TrimStart('/');
+        var containerPrefix = $"{container.Name}/";
+        if (blobPath.StartsWith(containerPrefix, StringComparison.OrdinalIgnoreCase))
+            blobPath = blobPath[containerPrefix.Length..];
+
+        if (string.IsNullOrWhiteSpace(blobPath))
+            return;
+
+        var blobClient = container.GetBlobClient(Uri.UnescapeDataString(blobPath));
+        await blobClient.DeleteIfExistsAsync(cancellationToken: ct);
     }
 }

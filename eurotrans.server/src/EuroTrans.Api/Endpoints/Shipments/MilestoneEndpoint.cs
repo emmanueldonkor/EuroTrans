@@ -5,6 +5,7 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace EuroTrans.Api.Endpoints.Shipments;
 
+[EuroTrans.Api.Endpoints.ApiEndpoint]
 public static class MilestoneEndpoint
 {
     public static void MapAddMilestoneEndpoint(this IEndpointRouteBuilder app)
@@ -12,7 +13,7 @@ public static class MilestoneEndpoint
         app.MapPost("/api/shipments/{id}/milestones", async (
             Guid id,
             MilestoneRequest request,
-          [FromServices]  MilestoneService service,
+          [FromServices] MilestoneService service,
             CancellationToken ct,
             IValidator<MilestoneRequest> validator) =>
         {
@@ -25,6 +26,6 @@ public static class MilestoneEndpoint
                 _ => Results.Ok(),
                 errors => errors.ToProblem());
         })
-         .RequireAuthorization("driver", "write:shipments");;
+         .RequireAuthorization("driver", "write:shipments"); ;
     }
 }

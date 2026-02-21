@@ -8,30 +8,26 @@ public class HasScopeHandler : AuthorizationHandler<HasScopeRequirement>
         AuthorizationHandlerContext context,
         HasScopeRequirement requirement)
     {
-        var scopeClaims = context.User.FindAll(c =>
-            c.Type == "scope" && c.Issuer == requirement.Issuer);
-
-        var permissionClaims = context.User.FindAll(c =>
-            c.Type == "permissions" && c.Issuer == requirement.Issuer);
-
-        foreach (var claim in scopeClaims)
+        var tokenIssuer = context.User.FindFirst("iss")?.Value;
+        if (string.IsNullOrWhiteSpace(tokenIssuer) ||
+            !string.Equals(tokenIssuer, requirement.Issuer, StringComparison.OrdinalIgnoreCase))
         {
-            var scopes = claim.Value.Split(' ', StringSplitOptions.RemoveEmptyEntries);
-            if (scopes.Contains(requirement.Scope))
-            {
-                context.Succeed(requirement);
-                return Task.CompletedTask;
-            }
+            return Task.CompletedTask;
         }
 
-        foreach (var claim in permissionClaims)
+        if (context.User.HasClaim(c => c.Type == "permissions" && c.Value == requirement.Scope))
         {
-            var permissions = claim.Value.Split(' ', StringSplitOptions.RemoveEmptyEntries);
-            if (permissions.Contains(requirement.Scope))
-            {
-                context.Succeed(requirement);
-                return Task.CompletedTask;
-            }
+            context.Succeed(requirement);
+            return Task.CompletedTask;
+        }
+
+        var scopeValues = context.User
+            .FindAll(c => c.Type == "scope" || c.Type == "scp")
+            .SelectMany(c => c.Value.Split(' ', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries));
+
+        if (scopeValues.Any(s => s == requirement.Scope))
+        {
+            context.Succeed(requirement);
         }
 
         return Task.CompletedTask;

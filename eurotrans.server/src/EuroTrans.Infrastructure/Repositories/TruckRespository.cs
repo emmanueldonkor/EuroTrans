@@ -16,12 +16,15 @@ public class TruckRepository : ITruckRepository
 
     public async Task<Truck?> GetByIdAsync(Guid id, CancellationToken ct = default)
     {
-        return await db.Trucks.FirstOrDefaultAsync(t => t.Id == id, ct);
+        return await db.Trucks.FirstOrDefaultAsync(t => t.Id == id && t.IsActive, ct);
     }
 
     public async Task<List<Truck>> GetAllAsync(CancellationToken ct = default)
     {
-        return await db.Trucks.ToListAsync(ct);
+        return await db.Trucks
+            .AsNoTracking()
+            .Where(t => t.IsActive)
+            .ToListAsync(ct);
     }
 
     public async Task AddAsync(Truck truck, CancellationToken ct = default)
@@ -36,7 +39,11 @@ public class TruckRepository : ITruckRepository
     }
     public Task DeleteAsync(Truck truck, CancellationToken ct = default)
     {
-        db.Trucks.Remove(truck);
+        var retireResult = truck.Retire();
+        if (retireResult.IsError)
+            throw new InvalidOperationException(retireResult.FirstError.Description);
+
+        db.Trucks.Update(truck);
         return Task.CompletedTask;
     }
 

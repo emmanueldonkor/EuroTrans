@@ -5,6 +5,7 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace EuroTrans.Api.Endpoints.Employees;
 
+[EuroTrans.Api.Endpoints.ApiEndpoint]
 public static class GetDriverEndpoint
 {
     public static void MapGetDriverEndpoint(this IEndpointRouteBuilder app)
@@ -13,17 +14,18 @@ public static class GetDriverEndpoint
             Guid id,
            [FromServices] GetDriverService service,
             CancellationToken ct,
-            IValidator<Guid> validator) =>
+            IValidator<GetDriverRequest> validator) =>
         {
-            var validation = await validator.ValidateAsync(id, ct);
+            var request = new GetDriverRequest(id);
+            var validation = await validator.ValidateAsync(request, ct);
             if (!validation.IsValid)
                 return Results.ValidationProblem(validation.ToDictionary());
 
-            var result = await service.GetAsync(id, ct);
+            var result = await service.GetAsync(request.DriverId, ct);
             return result.Match(
                 driver => Results.Ok(driver),
                 errors => errors.ToProblem());
         })
-        .RequireAuthorization("manager", "read:employees"); ; 
+        .RequireAuthorization("manager", "read:employees");
     }
 }

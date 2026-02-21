@@ -18,11 +18,13 @@ public class GetShipmentsService
         this.currentUser = currentUser;
         this.currentEmployeeProvider = currentEmployeeProvider;
     }
-
-    public async Task<ErrorOr<GetShipmentsResponse>> GetAsync(GetShipmentsRequest request, CancellationToken ct = default)
+    public async Task<ErrorOr<GetShipmentsResponse>> GetAsync(
+     GetShipmentsRequest request,
+     CancellationToken ct = default)
     {
         Guid? driverFilter = request.DriverId;
 
+        // If the current user is a driver, force filter by their employeeId
         if (currentUser.IsDriver)
         {
             var employeeIdResult = await currentEmployeeProvider.GetEmployeeIdAsync();
@@ -32,6 +34,7 @@ public class GetShipmentsService
             driverFilter = employeeIdResult.Value;
         }
 
+        // Repository now returns DTOs directly
         var (items, totalCount) = await shipments.GetFilteredAsync(
             status: request.Status,
             driverId: driverFilter,
@@ -43,26 +46,13 @@ public class GetShipmentsService
             ct: ct
         );
 
-        var mappedItems = items.Select(s => new GetShipmentsItemResponse(
-            s.Id,
-            s.TrackingId,
-            s.Status,
-            s.Cargo!.Description,
-            new AddressSummaryDto(
-                s.OriginAddress!.City,
-                s.OriginAddress.Country
-            ),
-            new AddressSummaryDto(
-                s.DestinationAddress!.City,
-                s.DestinationAddress.Country
-            ),
-            s.CreatedAtUtc,
-            s.UpdatedAtUtc,
-            s.EstimatedDeliveryDateUtc,
-            s.DriverId,
-            s.TruckId
-        )).ToList();
-
-        return new GetShipmentsResponse(mappedItems, totalCount, request.Page, request.PageSize);
+        // No mapping needed — items are already GetShipmentsItemResponse
+        return new GetShipmentsResponse(
+            Items: items,
+            TotalCount: totalCount,
+            Page: request.Page,
+            PageSize: request.PageSize
+        );
     }
+
 }

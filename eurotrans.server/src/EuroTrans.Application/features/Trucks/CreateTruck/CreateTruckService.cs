@@ -1,4 +1,5 @@
 using ErrorOr;
+using EuroTrans.Application.Common.Interfaces;
 using EuroTrans.Domain.Trucks;
 
 namespace EuroTrans.Application.features.Trucks.CreateTruck;
@@ -7,11 +8,13 @@ public class CreateTruckService
 {
     private readonly ITruckRepository trucks;
     private readonly IUnitOfWork uow;
+    private readonly IDateTimeProvider clock;
 
-    public CreateTruckService(ITruckRepository trucks, IUnitOfWork uow)
+    public CreateTruckService(ITruckRepository trucks, IUnitOfWork uow, IDateTimeProvider clock)
     {
         this.trucks = trucks;
         this.uow = uow;
+        this.clock = clock;
     }
 
     public async Task<ErrorOr<Guid>> CreateAsync(CreateTruckRequest request, CancellationToken ct = default)
@@ -21,7 +24,7 @@ public class CreateTruckService
             plateNumber: request.PlateNumber,
             model: request.Model,
             capacity: request.Capacity,
-            createdAtUtc: DateTime.UtcNow,
+            createdAtUtc: clock.UtcNow,
             status: request.Status
         );
 

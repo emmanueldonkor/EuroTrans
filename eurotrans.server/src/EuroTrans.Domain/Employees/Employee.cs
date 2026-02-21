@@ -54,4 +54,21 @@ public class Employee : AggregateRoot
         Name = name;
         Email = email;
     }
+
+    public ErrorOr<Success> UpdateRole(EmployeeRole role)
+    {
+        Role = role;
+
+        if (role == EmployeeRole.Driver && Driver is null)
+        {
+            Driver = new Driver(Id, null, null);
+        }
+
+        if (role != EmployeeRole.Driver)
+        {
+            Driver = null;
+        }
+
+        return Result.Success;
+    }
 }

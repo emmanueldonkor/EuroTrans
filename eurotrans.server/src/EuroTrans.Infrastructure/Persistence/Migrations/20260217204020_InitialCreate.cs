@@ -51,8 +51,8 @@ namespace EuroTrans.Infrastructure.Persistence.Migrations
                 {
                     employee_id = table.Column<Guid>(type: "TEXT", nullable: false),
                     EmployeeId = table.Column<Guid>(type: "TEXT", nullable: false),
-                    phone = table.Column<string>(type: "TEXT", maxLength: 50, nullable: false),
-                    license_number = table.Column<string>(type: "TEXT", maxLength: 100, nullable: false),
+                    phone = table.Column<string>(type: "TEXT", maxLength: 50, nullable: true),
+                    license_number = table.Column<string>(type: "TEXT", maxLength: 100, nullable: true),
                     status = table.Column<string>(type: "TEXT", nullable: false)
                 },
                 constraints: table =>
@@ -73,21 +73,21 @@ namespace EuroTrans.Infrastructure.Persistence.Migrations
                     id = table.Column<Guid>(type: "TEXT", nullable: false),
                     tracking_id = table.Column<string>(type: "TEXT", maxLength: 100, nullable: false),
                     status = table.Column<string>(type: "TEXT", nullable: false),
-                    cargo_description = table.Column<string>(type: "TEXT", maxLength: 500, nullable: false),
-                    cargo_weight = table.Column<float>(type: "REAL", nullable: false),
-                    cargo_volume = table.Column<float>(type: "REAL", nullable: false),
-                    origin_address = table.Column<string>(type: "TEXT", maxLength: 500, nullable: false),
-                    origin_city = table.Column<string>(type: "TEXT", maxLength: 200, nullable: false),
-                    origin_country = table.Column<string>(type: "TEXT", maxLength: 200, nullable: false),
-                    origin_postal_code = table.Column<string>(type: "TEXT", maxLength: 50, nullable: false),
-                    origin_lat = table.Column<float>(type: "REAL", nullable: false),
-                    origin_lng = table.Column<float>(type: "REAL", nullable: false),
-                    destination_address = table.Column<string>(type: "TEXT", maxLength: 500, nullable: false),
-                    destination_city = table.Column<string>(type: "TEXT", maxLength: 200, nullable: false),
-                    destination_country = table.Column<string>(type: "TEXT", maxLength: 200, nullable: false),
-                    destination_postal_code = table.Column<string>(type: "TEXT", maxLength: 50, nullable: false),
-                    destination_lat = table.Column<float>(type: "REAL", nullable: false),
-                    destination_lng = table.Column<float>(type: "REAL", nullable: false),
+                    cargo_description = table.Column<string>(type: "TEXT", maxLength: 500, nullable: true),
+                    cargo_weight = table.Column<float>(type: "REAL", nullable: true),
+                    cargo_volume = table.Column<float>(type: "REAL", nullable: true),
+                    origin_address = table.Column<string>(type: "TEXT", maxLength: 500, nullable: true),
+                    origin_city = table.Column<string>(type: "TEXT", maxLength: 200, nullable: true),
+                    origin_country = table.Column<string>(type: "TEXT", maxLength: 200, nullable: true),
+                    origin_postal_code = table.Column<string>(type: "TEXT", maxLength: 50, nullable: true),
+                    origin_lat = table.Column<float>(type: "REAL", nullable: true),
+                    origin_lng = table.Column<float>(type: "REAL", nullable: true),
+                    destination_address = table.Column<string>(type: "TEXT", maxLength: 500, nullable: true),
+                    destination_city = table.Column<string>(type: "TEXT", maxLength: 200, nullable: true),
+                    destination_country = table.Column<string>(type: "TEXT", maxLength: 200, nullable: true),
+                    destination_postal_code = table.Column<string>(type: "TEXT", maxLength: 50, nullable: true),
+                    destination_lat = table.Column<float>(type: "REAL", nullable: true),
+                    destination_lng = table.Column<float>(type: "REAL", nullable: true),
                     driver_id = table.Column<Guid>(type: "TEXT", nullable: true),
                     truck_id = table.Column<Guid>(type: "TEXT", nullable: true),
                     created_at = table.Column<DateTime>(type: "TEXT", nullable: false),
@@ -103,12 +103,14 @@ namespace EuroTrans.Infrastructure.Persistence.Migrations
                         name: "FK_shipments_drivers_driver_id",
                         column: x => x.driver_id,
                         principalTable: "drivers",
-                        principalColumn: "employee_id");
+                        principalColumn: "employee_id",
+                        onDelete: ReferentialAction.Restrict);
                     table.ForeignKey(
                         name: "FK_shipments_trucks_truck_id",
                         column: x => x.truck_id,
                         principalTable: "trucks",
-                        principalColumn: "id");
+                        principalColumn: "id",
+                        onDelete: ReferentialAction.Restrict);
                 });
 
             migrationBuilder.CreateTable(
@@ -130,7 +132,7 @@ namespace EuroTrans.Infrastructure.Persistence.Migrations
                         column: x => x.employee_id,
                         principalTable: "employees",
                         principalColumn: "id",
-                        onDelete: ReferentialAction.Cascade);
+                        onDelete: ReferentialAction.Restrict);
                     table.ForeignKey(
                         name: "FK_activities_shipments_shipment_id",
                         column: x => x.shipment_id,
@@ -154,6 +156,12 @@ namespace EuroTrans.Infrastructure.Persistence.Migrations
                 {
                     table.PrimaryKey("PK_documents", x => x.id);
                     table.ForeignKey(
+                        name: "FK_documents_employees_uploaded_by_employee_id",
+                        column: x => x.uploaded_by_employee_id,
+                        principalTable: "employees",
+                        principalColumn: "id",
+                        onDelete: ReferentialAction.Restrict);
+                    table.ForeignKey(
                         name: "FK_documents_shipments_shipment_id",
                         column: x => x.shipment_id,
                         principalTable: "shipments",
@@ -168,15 +176,20 @@ namespace EuroTrans.Infrastructure.Persistence.Migrations
                     id = table.Column<Guid>(type: "TEXT", nullable: false),
                     shipment_id = table.Column<Guid>(type: "TEXT", nullable: false),
                     created_by_employee_id = table.Column<Guid>(type: "TEXT", nullable: false),
-                    type = table.Column<string>(type: "TEXT", nullable: false),
                     note = table.Column<string>(type: "TEXT", maxLength: 1000, nullable: false),
-                    location_lat = table.Column<float>(type: "REAL", nullable: false),
-                    location_lng = table.Column<float>(type: "REAL", nullable: false),
+                    location_lat = table.Column<double>(type: "REAL", nullable: false),
+                    location_lng = table.Column<double>(type: "REAL", nullable: false),
                     timestamp = table.Column<DateTime>(type: "TEXT", nullable: false)
                 },
                 constraints: table =>
                 {
                     table.PrimaryKey("PK_milestones", x => x.id);
+                    table.ForeignKey(
+                        name: "FK_milestones_employees_created_by_employee_id",
+                        column: x => x.created_by_employee_id,
+                        principalTable: "employees",
+                        principalColumn: "id",
+                        onDelete: ReferentialAction.Restrict);
                     table.ForeignKey(
                         name: "FK_milestones_shipments_shipment_id",
                         column: x => x.shipment_id,
@@ -184,6 +197,11 @@ namespace EuroTrans.Infrastructure.Persistence.Migrations
                         principalColumn: "id",
                         onDelete: ReferentialAction.Cascade);
                 });
+
+            migrationBuilder.InsertData(
+                table: "employees",
+                columns: new[] { "id", "auth0_user_id", "avatar_url", "created_at", "email", "is_active", "name", "role" },
+                values: new object[] { new Guid("aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee"), "google-oauth2|100148582346131912486", null, new DateTime(2026, 2, 17, 20, 40, 19, 692, DateTimeKind.Utc).AddTicks(4884), "your@email.com", true, "Emmanuel Donkor", "Manager" });
 
             migrationBuilder.CreateIndex(
                 name: "IX_activities_employee_id",
@@ -201,6 +219,11 @@ namespace EuroTrans.Infrastructure.Persistence.Migrations
                 column: "shipment_id");
 
             migrationBuilder.CreateIndex(
+                name: "IX_documents_uploaded_by_employee_id",
+                table: "documents",
+                column: "uploaded_by_employee_id");
+
+            migrationBuilder.CreateIndex(
                 name: "IX_drivers_EmployeeId",
                 table: "drivers",
                 column: "EmployeeId",
@@ -211,6 +234,11 @@ namespace EuroTrans.Infrastructure.Persistence.Migrations
                 table: "employees",
                 column: "auth0_user_id",
                 unique: true);
+
+            migrationBuilder.CreateIndex(
+                name: "IX_milestones_created_by_employee_id",
+                table: "milestones",
+                column: "created_by_employee_id");
 
             migrationBuilder.CreateIndex(
                 name: "IX_milestones_shipment_id",

@@ -37,6 +37,8 @@ public class MilestoneService
             lat: request.Latitude,
             lon: request.Longitude,
             note: request.Note,
+            locationLabel: request.LocationLabel,
+            type: request.Type,
             timestampUtc: clock.UtcNow
         );
 

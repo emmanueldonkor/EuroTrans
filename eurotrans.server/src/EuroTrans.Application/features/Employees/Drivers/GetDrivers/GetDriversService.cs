@@ -19,11 +19,9 @@ public class GetDriversService
             EmployeeId: e.Id,
             Name: e.Name,
             Email: e.Email,
-            AvatarUrl: e.AvatarUrl,
             Phone: e.Driver?.Phone,
             Status: e.Driver!.Status,
-            LicenseNumber: e.Driver.LicenseNumber!,
-            IsActive: e.IsActive
+            LicenseNumber: e.Driver?.LicenseNumber
         )).ToList();
     }
 }
