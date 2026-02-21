@@ -5,6 +5,7 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace EuroTrans.Api.Endpoints.Employees;
 
+[EuroTrans.Api.Endpoints.ApiEndpoint]
 public static class SyncUserEndpoint
 {
     public static void MapSyncUserEndpoint(this IEndpointRouteBuilder app)

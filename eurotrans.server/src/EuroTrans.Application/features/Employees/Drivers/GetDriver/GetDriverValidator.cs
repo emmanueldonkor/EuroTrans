@@ -2,10 +2,10 @@ namespace EuroTrans.Application.features.Employees.Drivers.GetDriver;
 
 using FluentValidation;
 
-public class GetDriverValidator : AbstractValidator<Guid>
+public class GetDriverValidator : AbstractValidator<GetDriverRequest>
 {
     public GetDriverValidator()
     {
-        RuleFor(x => x).NotEmpty().WithMessage("Driver ID is required.");
+        RuleFor(x => x.DriverId).NotEmpty().WithMessage("Driver ID is required.");
     }
 }

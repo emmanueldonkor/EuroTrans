@@ -33,7 +33,7 @@ public class EmployeeRepository : IEmployeeRepository
     {
         return await db.Employees
             .Include(e => e.Driver)
-            .Where(e => e.Role == EmployeeRole.Driver)
+            .Where(e => e.Role == EmployeeRole.Driver && e.Driver != null)
             .ToListAsync(ct);
     }
 

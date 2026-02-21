@@ -4,11 +4,11 @@ import { auth0 } from "./auth0";
 import type { User, UserRole } from "./types"
 
 // Helper to decode JWT payload without external library
-function decodeJwtPayload(token: string): any {
+function decodeJwtPayload(token: string): Record<string, unknown> | null {
     try {
         const parts = token.split(".")
         if (parts.length !== 3) return null
-        return JSON.parse(Buffer.from(parts[1].replace(/-/g, "+").replace(/_/g, "/"), "base64").toString("utf8"))
+        return JSON.parse(Buffer.from(parts[1].replace(/-/g, "+").replace(/_/g, "/"), "base64").toString("utf8")) as Record<string, unknown>
     } catch (e) {
         console.error("Failed to decode JWT:", e)
         return null
@@ -31,7 +31,10 @@ export async function getSessionUser(): Promise<User | null> {
         if (accessToken) {
             const decodedAccessToken = decodeJwtPayload(accessToken)
             if (decodedAccessToken) {
-                roles = decodedAccessToken["https://eurotrans.api/roles"] as string[]
+                const rawRoles = decodedAccessToken["https://eurotrans.api/roles"]
+                if (Array.isArray(rawRoles)) {
+                    roles = rawRoles.filter((role): role is string => typeof role === "string")
+                }
             }
         }
 

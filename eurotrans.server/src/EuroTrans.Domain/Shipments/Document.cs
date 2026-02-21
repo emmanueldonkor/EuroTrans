@@ -1,4 +1,5 @@
 using EuroTrans.Domain.Common;
+using EuroTrans.Domain.Employees;
 using EuroTrans.Domain.Shipments.Enums;
 
 namespace EuroTrans.Domain.Shipments;
@@ -6,10 +7,13 @@ namespace EuroTrans.Domain.Shipments;
 public class Document : Entity
 {
     public Guid ShipmentId { get; private set; }
-    public Guid UploadedByEmployeeId { get; private set; }
+    public Guid EmployeeId { get; private set; }
     public DocumentType Type { get; private set; }
     public string Url { get; private set; } = string.Empty;
     public DateTime UploadedAtUtc { get; private set; }
+    public Shipment? Shipment { get; private set; }
+    public Employee? Employee { get; private set; }
+
 
     private Document() { }
 
@@ -23,7 +27,7 @@ public class Document : Entity
         : base(id)
     {
         ShipmentId = shipmentId;
-        UploadedByEmployeeId = uploadedByEmployeeId;
+        EmployeeId = uploadedByEmployeeId;
         Type = type;
         Url = url;
         UploadedAtUtc = uploadedAtUtc;

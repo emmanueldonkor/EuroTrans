@@ -24,20 +24,28 @@ public class StartShipmentService
 
     public async Task<ErrorOr<Success>> StartAsync(Guid shipmentId, CancellationToken ct = default)
     {
-        var employeeIdResult = await currentEmployeeProvider.GetEmployeeIdAsync();
-        if (employeeIdResult.IsError)
-            return employeeIdResult.Errors;
+        if (shipmentId == Guid.Empty)
+            return Error.Validation("ShipmentId.Invalid", "Shipment ID cannot be empty.");
 
+        // Get current driver ID
+        var driverIdResult = await currentEmployeeProvider.GetEmployeeIdAsync();
+        if (driverIdResult.IsError)
+            return driverIdResult.Errors;
+
+        // Fetch shipment
         var shipment = await shipments.GetByIdAsync(shipmentId, ct);
         if (shipment is null)
-            return Error.NotFound(description: "Shipment not found.");
+            return Error.NotFound("Shipment not found.");
 
-        var result = shipment.Start(employeeIdResult.Value, clock.UtcNow);
-
+        // Domain rule: only assigned driver can start
+        var result = shipment.Start(driverIdResult.Value, clock.UtcNow);
         if (result.IsError)
             return result.Errors;
 
-        await uow.SaveChangesAsync(ct);
+        // Save changes with concurrency check
+        var saveResult = await uow.SaveChangesWithConcurrencyCheckAsync(ct);
+        if (saveResult.IsError)
+            return saveResult.Errors;
 
         return Result.Success;
     }

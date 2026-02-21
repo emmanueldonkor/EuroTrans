@@ -4,13 +4,14 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace EuroTrans.Api.Endpoints.Trucks;
 
+[EuroTrans.Api.Endpoints.ApiEndpoint]
 public static class DeleteTruckEndpoint
 {
     public static void MapDeleteTruckEndpoint(this IEndpointRouteBuilder app)
     {
         app.MapDelete("/api/trucks/{id}", async (
             Guid id,
-          [FromServices]  DeleteTruckService service,
+          [FromServices] DeleteTruckService service,
             CancellationToken ct) =>
         {
             var result = await service.DeleteAsync(id, ct);

@@ -49,8 +49,5 @@ public class EmployeeConfiguration : IEntityTypeConfiguration<Employee>
             .HasColumnName("created_at")
             .IsRequired();
 
-        builder.HasOne(e => e.Driver)
-            .WithOne(d => d.Employee)
-            .HasForeignKey<Driver>(d => d.EmployeeId);
     }
 }

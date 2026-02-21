@@ -1,4 +1,5 @@
 using EuroTrans.Application.features.Shipments;
+using EuroTrans.Application.features.Shipments.GetShipments;
 using EuroTrans.Domain.Shipments;
 using EuroTrans.Domain.Shipments.Enums;
 using EuroTrans.Infrastructure.Persistence;
@@ -9,6 +10,11 @@ namespace EuroTrans.Infrastructure.Repositories;
 public class ShipmentRepository : IShipmentRepository
 {
     private readonly AppDbContext db;
+    private static readonly ShipmentStatus[] ActiveStatuses =
+    [
+        ShipmentStatus.Assigned,
+        ShipmentStatus.InTransit
+    ];
 
     public ShipmentRepository(AppDbContext db)
     {
@@ -18,9 +24,15 @@ public class ShipmentRepository : IShipmentRepository
     public async Task<Shipment?> GetByIdAsync(Guid id, CancellationToken ct = default)
     {
         return await db.Shipments
+             .AsSplitQuery()
+            .Include(s => s.Driver!)
+                    .ThenInclude(e => e.Employee)
+            .Include(s => s.Truck)
             .Include(s => s.Activities)
-            .Include(s => s.Milestones)
+                   .ThenInclude(a => a.Employee)
             .Include(s => s.Documents)
+            .Include(s => s.Milestones)
+                   .ThenInclude(s => s.Employee)
             .FirstOrDefaultAsync(s => s.Id == id, ct);
     }
 
@@ -29,17 +41,35 @@ public class ShipmentRepository : IShipmentRepository
         await db.Shipments.AddAsync(shipment, ct);
     }
 
-    public async Task<(List<Shipment> Items, int TotalCount)> GetFilteredAsync(
-        ShipmentStatus? status,
-        Guid? driverId,
-        DateTime? startDate,
-        DateTime? endDate,
-        string? search,
-        int page,
-        int pageSize,
-        CancellationToken ct = default)
+    public Task<bool> HasActiveAssignmentForDriverAsync(Guid driverId, CancellationToken ct = default)
     {
-        var query = db.Shipments.AsNoTracking().AsQueryable();
+        return db.Shipments
+            .AsNoTracking()
+            .AnyAsync(s => s.DriverId == driverId && ActiveStatuses.Contains(s.Status), ct);
+    }
+
+    public Task<bool> HasActiveAssignmentForTruckAsync(Guid truckId, CancellationToken ct = default)
+    {
+        return db.Shipments
+            .AsNoTracking()
+            .AnyAsync(s => s.TruckId == truckId && ActiveStatuses.Contains(s.Status), ct);
+    }
+
+    public async Task<(List<GetShipmentsItemResponse> Items, int TotalCount)> GetFilteredAsync(
+    ShipmentStatus? status,
+    Guid? driverId,
+    DateTime? startDate,
+    DateTime? endDate,
+    string? search,
+    int page,
+    int pageSize,
+    CancellationToken ct = default)
+    {
+        var query = db.Shipments
+            .AsNoTracking()
+            .Include(s => s.Driver)
+                .ThenInclude(d => d!.Employee)
+            .AsQueryable();
 
         if (status.HasValue)
             query = query.Where(s => s.Status == status);
@@ -56,7 +86,7 @@ public class ShipmentRepository : IShipmentRepository
         if (!string.IsNullOrWhiteSpace(search))
             query = query.Where(s =>
                 s.TrackingId.Contains(search) ||
-                s.Cargo!.Description.Contains(search));
+                s.Cargo != null && s.Cargo.Description.Contains(search));
 
         var totalCount = await query.CountAsync(ct);
 
@@ -64,8 +94,22 @@ public class ShipmentRepository : IShipmentRepository
             .OrderByDescending(s => s.CreatedAtUtc)
             .Skip((page - 1) * pageSize)
             .Take(pageSize)
+            .Select(s => new GetShipmentsItemResponse(
+                s.Id,
+                s.TrackingId,
+                s.Status,
+                s.Driver != null ? s.Driver.Employee.Name : null,
+                s.OriginAddress != null
+                    ? $"{s.OriginAddress.City}, {s.OriginAddress.Country}"
+                    : "Unknown",
+                s.DestinationAddress != null
+                    ? $"{s.DestinationAddress.City}, {s.DestinationAddress.Country}"
+                    : "Unknown",
+                s.UpdatedAtUtc
+            ))
             .ToListAsync(ct);
 
         return (items, totalCount);
     }
+
 }

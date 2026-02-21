@@ -1,43 +1,43 @@
-// Shipment lifecycle rules and state validation
 import type { ShipmentStatus, Shipment } from "./types"
 
 export interface ShipmentAction {
   label: string
-  type: "publish" | "assign" | "start" | "deliver" | "edit"
+  type: "assign" | "start" | "deliver" | "cancel"
   available: boolean
   reason?: string
 }
 
 export const SHIPMENT_STATUS_FLOW: Record<ShipmentStatus, ShipmentStatus[]> = {
-  draft: ["unassigned"],
-  unassigned: ["in-transit"],
-  "in-transit": ["delivered"],
+  unassigned: ["assigned", "cancelled"],
+  assigned: ["in-transit", "cancelled"],
+  "in-transit": ["delivered", "cancelled"],
   delivered: [],
+  cancelled: [],
 }
 
 export function canEditShipment(shipment: Shipment): boolean {
-  return shipment.status === "draft"
+  void shipment
+  // Backend currently does not expose an edit endpoint.
+  return false
 }
 
 export function canDeleteShipment(shipment: Shipment): boolean {
-  // Can delete drafts, unassigned, or in-transit that hasn't been started
-  return (
-    shipment.status === "draft" ||
-    shipment.status === "unassigned" ||
-    (shipment.status === "in-transit" && !shipment.startedAt)
-  )
+  // Maps to backend cancel endpoint.
+  return shipment.status !== "delivered" && shipment.status !== "cancelled"
 }
 
 export function canPublishShipment(shipment: Shipment): boolean {
-  return shipment.status === "draft"
+  void shipment
+  // Backend currently does not expose a publish endpoint.
+  return false
 }
 
 export function canAssignShipment(shipment: Shipment): boolean {
-  return shipment.status === "unassigned" || shipment.status === "draft"
+  return shipment.status === "unassigned"
 }
 
 export function canStartShipment(shipment: Shipment): boolean {
-  return shipment.status === "in-transit" && !!shipment.driverId && !!shipment.truckId && !shipment.startedAt
+  return shipment.status === "assigned" && !!shipment.driverId && !!shipment.truckId
 }
 
 export function canDeliverShipment(shipment: Shipment): boolean {
@@ -48,53 +48,48 @@ export function getAvailableActions(shipment: Shipment, userRole: "manager" | "d
   if (userRole === "manager") {
     return [
       {
-        label: "Publish Draft",
-        type: "publish",
-        available: canPublishShipment(shipment),
-        reason: !canPublishShipment(shipment) ? "Only drafts can be published" : undefined,
-      },
-      {
         label: "Assign Driver & Truck",
         type: "assign",
         available: canAssignShipment(shipment),
-        reason: !canAssignShipment(shipment) ? "Shipment already assigned or in transit" : undefined,
+        reason: !canAssignShipment(shipment) ? "Shipment must be unassigned before assignment." : undefined,
       },
       {
-        label: "Edit Shipment",
-        type: "edit",
-        available: canEditShipment(shipment),
-        reason: !canEditShipment(shipment) ? "Only drafts can be edited" : undefined,
+        label: "Cancel Shipment",
+        type: "cancel",
+        available: canDeleteShipment(shipment),
+        reason: !canDeleteShipment(shipment) ? "Delivered or cancelled shipments cannot be cancelled." : undefined,
       },
     ]
   }
 
-  // Driver actions
   return [
     {
       label: "Start Journey",
       type: "start",
       available: canStartShipment(shipment),
-      reason: !canStartShipment(shipment) ? "Shipment not ready to start" : undefined,
+      reason: !canStartShipment(shipment) ? "Shipment must be assigned to you before start." : undefined,
     },
     {
       label: "Mark Delivered",
       type: "deliver",
       available: canDeliverShipment(shipment),
-      reason: !canDeliverShipment(shipment) ? "Journey must be started first" : undefined,
+      reason: !canDeliverShipment(shipment) ? "Shipment must be in transit before delivery." : undefined,
     },
   ]
 }
 
 export function getStatusBadgeColor(status: ShipmentStatus): string {
   switch (status) {
-    case "draft":
-      return "bg-slate-100 text-slate-600 border border-slate-200"
     case "unassigned":
       return "bg-amber-50 text-amber-700 border border-amber-200"
+    case "assigned":
+      return "bg-cyan-50 text-cyan-700 border border-cyan-200"
     case "in-transit":
       return "bg-teal-50 text-teal-700 border border-teal-200"
     case "delivered":
       return "bg-emerald-50 text-emerald-700 border border-emerald-200"
+    case "cancelled":
+      return "bg-rose-50 text-rose-700 border border-rose-200"
     default:
       return "bg-slate-100 text-slate-600 border border-slate-200"
   }
@@ -106,12 +101,20 @@ export function getStatusLabel(status: ShipmentStatus): string {
 
 export function validateShipmentData(data: {
   cargo: { description: string; weight: number; volume: number }
-  origin: any
-  destination: any
+  origin: {
+    address?: string
+    city?: string
+    country?: string
+    postalCode?: string
+  }
+  destination: {
+    address?: string
+    city?: string
+    country?: string
+    postalCode?: string
+  }
 }): { valid: boolean; errors: string[] } {
   const errors: string[] = []
-
-  console.log("[v0] Validating shipment data:", data)
 
   if (!data.cargo.description?.trim()) {
     errors.push("Cargo description is required")
@@ -146,8 +149,6 @@ export function validateShipmentData(data: {
   if (!data.destination.postalCode?.trim()) {
     errors.push("Destination postal code is required")
   }
-
-  console.log("[v0] Validation result:", { valid: errors.length === 0, errors })
 
   return {
     valid: errors.length === 0,

@@ -44,8 +44,6 @@ export default function NewShipmentPage() {
   })
 
   const handleSubmit = async () => {
-    console.log("[v0] Form submitted with data:", { cargo, origin, destination })
-
     const validation = validateShipmentData({
       cargo: {
         description: cargo.description,
@@ -57,7 +55,6 @@ export default function NewShipmentPage() {
     })
 
     if (!validation.valid) {
-      console.log("[v0] Validation failed:", validation.errors)
       setErrors(validation.errors)
       return
     }
@@ -66,30 +63,7 @@ export default function NewShipmentPage() {
     setErrors([])
 
     try {
-      const getCoordinates = (city: string): { lat: number; lng: number } => {
-        const cityCoords: Record<string, { lat: number; lng: number }> = {
-          berlin: { lat: 52.52, lng: 13.405 },
-          paris: { lat: 48.8566, lng: 2.3522 },
-          munich: { lat: 48.1351, lng: 11.582 },
-          lyon: { lat: 45.764, lng: 4.8357 },
-          frankfurt: { lat: 50.1109, lng: 8.6821 },
-          brussels: { lat: 50.8503, lng: 4.3517 },
-          amsterdam: { lat: 52.3676, lng: 4.9041 },
-          cologne: { lat: 50.9375, lng: 6.9603 },
-          hamburg: { lat: 53.5511, lng: 9.9937 },
-          rotterdam: { lat: 51.9225, lng: 4.4792 },
-        }
-        const cityKey = city.toLowerCase().trim()
-        return cityCoords[cityKey] || { lat: 50.0 + Math.random() * 3, lng: 8.0 + Math.random() * 6 }
-      }
-
-      const originCoords = getCoordinates(origin.city || "")
-      const destCoords = getCoordinates(destination.city || "")
-
-      console.log("[v0] Creating shipment with coordinates:", { originCoords, destCoords })
-
       const newShipment = await api.createShipment({
-        status: "draft",
         cargo: {
           description: cargo.description,
           weight: Number.parseFloat(cargo.weight),
@@ -97,21 +71,22 @@ export default function NewShipmentPage() {
         },
         origin: {
           ...origin,
-          lat: originCoords.lat,
-          lng: originCoords.lng,
+          lat: origin.lat ?? 0,
+          lng: origin.lng ?? 0,
         } as Location,
         destination: {
           ...destination,
-          lat: destCoords.lat,
-          lng: destCoords.lng,
+          lat: destination.lat ?? 0,
+          lng: destination.lng ?? 0,
         } as Location,
       })
 
-      console.log("[v0] Shipment created successfully:", newShipment)
       router.push(`/dashboard/shipments/${newShipment.id}`)
     } catch (error) {
-      console.error("[v0] Failed to create shipment:", error)
-      setErrors(["Failed to create shipment. Please try again."])
+      console.error("Failed to create shipment:", error)
+      const fullMessage = error instanceof Error ? error.message : String(error)
+      setErrors([fullMessage || "Unknown error"])
+    } finally {
       setLoading(false)
     }
   }
@@ -314,9 +289,9 @@ export default function NewShipmentPage() {
       {step === 3 && (
         <Card className="p-6 space-y-6">
           <div>
-            <h2 className="text-xl font-semibold mb-4">Review & Create Draft</h2>
+            <h2 className="text-xl font-semibold mb-4">Review & Create Shipment</h2>
             <p className="text-sm text-muted-foreground">
-              Your shipment will be created as a draft. You can publish it later to make it available for assignment.
+              Review the details and create this shipment.
             </p>
           </div>
 
@@ -351,7 +326,7 @@ export default function NewShipmentPage() {
               Back
             </Button>
             <Button onClick={handleSubmit} className="flex-1" disabled={loading}>
-              {loading ? "Creating Draft..." : "Create Draft"}
+              {loading ? "Creating Shipment..." : "Create Shipment"}
             </Button>
           </div>
         </Card>

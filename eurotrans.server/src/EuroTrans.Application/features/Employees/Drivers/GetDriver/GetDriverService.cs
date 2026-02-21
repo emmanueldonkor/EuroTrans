@@ -30,9 +30,10 @@ public class GetDriverService
             Name: employee.Name,
             Email: employee.Email,
             AvatarUrl: employee.AvatarUrl,
+            Phone: employee.Driver.Phone,
             IsActive: employee.IsActive,
             CreatedAtUtc: employee.CreatedAtUtc,
-            LicenseNumber: employee.Driver.LicenseNumber!,
+            LicenseNumber: employee.Driver.LicenseNumber,
             Status: employee.Driver.Status
         );
     }

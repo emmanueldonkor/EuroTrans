@@ -1,5 +1,8 @@
+using ErrorOr;
 using EuroTrans.Application.features;
 using EuroTrans.Infrastructure.Persistence;
+using Microsoft.Data.Sqlite;
+using Microsoft.EntityFrameworkCore;
 
 namespace EuroTrans.Infrastructure.Repositories;
 
@@ -16,5 +19,29 @@ public class UnitOfWork : IUnitOfWork
     {
         return db.SaveChangesAsync(cancellationToken);
     }
+
+    public async Task<ErrorOr<Success>> SaveChangesWithConcurrencyCheckAsync(CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            await db.SaveChangesAsync(cancellationToken);
+            return Result.Success;
+        }
+        catch (DbUpdateConcurrencyException)
+        {
+            return Error.Conflict(
+                code: "Concurrency.Conflict",
+                description: "The record was updated by another request. Refresh and retry.");
+        }
+        catch (DbUpdateException ex) when (IsSqliteConstraintViolation(ex))
+        {
+            return Error.Conflict(
+                code: "Data.ConstraintViolation",
+                description: "The operation violates a data integrity constraint.");
+        }
+    }
+
+    private static bool IsSqliteConstraintViolation(DbUpdateException ex)
+        => ex.InnerException is SqliteException { SqliteErrorCode: 19 };
 }
 

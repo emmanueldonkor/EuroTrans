@@ -1,17 +1,15 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useEffect, useState } from "react"
 import Link from "next/link"
 import { Card } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Package } from "lucide-react"
 import { api } from "@/lib/api"
-import type { Shipment, User } from "@/lib/types"
+import type { Shipment } from "@/lib/types"
 import { getStatusColor, formatDate } from "@/lib/utils/format"
-import { getSessionUser } from "@/lib/auth"
 
 export default function DriverShipmentsPage() {
-  const [user, setUser] = useState<User | null>(null)
   const [shipments, setShipments] = useState<Shipment[]>([])
   const [loading, setLoading] = useState(true)
 
@@ -22,14 +20,9 @@ export default function DriverShipmentsPage() {
   const loadData = async () => {
     setLoading(true)
     try {
-      const userData = await getSessionUser()
-      setUser(userData)
-
-      if (userData) {
-        const allShipments = await api.getShipments()
-        const driverShipments = allShipments.filter((s) => s.driverId === userData.id)
-        setShipments(driverShipments)
-      }
+      // Backend already limits driver users to their own shipments.
+      const data = await api.getShipments()
+      setShipments(data)
     } catch (error) {
       console.error("Failed to load shipments:", error)
     } finally {
@@ -74,7 +67,7 @@ export default function DriverShipmentsPage() {
 
                   <div className="text-sm text-muted-foreground">
                     <p>
-                      {shipment.origin.city} → {shipment.destination.city}
+                      {shipment.origin.city} -{">"} {shipment.destination.city}
                     </p>
                     <p className="text-xs mt-1">Updated: {formatDate(shipment.updatedAt)}</p>
                   </div>

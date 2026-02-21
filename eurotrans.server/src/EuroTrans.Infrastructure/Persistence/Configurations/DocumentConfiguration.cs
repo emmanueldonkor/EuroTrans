@@ -20,7 +20,7 @@ public class DocumentConfiguration : IEntityTypeConfiguration<Document>
             .HasColumnName("shipment_id")
             .IsRequired();
 
-        builder.Property(d => d.UploadedByEmployeeId)
+        builder.Property(d => d.EmployeeId)
             .HasColumnName("uploaded_by_employee_id")
             .IsRequired();
 
@@ -37,5 +37,9 @@ public class DocumentConfiguration : IEntityTypeConfiguration<Document>
         builder.Property(d => d.UploadedAtUtc)
             .HasColumnName("uploaded_at")
             .IsRequired();
+        builder.HasOne(d => d.Employee)
+        .WithMany()
+        .HasForeignKey(d => d.EmployeeId)
+        .OnDelete(DeleteBehavior.Restrict);
     }
 }

@@ -5,6 +5,7 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace EuroTrans.Api.Endpoints.Shipments;
 
+[EuroTrans.Api.Endpoints.ApiEndpoint]
 public static class CreateShipmentEndpoint
 {
     public static void MapCreateShipmentEndpoint(this IEndpointRouteBuilder app)
@@ -25,8 +26,6 @@ public static class CreateShipmentEndpoint
          return result.Match(
              id => Results.Created($"/api/shipments/{id}", new { id }),
              errors => errors.ToProblem());
-     })
-    .RequireAuthorization("manager", "write:shipments");
-
+     }).RequireAuthorization("manager", "write:shipments");
     }
 }

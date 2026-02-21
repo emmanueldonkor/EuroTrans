@@ -2,7 +2,7 @@
 
 export type UserRole = "manager" | "driver" | "guest"
 
-export type ShipmentStatus = "draft" | "unassigned" | "in-transit" | "delivered"
+export type ShipmentStatus = "unassigned" | "assigned" | "in-transit" | "delivered" | "cancelled"
 
 export interface User {
   id: string
@@ -12,12 +12,22 @@ export interface User {
   avatar?: string
 }
 
+export interface CurrentUserContext {
+  employeeId: string
+  name: string
+  email: string
+  role: UserRole
+  driverProfileComplete: boolean
+  phone?: string
+  licenseNumber?: string
+}
+
 export interface Driver {
   id: string
   name: string
   email: string
-  phone: string
-  licenseNumber: string
+  phone?: string
+  licenseNumber?: string
   status: "available" | "on-duty" | "off-duty"
   currentShipmentId?: string
 }
@@ -51,7 +61,10 @@ export interface Shipment {
   origin: Location
   destination: Location
   driverId?: string
+  driverName?: string
   truckId?: string
+  truckPlateNumber?: string
+  truckModel?: string
   createdAt: string
   updatedAt: string
   startedAt?: string
@@ -66,14 +79,15 @@ export interface Milestone {
   id: string
   timestamp: string
   location: Location
+  locationLabel?: string
   note: string
-  type: "checkpoint" | "delay" | "rest" | "refuel" | "custom"
+  type: "location-update" | "checkpoint" | "delay" | "rest" | "refuel" | "custom"
 }
 
 export interface Activity {
   id: string
   shipmentId: string
-  type: "created" | "assigned" | "started" | "delivered" | "updated"
+  type: "created" | "assigned" | "started" | "delivered" | "cancelled" | "milestone" | "updated"
   description: string
   timestamp: string
   userId: string

@@ -20,18 +20,22 @@ public class MilestoneConfiguration : IEntityTypeConfiguration<Milestone>
             .HasColumnName("shipment_id")
             .IsRequired();
 
-        builder.Property(m => m.CreatedByEmployeeId)
+        builder.Property(m => m.EmployeeId)
             .HasColumnName("created_by_employee_id")
             .IsRequired();
 
-       /* builder.Property(m => m.Type)
+        builder.Property(m => m.Type)
             .HasColumnName("type")
             .HasConversion<string>()
-            .IsRequired(); */
+            .IsRequired();
 
         builder.Property(m => m.Note)
             .HasColumnName("note")
             .HasMaxLength(1000);
+
+        builder.Property(m => m.LocationLabel)
+            .HasColumnName("location_label")
+            .HasMaxLength(200);
 
         builder.Property(m => m.LocationLat)
             .HasColumnName("location_lat")
@@ -44,6 +48,9 @@ public class MilestoneConfiguration : IEntityTypeConfiguration<Milestone>
         builder.Property(m => m.TimestampUtc)
             .HasColumnName("timestamp")
             .IsRequired();
+        builder.HasOne(m => m.Employee)
+       .WithMany()
+       .HasForeignKey(m => m.EmployeeId)
+       .OnDelete(DeleteBehavior.Restrict);
     }
-
 }

@@ -1,17 +1,84 @@
-@EuroTrans.Api_HostAddress = http://localhost:5002
+﻿@EuroTrans.Api_HostAddress = http://localhost:5002
+@managerToken = eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCIsImtpZCI6ImQ5NDM3aGxGa2tBZHF4dHJ1WlgxaCJ9.eyJodHRwczovL2V1cm90cmFucy5hcGkvcm9sZXMiOlsibWFuYWdlciJdLCJodHRwczovL2V1cm90cmFucy5hcGkvZW1haWwiOiJlZG9ua29yMDAwMUBnbWFpbC5jb20iLCJodHRwczovL2V1cm90cmFucy5hcGkvbmFtZSI6IkVtbWFudWVsIERvbmtvciIsImlzcyI6Imh0dHBzOi8vZGV2LXgwbDVmMG1hamtpeHRvb3AudXMuYXV0aDAuY29tLyIsInN1YiI6Imdvb2dsZS1vYXV0aDJ8MTAwMTQ4NTgyMzQ2MTMxOTEyNDg2IiwiYXVkIjpbImh0dHBzOi8vZXVyb3RyYW5zLmFwaSIsImh0dHBzOi8vZGV2LXgwbDVmMG1hamtpeHRvb3AudXMuYXV0aDAuY29tL3VzZXJpbmZvIl0sImlhdCI6MTc3MTYxMTcwNiwiZXhwIjoxNzcxNjEyNjA2LCJzY29wZSI6Im9wZW5pZCBwcm9maWxlIGVtYWlsIHJlYWQ6c2hpcG1lbnRzIHdyaXRlOnNoaXBtZW50cyByZWFkOnRydWNrcyB3cml0ZTp0cnVja3MgcmVhZDplbXBsb3llZXMgd3JpdGU6ZW1wbG95ZWVzIG9mZmxpbmVfYWNjZXNzIiwiYXpwIjoiV1RqWWhPQ2tjelp5Tm43a3IzYTRNU2d1RHo0Tjg5NzAiLCJwZXJtaXNzaW9ucyI6WyJyZWFkOmVtcGxveWVlcyIsInJlYWQ6c2hpcG1lbnRzIiwicmVhZDp0cnVja3MiLCJzeW5jOnVzZXJzIiwid3JpdGU6ZW1wbG95ZWVzIiwid3JpdGU6c2hpcG1lbnRzIiwid3JpdGU6dHJ1Y2tzIl19.FiG0aZpnRAZ3o7YXwHCuvyKzRQLu2P6cR_ZN8AvcAKmq-hqNzxhvSKef--Imukum2XwlmuzO3ptFr09Mw1hPKrb0mUg2Gnyzn90AAkC0vx23BPsg4u-SdA9VYRtRBBy3-E8SSTXJpczjRJNNk_Ig2_qWuwdX1SpNlNE2msMp3z7fE-obYCYMe7Xtdss93qewiT6LcuvEN_Uucr5POhxMCQEFuXj2KBEVOTG1lvqd1EXVnhGLX4axONlltuabvdUB-Tol0j9uSHTUToEUOn0jew3I2WWnx4d7jEp8NN7oCzqJnEPJ_HSDhM8iWtV9gMP-Y_pAL-sDVBfL_j9zdDlknA
+@driverToken = <PASTE_DRIVER_TOKEN_AFTER_ASSIGNMENT>
+@driverId = <PASTE_DRIVER_EMPLOYEE_ID>
+@truckId = <PASTE_TRUCK_ID>
 
-# Get Trucks (Public?)
-GET {{EuroTrans.Api_HostAddress}}/api/trucks
+### 1) Create Shipment (manager + write:shipments)
+# @name createShipment
+POST {{EuroTrans.Api_HostAddress}}/api/shipments
+Content-Type: application/json
 Accept: application/json
+Authorization: Bearer {{managerToken}}
 
-###
+{
+  "cargo": {
+    "description": "Consumer electronics",
+    "weight": 4.5,
+    "volume": 2.2
+  },
+  "origin": {
+    "addressLine": "123 Main St",
+    "city": "Warsaw",
+    "country": "Poland",
+    "postalCode": "00-001"
+  },
+  "destination": {
+    "addressLine": "456 Market Ave",
+    "city": "Berlin",
+    "country": "Germany",
+    "postalCode": "10115"
+  },
+  "estimatedDeliveryDate": "2026-03-01T11:44:59.482Z"
+}
 
-# Get Drivers
+### Created shipment ID from step 1
+@shipmentId = {{createShipment.response.body.id}}
+
+### 2) List Shipments (manager + read:shipments)
+GET {{EuroTrans.Api_HostAddress}}/api/shipments?page=1&pageSize=20
+Accept: application/json
+Authorization: Bearer {{managerToken}}
+
+### 3) Get Drivers (manager + read:employees)
 GET {{EuroTrans.Api_HostAddress}}/api/drivers
 Accept: application/json
+Authorization: Bearer {{managerToken}}
 
-###
-
-# Get Shipments
-GET {{EuroTrans.Api_HostAddress}}/api/shipments
+### 4) Get Trucks (manager + read:trucks)
+GET {{EuroTrans.Api_HostAddress}}/api/trucks
 Accept: application/json
+Authorization: Bearer {{managerToken}}
+
+### 5) Assign Shipment (manager + write:shipments)
+POST {{EuroTrans.Api_HostAddress}}/api/shipments/{{shipmentId}}/assign
+Content-Type: application/json
+Accept: application/json
+Authorization: Bearer {{managerToken}}
+
+{
+  "driverId": "{{driverId}}",
+  "truckId": "{{truckId}}"
+}
+
+### 6) Start Shipment (driver + write:shipments)
+POST {{EuroTrans.Api_HostAddress}}/api/shipments/{{shipmentId}}/start
+Accept: application/json
+Authorization: Bearer {{driverToken}}
+
+### 7) Deliver Shipment (driver + write:shipments)
+POST {{EuroTrans.Api_HostAddress}}/api/shipments/{{shipmentId}}/deliver
+Authorization: Bearer {{driverToken}}
+Content-Type: multipart/form-data; boundary=WebAppBoundary
+
+--WebAppBoundary
+Content-Disposition: form-data; name="file"; filename="pod.txt"
+Content-Type: text/plain
+
+Proof of delivery sample file.
+--WebAppBoundary--
+
+### 8) Get Shipment Details (manager or assigned driver + read:shipments)
+GET {{EuroTrans.Api_HostAddress}}/api/shipments/{{shipmentId}}
+Accept: application/json
+Authorization: Bearer {{managerToken}}

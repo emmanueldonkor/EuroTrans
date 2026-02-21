@@ -52,11 +52,13 @@ export default function FleetPage() {
   }, [])
 
   const loadTrucks = async () => {
+    setError(null)
     try {
       const data = await api.getTrucks()
       setTrucks(data)
     } catch (error) {
       console.error("Failed to load trucks:", error)
+      setError(error instanceof Error ? error.message : String(error))
     } finally {
       setLoading(false)
     }
@@ -73,9 +75,9 @@ export default function FleetPage() {
       })
       setShowCreateDialog(false)
       setFormData({ plateNumber: "", model: "", capacity: "", status: "available" })
-      loadTrucks()
+      await loadTrucks()
     } catch (err) {
-      setError("Failed to create truck")
+      setError(err instanceof Error ? err.message : String(err))
       console.error(err)
     }
   }
@@ -100,9 +102,9 @@ export default function FleetPage() {
       setShowEditDialog(false)
       setSelectedTruck(null)
       setFormData({ plateNumber: "", model: "", capacity: "", status: "available" })
-      loadTrucks()
+      await loadTrucks()
     } catch (err) {
-      setError("Failed to update truck")
+      setError(err instanceof Error ? err.message : String(err))
       console.error(err)
     }
   }
@@ -122,9 +124,9 @@ export default function FleetPage() {
 
       setShowDeleteDialog(false)
       setSelectedTruck(null)
-      loadTrucks()
+      await loadTrucks()
     } catch (err) {
-      setError("Failed to delete truck")
+      setError(err instanceof Error ? err.message : String(err))
       console.error(err)
     }
   }

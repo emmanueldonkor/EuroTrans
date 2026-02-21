@@ -19,8 +19,8 @@ export function formatWeight(kg: number, locale = "en"): string {
   }).format(kg)
 }
 
-export function formatVolume(m3: number, locale = "en"): string {
-  return `${m3.toFixed(1)} m³`
+export function formatVolume(m3: number): string {
+  return `${m3.toFixed(1)} m3`
 }
 
 export function formatDistance(km: number, locale = "en"): string {
@@ -33,10 +33,12 @@ export function formatDistance(km: number, locale = "en"): string {
 
 export function getStatusColor(status: string): string {
   const colors = {
-    draft: "bg-slate-100 text-slate-600 border border-slate-200",
     unassigned: "bg-amber-50 text-amber-700 border border-amber-200",
+    assigned: "bg-cyan-50 text-cyan-700 border border-cyan-200",
     "in-transit": "bg-teal-50 text-teal-700 border border-teal-200",
     delivered: "bg-emerald-50 text-emerald-700 border border-emerald-200",
+    cancelled: "bg-rose-50 text-rose-700 border border-rose-200",
   }
-  return colors[status as keyof typeof colors] || colors.draft
+
+  return colors[status as keyof typeof colors] || colors.unassigned
 }

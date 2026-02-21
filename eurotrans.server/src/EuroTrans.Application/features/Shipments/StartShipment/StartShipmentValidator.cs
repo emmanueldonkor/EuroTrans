@@ -2,11 +2,11 @@ namespace EuroTrans.Application.features.Shipments.StartShipment;
 
 using FluentValidation;
 
-public class StartShipmentValidator : AbstractValidator<Guid>
+public class StartShipmentValidator : AbstractValidator<StartShipmentRequest>
 {
     public StartShipmentValidator()
     {
-        RuleFor(x => x)
+        RuleFor(x => x.ShipmentId)
             .NotEmpty().WithMessage("Shipment ID is required.");
     }
 }

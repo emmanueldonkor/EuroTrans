@@ -2,7 +2,7 @@
 
 import type React from "react"
 
-import { useState, useEffect, useRef } from "react"
+import { useEffect, useRef, useState } from "react"
 import { useParams, useRouter } from "next/navigation"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
@@ -11,7 +11,6 @@ import { Badge } from "@/components/ui/badge"
 import { Label } from "@/components/ui/label"
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import {
   Dialog,
   DialogContent,
@@ -20,9 +19,9 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog"
-import { ArrowLeft, Package, MapPin, Upload, CheckCircle, Play, Navigation, Flag, Loader2 } from "lucide-react"
+import { ArrowLeft, Package, MapPin, CheckCircle, Play, Navigation, Flag, Loader2, Truck } from "lucide-react"
 import { api } from "@/lib/api"
-import type { Shipment, Location, ShipmentStatus } from "@/lib/types"
+import type { Shipment, Location, Milestone } from "@/lib/types"
 import { getStatusColor } from "@/lib/utils/format"
 import { useToast } from "@/hooks/use-toast"
 
@@ -38,40 +37,59 @@ export default function DriverShipmentDetailPage() {
   const [uploadingProof, setUploadingProof] = useState(false)
   const [selectedFile, setSelectedFile] = useState<File | null>(null)
   const [gettingLocation, setGettingLocation] = useState(false)
+  const [gettingMilestoneGps, setGettingMilestoneGps] = useState(false)
 
   const [showLocationDialog, setShowLocationDialog] = useState(false)
   const [showMilestoneDialog, setShowMilestoneDialog] = useState(false)
-  const [showStatusDialog, setShowStatusDialog] = useState(false)
+  const [showDeliverPanel, setShowDeliverPanel] = useState(false)
+
   const [locationData, setLocationData] = useState({
     city: "",
     address: "",
     country: "",
     postalCode: "",
+    lat: "",
+    lng: "",
   })
+
   const [milestoneData, setMilestoneData] = useState({
-    type: "checkpoint" as const,
+    type: "checkpoint" as Milestone["type"],
     note: "",
+    locationLabel: "",
+    lat: "",
+    lng: "",
   })
-  const [selectedStatus, setSelectedStatus] = useState<ShipmentStatus>("in-transit")
+
+  const toErrorMessage = (error: unknown, fallback: string) => {
+    if (error instanceof Error && error.message.trim().length > 0) return error.message
+    return fallback
+  }
 
   useEffect(() => {
     loadData()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [params.id])
 
   const loadData = async () => {
     setLoading(true)
     try {
-      const shipmentData = await api.getShipment(params.id as string)
-
+      const shipmentData = await api.getShipment(String(params.id))
       if (!shipmentData) {
         router.push("/driver/shipments")
         return
       }
 
       setShipment(shipmentData)
-      setSelectedStatus(shipmentData.status)
+      if (shipmentData.status !== "in-transit") {
+        setShowDeliverPanel(false)
+      }
     } catch (error) {
       console.error("Failed to load shipment:", error)
+      toast({
+        title: "Error",
+        description: toErrorMessage(error, "Failed to load shipment."),
+        variant: "destructive",
+      })
     } finally {
       setLoading(false)
     }
@@ -79,12 +97,10 @@ export default function DriverShipmentDetailPage() {
 
   const handleStartJourney = async () => {
     if (!shipment) return
-
     setActionLoading(true)
 
     try {
       await api.startShipment(shipment.id)
-
       toast({
         title: "Journey Started",
         description: "Your shipment journey has begun.",
@@ -94,7 +110,7 @@ export default function DriverShipmentDetailPage() {
       console.error("Failed to start journey:", error)
       toast({
         title: "Error",
-        description: "Failed to start journey. Please try again.",
+        description: toErrorMessage(error, "Failed to start journey. Please try again."),
         variant: "destructive",
       })
     } finally {
@@ -102,7 +118,7 @@ export default function DriverShipmentDetailPage() {
     }
   }
 
-  const handleGetCurrentLocation = () => {
+  const updateLocationWithGps = () => {
     if (!navigator.geolocation) {
       toast({
         title: "Not Supported",
@@ -117,12 +133,11 @@ export default function DriverShipmentDetailPage() {
     navigator.geolocation.getCurrentPosition(
       async (position) => {
         try {
-          // Use reverse geocoding or set coordinates directly
           const location: Location = {
             lat: position.coords.latitude,
             lng: position.coords.longitude,
-            city: "Current Location",
-            address: `${position.coords.latitude.toFixed(4)}, ${position.coords.longitude.toFixed(4)}`,
+            city: "GPS Location",
+            address: `${position.coords.latitude.toFixed(6)}, ${position.coords.longitude.toFixed(6)}`,
             country: "",
             postalCode: "",
           }
@@ -131,7 +146,7 @@ export default function DriverShipmentDetailPage() {
             await api.updateShipmentLocation(shipment.id, location)
             toast({
               title: "Location Updated",
-              description: "Your current location has been recorded.",
+              description: "Current GPS location has been recorded.",
             })
             await loadData()
           }
@@ -139,15 +154,14 @@ export default function DriverShipmentDetailPage() {
           console.error("Failed to update location:", error)
           toast({
             title: "Error",
-            description: "Failed to update location.",
+            description: toErrorMessage(error, "Failed to update location."),
             variant: "destructive",
           })
         } finally {
           setGettingLocation(false)
         }
       },
-      (error) => {
-        console.error("Geolocation error:", error)
+      () => {
         setGettingLocation(false)
         toast({
           title: "Location Error",
@@ -163,33 +177,45 @@ export default function DriverShipmentDetailPage() {
     )
   }
 
-  const handleUpdateLocation = async () => {
+  const handleUpdateLocationManual = async () => {
     if (!shipment) return
 
-    setActionLoading(true)
+    const lat = Number(locationData.lat)
+    const lng = Number(locationData.lng)
+    if (Number.isNaN(lat) || Number.isNaN(lng)) {
+      toast({
+        title: "Invalid Coordinates",
+        description: "Latitude and longitude are required for manual updates.",
+        variant: "destructive",
+      })
+      return
+    }
 
+    setActionLoading(true)
     try {
       const location: Location = {
-        ...locationData,
-        lat: 50.0 + Math.random() * 5,
-        lng: 5.0 + Math.random() * 5,
+        city: locationData.city,
+        address: locationData.address,
+        country: locationData.country,
+        postalCode: locationData.postalCode,
+        lat,
+        lng,
       }
 
       await api.updateShipmentLocation(shipment.id, location)
-
       toast({
         title: "Location Updated",
-        description: `Current location: ${locationData.city}`,
+        description: locationData.city ? `Current location: ${locationData.city}` : "Manual location saved.",
       })
 
       setShowLocationDialog(false)
-      setLocationData({ city: "", address: "", country: "", postalCode: "" })
+      setLocationData({ city: "", address: "", country: "", postalCode: "", lat: "", lng: "" })
       await loadData()
     } catch (error) {
       console.error("Failed to update location:", error)
       toast({
         title: "Error",
-        description: "Failed to update location.",
+        description: toErrorMessage(error, "Failed to update location."),
         variant: "destructive",
       })
     } finally {
@@ -197,19 +223,75 @@ export default function DriverShipmentDetailPage() {
     }
   }
 
+  const handleFillMilestoneWithGps = () => {
+    if (!navigator.geolocation) {
+      toast({
+        title: "Not Supported",
+        description: "Geolocation is not supported by your browser.",
+        variant: "destructive",
+      })
+      return
+    }
+
+    setGettingMilestoneGps(true)
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        setMilestoneData((prev) => ({
+          ...prev,
+          lat: String(position.coords.latitude),
+          lng: String(position.coords.longitude),
+          locationLabel: prev.locationLabel || "GPS Location",
+        }))
+        setGettingMilestoneGps(false)
+      },
+      () => {
+        setGettingMilestoneGps(false)
+        toast({
+          title: "Location Error",
+          description: "Unable to get GPS coordinates for milestone.",
+          variant: "destructive",
+        })
+      },
+      {
+        enableHighAccuracy: true,
+        timeout: 10000,
+        maximumAge: 0,
+      },
+    )
+  }
+
   const handleAddMilestone = async () => {
     if (!shipment || !milestoneData.note.trim()) return
+
+    const lat = Number(milestoneData.lat)
+    const lng = Number(milestoneData.lng)
+    if (Number.isNaN(lat) || Number.isNaN(lng)) {
+      toast({
+        title: "Invalid Coordinates",
+        description: "Latitude and longitude are required for a milestone.",
+        variant: "destructive",
+      })
+      return
+    }
 
     setActionLoading(true)
 
     try {
-      const milestone = {
-        type: milestoneData.type,
-        note: milestoneData.note,
-        location: shipment.currentLocation || shipment.origin,
-      }
+      const locationLabel = milestoneData.locationLabel.trim()
 
-      await api.addShipmentMilestone(shipment.id, milestone)
+      await api.addShipmentMilestone(shipment.id, {
+        type: milestoneData.type,
+        note: milestoneData.note.trim(),
+        locationLabel: locationLabel || undefined,
+        location: {
+          address: locationLabel,
+          city: locationLabel,
+          country: "",
+          postalCode: "",
+          lat,
+          lng,
+        },
+      })
 
       toast({
         title: "Milestone Added",
@@ -217,40 +299,13 @@ export default function DriverShipmentDetailPage() {
       })
 
       setShowMilestoneDialog(false)
-      setMilestoneData({ type: "checkpoint", note: "" })
+      setMilestoneData({ type: "checkpoint", note: "", locationLabel: "", lat: "", lng: "" })
       await loadData()
     } catch (error) {
       console.error("Failed to add milestone:", error)
       toast({
         title: "Error",
-        description: "Failed to add milestone.",
-        variant: "destructive",
-      })
-    } finally {
-      setActionLoading(false)
-    }
-  }
-
-  const handleUpdateStatus = async () => {
-    if (!shipment) return
-
-    setActionLoading(true)
-
-    try {
-      await api.updateShipment(shipment.id, { status: selectedStatus })
-
-      toast({
-        title: "Status Updated",
-        description: `Shipment status changed to ${selectedStatus}`,
-      })
-
-      setShowStatusDialog(false)
-      await loadData()
-    } catch (error) {
-      console.error("Failed to update status:", error)
-      toast({
-        title: "Error",
-        description: "Failed to update status.",
+        description: toErrorMessage(error, "Failed to add milestone."),
         variant: "destructive",
       })
     } finally {
@@ -260,33 +315,34 @@ export default function DriverShipmentDetailPage() {
 
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
-    if (file) {
-      setSelectedFile(file)
-    }
+    if (file) setSelectedFile(file)
   }
 
-  const handleUploadProof = async () => {
-    if (!shipment || !selectedFile) return
-
+  const handleDeliverShipment = async () => {
+    if (!shipment || !selectedFile) {
+      toast({
+        title: "Confirmation File Required",
+        description: "Choose a confirmation file before delivering.",
+        variant: "destructive",
+      })
+      return
+    }
     setUploadingProof(true)
 
     try {
-      const proofUrl = await api.uploadProofOfDelivery(selectedFile)
-
-      await api.deliverShipment(shipment.id, proofUrl)
-
+      await api.deliverShipment(shipment.id, selectedFile)
       toast({
-        title: "Delivery Confirmed",
-        description: "Proof of delivery uploaded successfully.",
+        title: "Shipment Delivered",
+        description: "Proof of delivery uploaded and shipment marked delivered.",
       })
-
-      await loadData()
       setSelectedFile(null)
+      setShowDeliverPanel(false)
+      await loadData()
     } catch (error) {
-      console.error("Failed to upload proof:", error)
+      console.error("Failed to deliver shipment:", error)
       toast({
         title: "Error",
-        description: "Failed to upload proof. Please try again.",
+        description: toErrorMessage(error, "Failed to deliver shipment. Please try again."),
         variant: "destructive",
       })
     } finally {
@@ -302,14 +358,13 @@ export default function DriverShipmentDetailPage() {
     )
   }
 
-  const canStart = shipment.status === "in-transit" && !shipment.startedAt
-  const canUpdateLocation = shipment.status === "in-transit" && shipment.startedAt
-  const canDeliver = shipment.status === "in-transit" && shipment.startedAt
+  const canStart = shipment.status === "assigned" && !shipment.startedAt
+  const canUpdateLocation = shipment.status === "in-transit" && !!shipment.startedAt
+  const canDeliver = shipment.status === "in-transit" && !!shipment.startedAt
   const isDelivered = shipment.status === "delivered"
 
   return (
     <div className="max-w-lg mx-auto space-y-6">
-      {/* Header */}
       <div className="flex items-center gap-4">
         <Link href="/driver/shipments">
           <Button variant="ghost" size="icon">
@@ -322,19 +377,16 @@ export default function DriverShipmentDetailPage() {
         <Badge className={getStatusColor(shipment.status)}>{shipment.status.replace("-", " ")}</Badge>
       </div>
 
-      {/* Cargo Info */}
       <Card className="p-6 space-y-4">
         <div className="flex items-center gap-2 text-lg font-semibold">
           <Package className="h-5 w-5" />
           Cargo Details
         </div>
-
         <div className="space-y-3">
           <div>
             <Label className="text-muted-foreground">Description</Label>
             <p className="mt-1">{shipment.cargo.description}</p>
           </div>
-
           <div className="grid grid-cols-2 gap-4">
             <div>
               <Label className="text-muted-foreground">Weight</Label>
@@ -342,13 +394,12 @@ export default function DriverShipmentDetailPage() {
             </div>
             <div>
               <Label className="text-muted-foreground">Volume</Label>
-              <p className="mt-1">{shipment.cargo.volume} m³</p>
+              <p className="mt-1">{shipment.cargo.volume} m3</p>
             </div>
           </div>
         </div>
       </Card>
 
-      {/* Route Info */}
       <Card className="p-6 space-y-4">
         <div className="flex items-center gap-2 text-lg font-semibold">
           <MapPin className="h-5 w-5" />
@@ -365,17 +416,14 @@ export default function DriverShipmentDetailPage() {
           </div>
 
           {shipment.currentLocation && (
-            <>
-              <div className="border-l-2 border-primary/30 h-6 ml-3" />
-              <div className="bg-muted/50 p-3 rounded-lg">
-                <Label className="text-muted-foreground">Current Location</Label>
-                <p className="mt-1 font-medium">{shipment.currentLocation.city}</p>
-                <p className="text-xs text-muted-foreground">{shipment.currentLocation.address}</p>
-              </div>
-            </>
+            <div className="bg-muted/50 p-3 rounded-lg">
+              <Label className="text-muted-foreground">Current Location</Label>
+              <p className="mt-1 font-medium">{shipment.currentLocation.city || "Coordinate update"}</p>
+              <p className="text-xs text-muted-foreground">
+                {shipment.currentLocation.address || `${shipment.currentLocation.lat.toFixed(6)}, ${shipment.currentLocation.lng.toFixed(6)}`}
+              </p>
+            </div>
           )}
-
-          <div className="border-l-2 border-primary/30 h-8 ml-3" />
 
           <div>
             <Label className="text-muted-foreground">Destination</Label>
@@ -386,29 +434,6 @@ export default function DriverShipmentDetailPage() {
           </div>
         </div>
       </Card>
-
-      {shipment.milestones && shipment.milestones.length > 0 && (
-        <Card className="p-6 space-y-4">
-          <div className="flex items-center gap-2 text-lg font-semibold">
-            <Flag className="h-5 w-5" />
-            Journey Milestones
-          </div>
-          <div className="space-y-3">
-            {shipment.milestones.map((milestone) => (
-              <div key={milestone.id} className="border-l-2 border-muted pl-4 py-2">
-                <div className="flex items-center gap-2">
-                  <Badge variant="outline">{milestone.type}</Badge>
-                  <span className="text-xs text-muted-foreground">
-                    {new Date(milestone.timestamp).toLocaleString()}
-                  </span>
-                </div>
-                <p className="text-sm mt-1">{milestone.note}</p>
-                <p className="text-xs text-muted-foreground mt-1">{milestone.location.city}</p>
-              </div>
-            ))}
-          </div>
-        </Card>
-      )}
 
       {!isDelivered && (
         <div className="space-y-3">
@@ -421,7 +446,7 @@ export default function DriverShipmentDetailPage() {
 
           {canUpdateLocation && (
             <>
-              <Button className="w-full h-14 text-lg" onClick={handleGetCurrentLocation} disabled={gettingLocation}>
+              <Button className="w-full h-14 text-lg" onClick={updateLocationWithGps} disabled={gettingLocation}>
                 {gettingLocation ? (
                   <>
                     <Loader2 className="mr-2 h-5 w-5 animate-spin" />
@@ -441,7 +466,7 @@ export default function DriverShipmentDetailPage() {
                 onClick={() => setShowLocationDialog(true)}
               >
                 <MapPin className="mr-2 h-5 w-5" />
-                Update Location (Manual)
+                Update Location (Manual GPS)
               </Button>
 
               <Button
@@ -453,42 +478,51 @@ export default function DriverShipmentDetailPage() {
                 Add Milestone
               </Button>
 
-              <Button
-                variant="outline"
-                className="w-full h-14 text-lg bg-transparent"
-                onClick={() => setShowStatusDialog(true)}
-              >
-                <Package className="mr-2 h-5 w-5" />
-                Update Status
-              </Button>
+              {!showDeliverPanel && (
+                <Button className="w-full h-14 text-lg" onClick={() => setShowDeliverPanel(true)}>
+                  <Truck className="mr-2 h-5 w-5" />
+                  Deliver Shipment
+                </Button>
+              )}
             </>
           )}
 
-          {canDeliver && !selectedFile && (
-            <Button className="w-full h-14 text-lg" onClick={() => fileInputRef.current?.click()}>
-              <Upload className="mr-2 h-5 w-5" />
-              Upload POD
-            </Button>
-          )}
-
-          {canDeliver && selectedFile && (
+          {canDeliver && showDeliverPanel && (
             <Card className="p-4 space-y-3">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <CheckCircle className="h-5 w-5 text-green-500" />
-                  <span className="text-sm font-medium truncate max-w-[200px]">{selectedFile.name}</span>
+              <div className="space-y-1">
+                <p className="text-sm font-medium">Delivery Confirmation</p>
+                <p className="text-xs text-muted-foreground">
+                  Upload proof of delivery and confirm completion.
+                </p>
+              </div>
+
+              <input ref={fileInputRef} type="file" accept="image/*,.pdf" className="hidden" onChange={handleFileSelect} />
+
+              <Button variant="outline" className="w-full bg-transparent" onClick={() => fileInputRef.current?.click()}>
+                Choose Confirmation File
+              </Button>
+
+              {selectedFile ? (
+                <div className="flex items-center justify-between rounded border p-2">
+                  <span className="text-sm truncate max-w-[220px]">{selectedFile.name}</span>
+                  <Button variant="ghost" size="sm" onClick={() => setSelectedFile(null)}>
+                    Remove
+                  </Button>
                 </div>
-                <Button variant="ghost" size="sm" onClick={() => setSelectedFile(null)}>
-                  Remove
+              ) : (
+                <p className="text-xs text-muted-foreground">No file selected</p>
+              )}
+
+              <div className="flex gap-2">
+                <Button variant="outline" className="flex-1 bg-transparent" onClick={() => setShowDeliverPanel(false)}>
+                  Cancel
+                </Button>
+                <Button className="flex-1" onClick={handleDeliverShipment} disabled={uploadingProof || !selectedFile}>
+                  {uploadingProof ? "Delivering..." : "Confirm Delivery"}
                 </Button>
               </div>
-              <Button className="w-full h-12 text-base" onClick={handleUploadProof} disabled={uploadingProof}>
-                {uploadingProof ? "Uploading..." : "Mark Delivered"}
-              </Button>
             </Card>
           )}
-
-          <input ref={fileInputRef} type="file" accept="image/*,.pdf" className="hidden" onChange={handleFileSelect} />
         </div>
       )}
 
@@ -504,11 +538,11 @@ export default function DriverShipmentDetailPage() {
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Update Location</DialogTitle>
-            <DialogDescription>Manually enter your current location for this shipment</DialogDescription>
+            <DialogDescription>Enter location label plus GPS coordinates.</DialogDescription>
           </DialogHeader>
           <div className="space-y-4">
             <div>
-              <Label>City</Label>
+              <Label>City or Place Name</Label>
               <Input
                 value={locationData.city}
                 onChange={(e) => setLocationData({ ...locationData, city: e.target.value })}
@@ -516,7 +550,7 @@ export default function DriverShipmentDetailPage() {
               />
             </div>
             <div>
-              <Label>Address</Label>
+              <Label>Address / Landmark</Label>
               <Input
                 value={locationData.address}
                 onChange={(e) => setLocationData({ ...locationData, address: e.target.value })}
@@ -541,12 +575,34 @@ export default function DriverShipmentDetailPage() {
                 />
               </div>
             </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <Label>Latitude</Label>
+                <Input
+                  type="number"
+                  step="any"
+                  value={locationData.lat}
+                  onChange={(e) => setLocationData({ ...locationData, lat: e.target.value })}
+                  placeholder="48.1351"
+                />
+              </div>
+              <div>
+                <Label>Longitude</Label>
+                <Input
+                  type="number"
+                  step="any"
+                  value={locationData.lng}
+                  onChange={(e) => setLocationData({ ...locationData, lng: e.target.value })}
+                  placeholder="11.5820"
+                />
+              </div>
+            </div>
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setShowLocationDialog(false)}>
               Cancel
             </Button>
-            <Button onClick={handleUpdateLocation} disabled={actionLoading || !locationData.city}>
+            <Button onClick={handleUpdateLocationManual} disabled={actionLoading || !locationData.lat || !locationData.lng}>
               Update Location
             </Button>
           </DialogFooter>
@@ -557,29 +613,25 @@ export default function DriverShipmentDetailPage() {
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Add Milestone</DialogTitle>
-            <DialogDescription>Record an important event during your journey</DialogDescription>
+            <DialogDescription>Record an important event with exact coordinates.</DialogDescription>
           </DialogHeader>
           <div className="space-y-4">
             <div>
               <Label>Milestone Type</Label>
-              <Select
+              <select
+                className="w-full h-10 rounded-md border border-input bg-background px-3 text-sm"
                 value={milestoneData.type}
-                onValueChange={(value: any) => setMilestoneData({ ...milestoneData, type: value })}
+                onChange={(e) => setMilestoneData({ ...milestoneData, type: e.target.value as Milestone["type"] })}
               >
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="checkpoint">Checkpoint</SelectItem>
-                  <SelectItem value="delay">Delay</SelectItem>
-                  <SelectItem value="rest">Rest Stop</SelectItem>
-                  <SelectItem value="refuel">Refuel</SelectItem>
-                  <SelectItem value="custom">Custom</SelectItem>
-                </SelectContent>
-              </Select>
+                <option value="checkpoint">Checkpoint</option>
+                <option value="delay">Delay</option>
+                <option value="rest">Rest</option>
+                <option value="refuel">Refuel</option>
+                <option value="custom">Custom</option>
+              </select>
             </div>
             <div>
-              <Label>Note</Label>
+              <Label>Milestone Note</Label>
               <Textarea
                 value={milestoneData.note}
                 onChange={(e) => setMilestoneData({ ...milestoneData, note: e.target.value })}
@@ -587,46 +639,53 @@ export default function DriverShipmentDetailPage() {
                 rows={3}
               />
             </div>
+            <div>
+              <Label>Location Label (optional)</Label>
+              <Input
+                value={milestoneData.locationLabel}
+                onChange={(e) => setMilestoneData({ ...milestoneData, locationLabel: e.target.value })}
+                placeholder="e.g. Border Checkpoint A3"
+              />
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <Label>Latitude</Label>
+                <Input
+                  type="number"
+                  step="any"
+                  value={milestoneData.lat}
+                  onChange={(e) => setMilestoneData({ ...milestoneData, lat: e.target.value })}
+                  placeholder="48.1351"
+                />
+              </div>
+              <div>
+                <Label>Longitude</Label>
+                <Input
+                  type="number"
+                  step="any"
+                  value={milestoneData.lng}
+                  onChange={(e) => setMilestoneData({ ...milestoneData, lng: e.target.value })}
+                  placeholder="11.5820"
+                />
+              </div>
+            </div>
+            <Button variant="outline" className="w-full bg-transparent" onClick={handleFillMilestoneWithGps} disabled={gettingMilestoneGps}>
+              {gettingMilestoneGps ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Getting GPS...
+                </>
+              ) : (
+                "Use Current GPS"
+              )}
+            </Button>
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setShowMilestoneDialog(false)}>
               Cancel
             </Button>
-            <Button onClick={handleAddMilestone} disabled={actionLoading || !milestoneData.note.trim()}>
+            <Button onClick={handleAddMilestone} disabled={actionLoading || !milestoneData.note.trim() || !milestoneData.lat || !milestoneData.lng}>
               Add Milestone
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-
-      <Dialog open={showStatusDialog} onOpenChange={setShowStatusDialog}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Update Shipment Status</DialogTitle>
-            <DialogDescription>Change the current status of this shipment</DialogDescription>
-          </DialogHeader>
-          <div className="space-y-4">
-            <div>
-              <Label>Select Status</Label>
-              <Select value={selectedStatus} onValueChange={(value: ShipmentStatus) => setSelectedStatus(value)}>
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="draft">Draft</SelectItem>
-                  <SelectItem value="unassigned">Unassigned</SelectItem>
-                  <SelectItem value="in-transit">In Transit</SelectItem>
-                  <SelectItem value="delivered">Delivered</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setShowStatusDialog(false)}>
-              Cancel
-            </Button>
-            <Button onClick={handleUpdateStatus} disabled={actionLoading}>
-              Update Status
             </Button>
           </DialogFooter>
         </DialogContent>

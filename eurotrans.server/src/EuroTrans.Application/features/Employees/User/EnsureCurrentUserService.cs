@@ -36,19 +36,26 @@ public class EnsureCurrentUserService
             ? currentUser.Email
             : currentUser.Name;
 
-        var existing = await employees.GetByAuth0IdAsync(currentUser.Auth0UserId, ct);
-        if (existing is not null)
-        {
-            existing.UpdateFromIdentity(resolvedName, currentUser.Email);
-            await uow.SaveChangesAsync(ct);
-            return existing.Id;
-        }
-
         var role = currentUser.IsManager
             ? EmployeeRole.Manager
             : currentUser.IsDriver
                 ? EmployeeRole.Driver
                 : (EmployeeRole?)null;
+
+        var existing = await employees.GetByAuth0IdAsync(currentUser.Auth0UserId, ct);
+        if (existing is not null)
+        {
+            if (role is not null)
+            {
+                var roleResult = existing.UpdateRole(role.Value);
+                if (roleResult.IsError)
+                    return roleResult.Errors;
+            }
+
+            existing.UpdateFromIdentity(resolvedName, currentUser.Email);
+            await uow.SaveChangesAsync(ct);
+            return existing.Id;
+        }
 
         if (role is null)
             return Error.Forbidden(description: "Current user has no supported role.");
@@ -65,11 +72,7 @@ public class EnsureCurrentUserService
             createdAtUtc: clock.UtcNow
         );
 
-        if (role == EmployeeRole.Driver)
-        {
-            var driver = new Driver(employeeId, null, null);
-            employee.SetDriver(driver);
-        }
+        employee.UpdateRole(role.Value);
 
         await employees.AddAsync(employee, ct);
         await uow.SaveChangesAsync(ct);

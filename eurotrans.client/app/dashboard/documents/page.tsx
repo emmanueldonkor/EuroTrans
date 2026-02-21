@@ -25,8 +25,9 @@ export default function DocumentsPage() {
   const loadData = async () => {
     setLoading(true)
     try {
-      const data = await api.getShipments()
-      const deliveredWithProof = data.filter((s) => s.status === "delivered" && s.proofOfDeliveryUrl)
+      const delivered = await api.getShipments({ status: "delivered" })
+      const detailed = await Promise.all(delivered.map((shipment) => api.getShipment(shipment.id)))
+      const deliveredWithProof = detailed.filter((s): s is Shipment => Boolean(s && s.proofOfDeliveryUrl))
       setShipments(deliveredWithProof)
     } catch (error) {
       console.error("Failed to load documents:", error)
@@ -96,10 +97,10 @@ export default function DocumentsPage() {
                     <Badge className={getStatusBadgeColor(shipment.status)}>{getStatusLabel(shipment.status)}</Badge>
                   </TableCell>
                   <TableCell className="max-w-xs truncate">
-                    {shipment.origin.city} → {shipment.destination.city}
+                    {shipment.origin.city} -{">"} {shipment.destination.city}
                   </TableCell>
                   <TableCell className="text-muted-foreground">
-                    {shipment.deliveredAt ? formatDate(shipment.deliveredAt) : "—"}
+                    {shipment.deliveredAt ? formatDate(shipment.deliveredAt) : "-"}
                   </TableCell>
                   <TableCell>
                     {shipment.proofOfDeliveryUrl ? (
@@ -110,7 +111,7 @@ export default function DocumentsPage() {
                         </a>
                       </Button>
                     ) : (
-                      <span className="text-sm text-muted-foreground">—</span>
+                      <span className="text-sm text-muted-foreground">-</span>
                     )}
                   </TableCell>
                 </TableRow>

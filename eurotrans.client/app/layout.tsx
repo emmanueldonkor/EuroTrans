@@ -1,15 +1,10 @@
 import type React from "react"
 import type { Metadata } from "next"
-import { Inter } from "next/font/google"
-import { Geist_Mono } from "next/font/google"
 import { Analytics } from "@vercel/analytics/next"
 import { Toaster } from "@/components/toaster"
-import { Auth0Provider } from "@auth0/nextjs-auth0/client";
+import { Auth0Provider } from "@auth0/nextjs-auth0/client"
 import "./globals.css"
-import { Geist } from "next/font/google"
-
-const _inter = Inter({ subsets: ["latin"] })
-const _geistMono = Geist_Mono({ subsets: ["latin"] })
+import { ReactQueryProvider } from "@/lib/react-query"
 
 export const metadata: Metadata = {
   title: "EuroTrans - Fleet Management",
@@ -33,8 +28,6 @@ export const metadata: Metadata = {
     apple: "/apple-icon.png",
   },
 }
-
-import { ReactQueryProvider } from "@/lib/react-query"
 
 export default function RootLayout({
   children,

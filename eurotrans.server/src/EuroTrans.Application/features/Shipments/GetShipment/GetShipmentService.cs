@@ -38,41 +38,81 @@ public class GetShipmentService
         }
 
         return new GetShipmentResponse(
-            shipment.Id,
-            shipment.TrackingId,
-            shipment.Status,
-            shipment.Cargo.Description,
-            shipment.Cargo.Weight,
-            shipment.Cargo.Volume,
-            new AddressDto(
-                shipment.OriginAddress.AddressLine,
-                shipment.OriginAddress.City,
-                shipment.OriginAddress.Country,
-                shipment.OriginAddress.PostalCode
-            ),
-            new AddressDto(
-                shipment.DestinationAddress.AddressLine,
-                shipment.DestinationAddress.City,
-                shipment.DestinationAddress.Country,
-                shipment.DestinationAddress.PostalCode
-            ),
-            shipment.CreatedAtUtc,
-            shipment.EstimatedDeliveryDateUtc,
-            shipment.DriverId,
-            shipment.TruckId,
-            shipment.Milestones.Select(m => new MilestoneDto(
-                m.Id,
-                m.LocationLat,
-                m.LocationLng,
-                m.Note,
-                m.TimestampUtc
-            )).ToList(),
-            shipment.Activities.Select(a => new ActivityDto(
-                a.Id,
-                a.Description,
-                a.Type,
-                a.TimestampUtc
-            )).ToList()
-        );
+    shipment.Id,
+    shipment.TrackingId,
+    shipment.Status,
+
+    new CargoDto(
+        shipment.Cargo.Description,
+        shipment.Cargo.Weight,
+        shipment.Cargo.Volume
+    ),
+
+    new AddressDto(
+        shipment.OriginAddress.AddressLine,
+        shipment.OriginAddress.City,
+        shipment.OriginAddress.Country,
+        shipment.OriginAddress.PostalCode
+    ),
+
+    new AddressDto(
+        shipment.DestinationAddress.AddressLine,
+        shipment.DestinationAddress.City,
+        shipment.DestinationAddress.Country,
+        shipment.DestinationAddress.PostalCode
+    ),
+
+    shipment.CreatedAtUtc,
+    shipment.UpdatedAtUtc,
+    shipment.StartedAtUtc,
+    shipment.DeliveredAtUtc,
+    shipment.EstimatedDeliveryDateUtc,
+    shipment.Documents
+        .OrderByDescending(d => d.UploadedAtUtc)
+        .FirstOrDefault(d => d.Type == Domain.Shipments.Enums.DocumentType.ProofOfDelivery)?.Url,
+    shipment.DriverId,
+    shipment.TruckId,
+
+    shipment.Driver is null
+        ? null
+        : new DriverDto(
+            shipment.Driver.Id,
+            shipment.Driver.Employee?.Name ?? "Unknown",
+            shipment.Driver.Phone
+        ),
+
+    shipment.Truck is null
+        ? null
+        : new TruckDto(
+            shipment.Truck.Id,
+            shipment.Truck.PlateNumber,
+            shipment.Truck.Model
+        ),
+
+    shipment.Activities
+        .OrderBy(a => a.TimestampUtc)
+        .Select(a => new ActivityDto(
+            a.Id,
+            a.Description,
+            a.Type,
+            a.TimestampUtc,
+            a.EmployeeId,
+            a.Employee?.Name ?? "Unknown"
+        )).ToList(),
+
+    shipment.Milestones
+        .OrderBy(m => m.TimestampUtc)
+        .Select(m => new MilestoneDto(
+            m.Id,
+            m.Type,
+            m.LocationLat,
+            m.LocationLng,
+            m.Note,
+            m.LocationLabel,
+            m.TimestampUtc,
+            m.Employee?.Name ?? "Unknown"
+        )).ToList()
+);
+
     }
 }

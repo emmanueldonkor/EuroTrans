@@ -5,13 +5,14 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace EuroTrans.Api.Endpoints.Shipments;
 
+[EuroTrans.Api.Endpoints.ApiEndpoint]
 public static class GetShipmentsEndpoint
 {
     public static void MapGetShipmentsEndpoint(this IEndpointRouteBuilder app)
     {
         app.MapGet("/api/shipments", async (
             [AsParameters] GetShipmentsRequest request,
-          [FromServices]  GetShipmentsService service,
+          [FromServices] GetShipmentsService service,
             CancellationToken ct,
             IValidator<GetShipmentsRequest> validator) =>
         {

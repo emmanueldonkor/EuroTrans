@@ -2,6 +2,7 @@ using ErrorOr;
 using EuroTrans.Application.Common.Interfaces;
 using EuroTrans.Application.features.Employees;
 using EuroTrans.Application.features.Trucks;
+using EuroTrans.Domain.Shipments.Enums;
 
 namespace EuroTrans.Application.features.Shipments.DeliverShipment;
 
@@ -11,29 +12,34 @@ public class DeliverShipmentService
     private readonly IEmployeeRepository drivers;
     private readonly ITruckRepository trucks;
     private readonly IUnitOfWork uow;
-    private readonly ICurrentUser currentUser;
     private readonly ICurrentEmployeeProvider currentEmployeeProvider;
     private readonly IDateTimeProvider clock;
+    private readonly IPodService podService;
 
     public DeliverShipmentService(
         IShipmentRepository shipments,
         IEmployeeRepository drivers,
         ITruckRepository trucks,
         IUnitOfWork uow,
-        ICurrentUser currentUser,
         ICurrentEmployeeProvider currentEmployeeProvider,
-        IDateTimeProvider clock)
+        IDateTimeProvider clock,
+        IPodService podService)
     {
         this.shipments = shipments;
         this.drivers = drivers;
         this.trucks = trucks;
         this.uow = uow;
-        this.currentUser = currentUser;
         this.currentEmployeeProvider = currentEmployeeProvider;
         this.clock = clock;
+        this.podService = podService;
     }
 
-    public async Task<ErrorOr<Success>> DeliverAsync(Guid shipmentId, DeliverShipmentRequest request, CancellationToken ct = default)
+    public async Task<ErrorOr<Success>> DeliverAsync(
+        Guid shipmentId,
+        Stream fileStream,
+        string fileName,
+        string contentType,
+        CancellationToken ct = default)
     {
         var employeeIdResult = await currentEmployeeProvider.GetEmployeeIdAsync();
         if (employeeIdResult.IsError)
@@ -43,19 +49,64 @@ public class DeliverShipmentService
         if (shipment is null)
             return Error.NotFound("Shipment not found.");
 
-        var result = shipment.Deliver(employeeIdResult.Value, request.ProofOfDeliveryUrl, clock.UtcNow);
-        if (result.IsError)
-            return result.Errors;
+        if (shipment.Status != ShipmentStatus.InTransit)
+            return Error.Validation("Shipment.InvalidStatus", "Shipment must be in-transit to deliver.");
 
-        var driver = await drivers.GetByIdAsync(shipment.DriverId!.Value, ct);
-        var truck = await trucks.GetByIdAsync(shipment.TruckId!.Value, ct);
+        if (shipment.DriverId != employeeIdResult.Value)
+            return Error.Forbidden("Shipment.Unauthorized", "Only assigned driver can deliver.");
 
-        driver?.Driver?.SetAvailable();
-        truck?.MarkAvailable();
+        string? proofUrl = null;
+        try
+        {
+            proofUrl = await podService.UploadAsync(fileStream, fileName, contentType);
 
-        await uow.SaveChangesAsync(ct);
+            var result = shipment.Deliver(employeeIdResult.Value, proofUrl, clock.UtcNow);
+            if (result.IsError)
+            {
+                await CleanupProofAsync(proofUrl, ct);
+                return result.Errors;
+            }
 
-        return Result.Success;
+            if (shipment.DriverId.HasValue)
+            {
+                var driver = await drivers.GetByIdAsync(shipment.DriverId.Value, ct);
+                driver?.Driver?.SetAvailable();
+            }
+
+            if (shipment.TruckId.HasValue)
+            {
+                var truck = await trucks.GetByIdAsync(shipment.TruckId.Value, ct);
+                truck?.MarkAvailable();
+            }
+
+            var saveResult = await uow.SaveChangesWithConcurrencyCheckAsync(ct);
+            if (saveResult.IsError)
+            {
+                await CleanupProofAsync(proofUrl, ct);
+                return saveResult.Errors;
+            }
+
+            return Result.Success;
+        }
+        catch
+        {
+            await CleanupProofAsync(proofUrl, ct);
+            throw;
+        }
     }
 
+    private async Task CleanupProofAsync(string? proofUrl, CancellationToken ct)
+    {
+        if (string.IsNullOrWhiteSpace(proofUrl))
+            return;
+
+        try
+        {
+            await podService.DeleteAsync(proofUrl, ct);
+        }
+        catch
+        {
+            // Best effort cleanup to avoid orphan files on failed delivery.
+        }
+    }
 }

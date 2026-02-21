@@ -13,26 +13,29 @@ public class DriverConfiguration : IEntityTypeConfiguration<Driver>
         builder.HasKey(d => d.Id);
 
         builder.Property(d => d.Id)
-            .HasColumnName("employee_id") 
+            .HasColumnName("employee_id")
             .ValueGeneratedNever();
 
         builder.HasOne(d => d.Employee)
             .WithOne(e => e.Driver)
-            .HasForeignKey<Driver>(d => d.Id); 
+            .HasForeignKey<Driver>(d => d.Id)
+            .HasPrincipalKey<Employee>(e => e.Id);
 
         builder.Property(d => d.Phone)
             .HasColumnName("phone")
-            .IsRequired()
             .HasMaxLength(50);
 
         builder.Property(d => d.LicenseNumber)
             .HasColumnName("license_number")
-            .IsRequired()
             .HasMaxLength(100);
 
         builder.Property(d => d.Status)
             .HasColumnName("status")
             .HasConversion<string>()
             .IsRequired();
+
+        builder.Property(d => d.RowVersion)
+           .IsConcurrencyToken()
+           .IsRequired();
     }
 }

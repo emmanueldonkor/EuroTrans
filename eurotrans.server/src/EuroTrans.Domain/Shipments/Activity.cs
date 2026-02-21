@@ -1,4 +1,5 @@
 using EuroTrans.Domain.Common;
+using EuroTrans.Domain.Employees;
 using EuroTrans.Domain.Shipments.Enums;
 
 namespace EuroTrans.Domain.Shipments;
@@ -10,6 +11,8 @@ public class Activity : Entity
     public ActivityType Type { get; private set; }
     public string Description { get; private set; } = string.Empty;
     public DateTime TimestampUtc { get; private set; }
+    public Shipment? Shipment { get; private set; }
+    public Employee? Employee { get; private set; }
 
     private Activity() { }
 

@@ -15,8 +15,6 @@ const languages = [
 export function LanguageSwitcher() {
   const [locale, setLocale] = useState<Locale>("en")
 
-  const currentLanguage = languages.find((lang) => lang.code === locale)
-
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>

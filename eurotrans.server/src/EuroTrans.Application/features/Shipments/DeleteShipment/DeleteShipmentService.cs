@@ -3,9 +3,9 @@ using EuroTrans.Application.Common.Interfaces;
 using EuroTrans.Application.features.Employees;
 using EuroTrans.Application.features.Trucks;
 
-namespace EuroTrans.Application.features.Shipments.CancelShipment;
+namespace EuroTrans.Application.features.Shipments.DeleteShipment;
 
-public class CancelShipmentService
+public class DeleteShipmentService
 {
     private readonly IShipmentRepository shipments;
     private readonly IEmployeeRepository drivers;
@@ -14,7 +14,7 @@ public class CancelShipmentService
     private readonly ICurrentEmployeeProvider currentEmployeeProvider;
     private readonly IDateTimeProvider clock;
 
-    public CancelShipmentService(
+    public DeleteShipmentService(
         IShipmentRepository shipments,
         IEmployeeRepository drivers,
         ITruckRepository trucks,
@@ -30,34 +30,49 @@ public class CancelShipmentService
         this.clock = clock;
     }
 
-    public async Task<ErrorOr<Success>> CancelAsync(Guid shipmentId, CancellationToken ct = default)
+    public async Task<ErrorOr<Success>> DeleteAsync(Guid shipmentId, CancellationToken ct = default)
     {
+        if (shipmentId == Guid.Empty)
+            return Error.Validation("ShipmentId.Invalid", "Shipment ID cannot be empty.");
+
         var employeeIdResult = await currentEmployeeProvider.GetEmployeeIdAsync();
         if (employeeIdResult.IsError)
             return employeeIdResult.Errors;
 
         var shipment = await shipments.GetByIdAsync(shipmentId, ct);
         if (shipment is null)
-            return Error.NotFound(description: "Shipment not found.");
+            return Error.NotFound("Shipment not found.");
 
-        var cancelResult = shipment.Cancel(employeeIdResult.Value, clock.UtcNow);
+        // Domain handles rules & activities
+        var deleteResult = shipment.Delete(employeeIdResult.Value, clock.UtcNow);
+        if (deleteResult.IsError)
+            return deleteResult.Errors;
 
-        if (cancelResult.IsError)
-            return cancelResult.Errors;
-
+        // Release driver if assigned
         if (shipment.DriverId.HasValue)
         {
             var driver = await drivers.GetByIdAsync(shipment.DriverId.Value, ct);
-            driver?.Driver?.SetAvailable();
+            if (driver?.Driver is null)
+                return Error.NotFound("Assigned driver not found.");
+
+            driver.Driver.SetAvailable();
         }
 
+        // Release truck if assigned
         if (shipment.TruckId.HasValue)
         {
             var truck = await trucks.GetByIdAsync(shipment.TruckId.Value, ct);
-            truck?.MarkAvailable();
+            if (truck is null)
+                return Error.NotFound("Assigned truck not found.");
+
+            truck.MarkAvailable();
         }
 
-        await uow.SaveChangesAsync(ct);
+        // Save changes with concurrency check
+        var saveResult = await uow.SaveChangesWithConcurrencyCheckAsync(ct);
+        if (saveResult.IsError)
+            return saveResult.Errors;
+
         return Result.Success;
     }
 }

@@ -20,20 +20,24 @@ public class SyncUserService
 
     public async Task<ErrorOr<Guid>> SyncAsync(SyncUserRequest request, CancellationToken ct = default)
     {
-        var existing = await employees.GetByAuth0IdAsync(request.Auth0UserId, ct);
-        if (existing != null)
-        {
-            existing.UpdateFromIdentity(request.Name, request.Email);
-            await uow.SaveChangesAsync(ct);
-            return existing.Id;
-        }
-
-        var role = request.Role.ToLower() switch
+        var role = request.Role.ToLowerInvariant() switch
         {
             "driver" => EmployeeRole.Driver,
             "manager" => EmployeeRole.Manager,
             _ => EmployeeRole.Driver
         };
+
+        var existing = await employees.GetByAuth0IdAsync(request.Auth0UserId, ct);
+        if (existing != null)
+        {
+            var roleResult = existing.UpdateRole(role);
+            if (roleResult.IsError)
+                return roleResult.Errors;
+
+            existing.UpdateFromIdentity(request.Name, request.Email);
+            await uow.SaveChangesAsync(ct);
+            return existing.Id;
+        }
 
         var employeeId = Guid.NewGuid();
 
@@ -47,11 +51,7 @@ public class SyncUserService
             createdAtUtc: clock.UtcNow
         );
 
-        if (role == EmployeeRole.Driver)
-        {
-            var driver = new Driver(employeeId, null, null);
-            employee.SetDriver(driver);
-        }
+        employee.UpdateRole(role);
 
         await employees.AddAsync(employee, ct);
         await uow.SaveChangesAsync(ct);
