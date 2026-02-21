@@ -2,17 +2,8 @@ import type { NextRequest } from "next/server"
 import { auth0 } from "./lib/auth0"
 
 export default async function proxy(request: NextRequest) {
-  const { pathname } = request.nextUrl
-
   // Run Auth0 middleware first
   const response = await auth0.middleware(request)
-
-  // Protected routes (currently unused, but kept for future logic)
-  const managerRoutes = ["/dashboard"]
-  const driverRoutes = ["/driver"]
-
-  const isManagerRoute = managerRoutes.some((route) => pathname.startsWith(route))
-  const isDriverRoute = driverRoutes.some((route) => pathname.startsWith(route))
 
   // Add security headers to the response
   response.headers.set("X-Content-Type-Options", "nosniff")

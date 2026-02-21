@@ -1,6 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query"
 import { api } from "@/lib/api"
-import type { Shipment, ShipmentStatus, Truck, Driver, Activity, LiveMapPin, Location, Milestone } from "@/lib/types"
+import type { ShipmentStatus, Truck, Location } from "@/lib/types"
 
 // --- SHIPMENTS ---
 
@@ -43,14 +43,6 @@ export function useShipmentMutations() {
         },
     })
 
-    const updateShipment = useMutation({
-        mutationFn: ({ id, data }: { id: string; data: Partial<Shipment> }) => api.updateShipment(id, data),
-        onSuccess: (data) => {
-            queryClient.invalidateQueries({ queryKey: ["shipments"] })
-            queryClient.invalidateQueries({ queryKey: ["shipment", data.id] })
-        },
-    })
-
     const deleteShipment = useMutation({
         mutationFn: api.deleteShipment,
         onSuccess: (_, id) => {
@@ -79,8 +71,8 @@ export function useShipmentMutations() {
     })
 
     const deliverShipment = useMutation({
-        mutationFn: ({ id, proofOfDeliveryUrl }: { id: string; proofOfDeliveryUrl: string }) =>
-            api.deliverShipment(id, proofOfDeliveryUrl),
+        mutationFn: ({ id, proofOfDeliveryFile }: { id: string; proofOfDeliveryFile: File | string }) =>
+            api.deliverShipment(id, proofOfDeliveryFile),
         onSuccess: (data) => {
             queryClient.invalidateQueries({ queryKey: ["shipments"] })
             queryClient.invalidateQueries({ queryKey: ["shipment", data.id] })
@@ -97,7 +89,6 @@ export function useShipmentMutations() {
 
     return {
         createShipment,
-        updateShipment,
         deleteShipment,
         assignShipment,
         startShipment,
@@ -191,7 +182,7 @@ export function useLiveMap() {
     return useQuery({
         queryKey: ["live-map"],
         queryFn: () => api.getLiveMapPins(),
-        refetchInterval: 10000, // Refresh every 10s
+        refetchInterval: 30000, // Refresh every 30s
     })
 }
 
@@ -202,9 +193,3 @@ export function useAnalytics() {
     })
 }
 
-export function useCurrentUser() {
-    return useQuery({
-        queryKey: ["current-user"],
-        queryFn: () => api.getCurrentUser(),
-    })
-}

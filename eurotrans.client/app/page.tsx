@@ -2,6 +2,8 @@ import { getSessionUser } from "@/lib/auth";
 import { redirect } from "next/navigation";
 import LandingPageClient from "@/components/landing-page"; // Ensure this component exists
 
+export const dynamic = "force-dynamic";
+
 export default async function Page() {
   // 1. Auth0 Logic
   const user = await getSessionUser();

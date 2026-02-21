@@ -5,8 +5,10 @@ import { Card } from "@/components/ui/card"
 import { Package, TrendingUp, Users, Clock } from "lucide-react"
 import { api } from "@/lib/api"
 
+type AnalyticsSnapshot = Awaited<ReturnType<typeof api.getAnalytics>>
+
 export default function AnalyticsPage() {
-  const [analytics, setAnalytics] = useState<any>(null)
+  const [analytics, setAnalytics] = useState<AnalyticsSnapshot | null>(null)
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {

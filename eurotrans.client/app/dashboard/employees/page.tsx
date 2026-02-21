@@ -53,6 +53,9 @@ export default function EmployeesPage() {
     return colors[status as keyof typeof colors] || colors.available
   }
 
+  const isDriverStatus = (value: string): value is Driver["status"] =>
+    value === "available" || value === "on-duty" || value === "off-duty"
+
   const handleUpdateStatus = (driver: Driver) => {
     setSelectedDriver(driver)
     setNewStatus(driver.status)
@@ -159,7 +162,14 @@ export default function EmployeesPage() {
 
             <div className="space-y-2">
               <Label>New Status</Label>
-              <RadioGroup value={newStatus} onValueChange={(v) => setNewStatus(v as any)}>
+              <RadioGroup
+                value={newStatus}
+                onValueChange={(v) => {
+                  if (isDriverStatus(v)) {
+                    setNewStatus(v)
+                  }
+                }}
+              >
                 <div className="flex items-center space-x-2">
                   <RadioGroupItem value="available" id="available" />
                   <Label htmlFor="available" className="font-normal cursor-pointer">

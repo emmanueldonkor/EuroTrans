@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useCallback } from "react"
 import { useRouter } from "next/navigation"
 import { Card } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
@@ -21,17 +21,13 @@ export default function DriverHomePage() {
   const [loading, setLoading] = useState(true)
   const [starting, setStarting] = useState(false)
 
-  useEffect(() => {
-    loadData()
-  }, [])
-
-  const loadData = async () => {
+  const loadData = useCallback(async () => {
     setLoading(true)
     try {
       const userData = await getSessionUser()
 
       if (!userData) {
-        window.location.href = "/api/auth/login"
+        window.location.href = "/auth/login"
         return
       }
 
@@ -47,17 +43,19 @@ export default function DriverHomePage() {
 
       setUser(userData)
 
-      if (userData) {
-        const shipments = await api.getShipments()
-        const active = shipments.find((s) => s.driverId === userData.id && s.status !== "delivered")
-        setActiveShipment(active || null)
-      }
+      const shipments = await api.getShipments()
+      const active = shipments.find((s) => s.status !== "delivered" && s.status !== "cancelled")
+      setActiveShipment(active || null)
     } catch (error) {
       console.error("Failed to load data:", error)
     } finally {
       setLoading(false)
     }
-  }
+  }, [router])
+
+  useEffect(() => {
+    loadData()
+  }, [loadData])
 
   const handleStartJourney = async () => {
     if (!activeShipment) return
@@ -97,13 +95,11 @@ export default function DriverHomePage() {
 
   return (
     <div className="max-w-lg mx-auto space-y-6">
-      {/* Greeting */}
       <div>
         <h1 className="text-3xl font-bold">Hello, {user?.name.split(" ")[0]}</h1>
         <p className="text-muted-foreground">Welcome back to your driver portal</p>
       </div>
 
-      {/* Active Shipment Card */}
       {activeShipment ? (
         <Card className="p-6 space-y-6">
           <div className="flex items-start justify-between">
@@ -121,7 +117,7 @@ export default function DriverHomePage() {
                 <p className="font-medium">Cargo</p>
                 <p className="text-sm text-muted-foreground">{activeShipment.cargo.description}</p>
                 <p className="text-xs text-muted-foreground mt-1">
-                  {activeShipment.cargo.weight} kg • {activeShipment.cargo.volume} m³
+                  {activeShipment.cargo.weight} kg | {activeShipment.cargo.volume} m3
                 </p>
               </div>
             </div>
@@ -131,7 +127,7 @@ export default function DriverHomePage() {
               <div className="flex-1">
                 <p className="font-medium">Route</p>
                 <p className="text-sm text-muted-foreground">
-                  {activeShipment.origin.city} → {activeShipment.destination.city}
+                  {activeShipment.origin.city} -{">"} {activeShipment.destination.city}
                 </p>
                 <p className="text-xs text-muted-foreground mt-1">{activeShipment.destination.address}</p>
               </div>
@@ -164,7 +160,6 @@ export default function DriverHomePage() {
         </Card>
       )}
 
-      {/* Quick Stats */}
       <div className="grid grid-cols-2 gap-4">
         <Card className="p-4">
           <p className="text-sm text-muted-foreground mb-1">Status</p>

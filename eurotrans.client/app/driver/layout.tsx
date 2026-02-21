@@ -6,6 +6,7 @@ import { useState, useEffect } from "react"
 import { usePathname, useRouter } from "next/navigation"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
+import { Card } from "@/components/ui/card"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import {
   DropdownMenu,
@@ -18,8 +19,9 @@ import { LanguageSwitcher } from "@/components/language-switcher"
 import { Package, Home, User, Truck, LogOut } from "lucide-react"
 import { getSessionUser, logout } from "@/lib/auth"
 import type { User as UserType } from "@/lib/types"
-
-const navigation = [
+import { api } from "@/lib/api"
+import { Alert, AlertDescription } from "@/components/ui/alert"
+const fullNavigation = [
   { name: "Home", href: "/driver", icon: Home },
   { name: "Shipments", href: "/driver/shipments", icon: Package },
   { name: "Profile", href: "/driver/profile", icon: User },
@@ -27,30 +29,94 @@ const navigation = [
 
 export default function DriverLayout({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<UserType | null>(null)
+  const [profileComplete, setProfileComplete] = useState(true)
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
   const pathname = usePathname()
   const router = useRouter()
 
   useEffect(() => {
-    getSessionUser().then((userData) => {
-      if (!userData || userData.role !== "driver") {
-        router.push("/")
-      } else {
-        setUser(userData)
+    const bootstrap = async () => {
+      setError(null)
+      setLoading(true)
+      try {
+        const sessionUser = await getSessionUser()
+        if (!sessionUser) {
+          router.push("/")
+          return
+        }
+
+        if (sessionUser.role === "manager") {
+          router.push("/dashboard")
+          return
+        }
+
+        if (sessionUser.role !== "driver") {
+          router.push("/access-denied")
+          return
+        }
+
+        const currentUser = await api.getCurrentUserContext()
+        if (currentUser.role !== "driver") {
+          router.push("/")
+          return
+        }
+
+        setUser({
+          id: currentUser.employeeId,
+          name: currentUser.name,
+          email: currentUser.email,
+          role: currentUser.role,
+        })
+        setProfileComplete(currentUser.driverProfileComplete)
+
+        const isOnProfilePage = pathname.startsWith("/driver/profile")
+        if (!currentUser.driverProfileComplete && !isOnProfilePage) {
+          router.replace("/driver/profile?complete=1")
+          return
+        }
+      } catch (err) {
+        setError(err instanceof Error ? err.message : String(err))
+      } finally {
+        setLoading(false)
       }
-    })
-  }, [router])
+    }
+
+    void bootstrap()
+  }, [pathname, router])
 
   const handleLogout = async () => {
     await logout()
   }
 
-  if (!user) {
+  if (loading || !user) {
+    if (!loading && !user) {
+      return (
+        <div className="min-h-screen flex items-center justify-center p-4">
+          <Card className="w-full max-w-lg p-6 space-y-4">
+            <h1 className="text-xl font-semibold">Unable to load driver session</h1>
+            <p className="text-sm text-muted-foreground">
+              {error ?? "Your session may be expired. Please sign in again."}
+            </p>
+            <div className="flex gap-3">
+              <Button onClick={() => router.push("/auth/login")}>Sign In Again</Button>
+              <Button variant="outline" onClick={() => router.push("/")}>
+                Back Home
+              </Button>
+            </div>
+          </Card>
+        </div>
+      )
+    }
+
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-muted-foreground">Loading...</div>
       </div>
     )
   }
+
+  const navigation = profileComplete ? fullNavigation : [{ name: "Profile", href: "/driver/profile", icon: User }]
 
   return (
     <div className="min-h-screen bg-background pb-20">
@@ -98,7 +164,14 @@ export default function DriverLayout({ children }: { children: React.ReactNode }
       </header>
 
       {/* Main Content */}
-      <main className="p-4">{children}</main>
+      <main className="p-4 space-y-4">
+        {error && (
+          <Alert variant="destructive">
+            <AlertDescription>{error}</AlertDescription>
+          </Alert>
+        )}
+        {children}
+      </main>
 
       {/* Bottom Navigation - Mobile First */}
       <nav className="fixed bottom-0 left-0 right-0 z-50 border-t bg-card">

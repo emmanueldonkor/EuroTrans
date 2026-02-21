@@ -39,7 +39,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       const userData = await getSessionUser()
       if (!userData) {
         // If no user, redirect to login
-        window.location.href = "/api/auth/login"
+        window.location.href = "/auth/login"
         return
       }
 

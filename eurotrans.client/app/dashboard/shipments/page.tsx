@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState } from "react"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -10,36 +10,34 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Plus, Search } from "lucide-react"
 import { useShipments, useDrivers } from "@/hooks/use-transport-data"
-import { getStatusColor } from "@/lib/utils/format"
-import { formatDate } from "@/lib/utils/format"
+import { getStatusColor, formatDate } from "@/lib/utils/format"
+import { Alert, AlertDescription } from "@/components/ui/alert"
+import type { ShipmentStatus } from "@/lib/types"
 
 export default function ShipmentsPage() {
   const [searchTerm, setSearchTerm] = useState("")
   const [statusFilter, setStatusFilter] = useState<string>("all")
   const [driverFilter, setDriverFilter] = useState<string>("all")
 
-  // Use TanStack Query hooks
   const { data: shipments = [], isLoading: shipmentsLoading, error: shipmentsError } = useShipments({
-    status: statusFilter !== "all" ? (statusFilter as any) : undefined,
+    status: statusFilter !== "all" ? (statusFilter as ShipmentStatus) : undefined,
     driverId: driverFilter !== "all" ? driverFilter : undefined,
     search: searchTerm || undefined,
   })
 
   const { data: drivers = [], isLoading: driversLoading } = useDrivers()
-
   const isLoading = shipmentsLoading || driversLoading
 
-  // Enhance filtering logic if API doesn't fully support all filters yet (mock API does basic filtering)
   const filteredShipments = shipments.filter((shipment) => {
-    // Client-side filtering as a fallback or enhancement
     const matchesSearch = !searchTerm || shipment.trackingId.toLowerCase().includes(searchTerm.toLowerCase())
     const matchesStatus = statusFilter === "all" || shipment.status === statusFilter
     const matchesDriver = driverFilter === "all" || shipment.driverId === driverFilter
     return matchesSearch && matchesStatus && matchesDriver
   })
 
-  const getDriverName = (driverId?: string) => {
-    if (!driverId) return "—"
+  const getDriverName = (driverId?: string, driverName?: string) => {
+    if (driverName) return driverName
+    if (!driverId) return "N/A"
     const driver = drivers.find((d) => d.id === driverId)
     return driver?.name || "Unknown"
   }
@@ -52,17 +50,8 @@ export default function ShipmentsPage() {
     )
   }
 
-  if (shipmentsError) {
-    return (
-      <div className="flex items-center justify-center min-h-[400px]">
-        <div className="text-destructive">Error loading shipments. Please try again.</div>
-      </div>
-    )
-  }
-
   return (
     <div className="space-y-6">
-      {/* Header */}
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h1 className="text-3xl font-bold tracking-tight">Shipments</h1>
@@ -76,7 +65,12 @@ export default function ShipmentsPage() {
         </Link>
       </div>
 
-      {/* Filters */}
+      {shipmentsError && (
+        <Alert variant="destructive">
+          <AlertDescription>{shipmentsError instanceof Error ? shipmentsError.message : "Error loading shipments."}</AlertDescription>
+        </Alert>
+      )}
+
       <Card className="p-4">
         <div className="flex flex-col gap-4 sm:flex-row">
           <div className="flex-1 relative">
@@ -89,19 +83,20 @@ export default function ShipmentsPage() {
             />
           </div>
           <Select value={statusFilter} onValueChange={setStatusFilter}>
-            <SelectTrigger className="w-full sm:w-40">
+            <SelectTrigger className="w-full sm:w-44">
               <SelectValue placeholder="Status" />
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="all">All Status</SelectItem>
-              <SelectItem value="draft">Draft</SelectItem>
               <SelectItem value="unassigned">Unassigned</SelectItem>
+              <SelectItem value="assigned">Assigned</SelectItem>
               <SelectItem value="in-transit">In Transit</SelectItem>
               <SelectItem value="delivered">Delivered</SelectItem>
+              <SelectItem value="cancelled">Cancelled</SelectItem>
             </SelectContent>
           </Select>
           <Select value={driverFilter} onValueChange={setDriverFilter}>
-            <SelectTrigger className="w-full sm:w-40">
+            <SelectTrigger className="w-full sm:w-44">
               <SelectValue placeholder="Driver" />
             </SelectTrigger>
             <SelectContent>
@@ -116,7 +111,6 @@ export default function ShipmentsPage() {
         </div>
       </Card>
 
-      {/* Shipments Table */}
       <Card>
         <Table>
           <TableHeader>
@@ -132,7 +126,7 @@ export default function ShipmentsPage() {
             {filteredShipments.length === 0 ? (
               <TableRow>
                 <TableCell colSpan={5} className="text-center text-muted-foreground py-8">
-                  No shipments found
+                  {shipmentsError ? "Could not load shipments." : "No shipments found"}
                 </TableCell>
               </TableRow>
             ) : (
@@ -146,9 +140,9 @@ export default function ShipmentsPage() {
                   <TableCell>
                     <Badge className={getStatusColor(shipment.status)}>{shipment.status.replace("-", " ")}</Badge>
                   </TableCell>
-                  <TableCell>{getDriverName(shipment.driverId)}</TableCell>
+                  <TableCell>{getDriverName(shipment.driverId, shipment.driverName)}</TableCell>
                   <TableCell className="max-w-xs truncate">
-                    {shipment.origin.city} → {shipment.destination.city}
+                    {shipment.origin.city} -{">"} {shipment.destination.city}
                   </TableCell>
                   <TableCell className="text-muted-foreground">{formatDate(shipment.updatedAt)}</TableCell>
                 </TableRow>

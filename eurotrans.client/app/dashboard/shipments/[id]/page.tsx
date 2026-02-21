@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useEffect, useState } from "react"
 import { useParams, useRouter } from "next/navigation"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
@@ -18,18 +18,12 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog"
-import { ArrowLeft, Package, MapPin, Clock, User, TruckIcon, AlertCircle, Trash2, Edit } from "lucide-react"
+import { ArrowLeft, Package, MapPin, Clock, User, TruckIcon, Trash2 } from "lucide-react"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { api } from "@/lib/api"
 import type { Shipment, Driver, Truck, Activity } from "@/lib/types"
 import { formatDate } from "@/lib/utils/format"
-import {
-  getStatusBadgeColor,
-  getStatusLabel,
-  canEditShipment,
-  canAssignShipment,
-  canDeleteShipment,
-} from "@/lib/shipment-rules"
+import { getStatusBadgeColor, getStatusLabel, canAssignShipment, canDeleteShipment } from "@/lib/shipment-rules"
 
 export default function ShipmentDetailPage() {
   const params = useParams()
@@ -40,26 +34,28 @@ export default function ShipmentDetailPage() {
   const [activities, setActivities] = useState<Activity[]>([])
   const [loading, setLoading] = useState(true)
   const [assigning, setAssigning] = useState(false)
-  const [publishing, setPublishing] = useState(false)
-  const [deleting, setDeleting] = useState(false)
-  const [showDeleteDialog, setShowDeleteDialog] = useState(false)
+  const [cancelling, setCancelling] = useState(false)
+  const [showCancelDialog, setShowCancelDialog] = useState(false)
+  const [error, setError] = useState<string | null>(null)
 
-  // Assignment state
   const [selectedDriverId, setSelectedDriverId] = useState<string>("")
   const [selectedTruckId, setSelectedTruckId] = useState<string>("")
 
   useEffect(() => {
     loadData()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [params.id])
 
   const loadData = async () => {
     setLoading(true)
+    setError(null)
     try {
+      const shipmentId = String(params.id)
       const [shipmentData, driversData, trucksData, activitiesData] = await Promise.all([
-        api.getShipment(params.id as string),
+        api.getShipment(shipmentId),
         api.getDrivers(),
         api.getTrucks(),
-        api.getShipmentActivities(params.id as string),
+        api.getShipmentActivities(shipmentId),
       ])
 
       if (!shipmentData) {
@@ -71,57 +67,42 @@ export default function ShipmentDetailPage() {
       setDrivers(driversData)
       setTrucks(trucksData)
       setActivities(activitiesData)
-      setSelectedDriverId(shipmentData.driverId || "")
-      setSelectedTruckId(shipmentData.truckId || "")
-    } catch (error) {
-      console.error("Failed to load data:", error)
+      setSelectedDriverId(shipmentData.driverId ?? "")
+      setSelectedTruckId(shipmentData.truckId ?? "")
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to load shipment.")
     } finally {
       setLoading(false)
     }
   }
 
-  const handlePublish = async () => {
-    if (!shipment) return
-
-    setPublishing(true)
-
-    try {
-      await api.publishShipment(shipment.id)
-      await loadData()
-    } catch (error) {
-      console.error("Failed to publish shipment:", error)
-    } finally {
-      setPublishing(false)
-    }
-  }
-
   const handleAssign = async () => {
-    if (!selectedDriverId || !selectedTruckId || !shipment) return
-
+    if (!shipment || !selectedDriverId || !selectedTruckId) return
     setAssigning(true)
+    setError(null)
 
     try {
       await api.assignShipment(shipment.id, selectedDriverId, selectedTruckId)
       await loadData()
-    } catch (error) {
-      console.error("Failed to assign shipment:", error)
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to assign shipment.")
     } finally {
       setAssigning(false)
     }
   }
 
-  const handleDelete = async () => {
+  const handleCancelShipment = async () => {
     if (!shipment) return
-
-    setDeleting(true)
+    setCancelling(true)
+    setError(null)
 
     try {
       await api.deleteShipment(shipment.id)
       router.push("/dashboard/shipments")
-    } catch (error) {
-      console.error("Failed to delete shipment:", error)
-      setDeleting(false)
-      setShowDeleteDialog(false)
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to cancel shipment.")
+      setShowCancelDialog(false)
+      setCancelling(false)
     }
   }
 
@@ -133,14 +114,12 @@ export default function ShipmentDetailPage() {
     )
   }
 
-  const driver = drivers.find((d) => d.id === shipment.driverId)
-  const truck = trucks.find((t) => t.id === shipment.truckId)
-  const isReadOnly = !canEditShipment(shipment)
-  const canDelete = canDeleteShipment(shipment)
+  const assignedDriver = drivers.find((d) => d.id === shipment.driverId)
+  const assignedTruck = trucks.find((t) => t.id === shipment.truckId)
+  const canCancel = canDeleteShipment(shipment)
 
   return (
     <div className="max-w-5xl space-y-6">
-      {/* Header */}
       <div className="flex items-center gap-4">
         <Link href="/dashboard/shipments">
           <Button variant="ghost" size="icon">
@@ -154,28 +133,20 @@ export default function ShipmentDetailPage() {
         <Badge className={getStatusBadgeColor(shipment.status)}>{getStatusLabel(shipment.status)}</Badge>
       </div>
 
-      {shipment.status === "draft" && (
-        <Alert>
-          <AlertCircle className="h-4 w-4" />
-          <AlertDescription>
-            This shipment is in draft mode. Publish it to make it available for driver assignment.
-          </AlertDescription>
+      {error && (
+        <Alert variant="destructive">
+          <AlertDescription>{error}</AlertDescription>
         </Alert>
       )}
 
-      {isReadOnly && shipment.status === "unassigned" && (
+      {shipment.status === "unassigned" && (
         <Alert>
-          <AlertCircle className="h-4 w-4" />
-          <AlertDescription>
-            This shipment is ready for assignment. Assign a driver and truck to begin the journey.
-          </AlertDescription>
+          <AlertDescription>This shipment is ready for assignment.</AlertDescription>
         </Alert>
       )}
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Main Info */}
         <div className="lg:col-span-2 space-y-6">
-          {/* Shipment Info */}
           <Card className="p-6 space-y-4">
             <h2 className="text-xl font-semibold flex items-center gap-2">
               <Package className="h-5 w-5" />
@@ -195,13 +166,12 @@ export default function ShipmentDetailPage() {
                 </div>
                 <div>
                   <Label className="text-muted-foreground">Volume</Label>
-                  <p className="mt-1">{shipment.cargo.volume} m³</p>
+                  <p className="mt-1">{shipment.cargo.volume} m3</p>
                 </div>
               </div>
             </div>
           </Card>
 
-          {/* Route Info */}
           <Card className="p-6 space-y-4">
             <h2 className="text-xl font-semibold flex items-center gap-2">
               <MapPin className="h-5 w-5" />
@@ -227,48 +197,9 @@ export default function ShipmentDetailPage() {
             </div>
           </Card>
 
-          {shipment.status === "draft" && (
+          {canAssignShipment(shipment) && (
             <Card className="p-6 space-y-4">
-              <h2 className="text-xl font-semibold">Draft Actions</h2>
-              <p className="text-sm text-muted-foreground">
-                This shipment is currently in draft mode. Publish it to make it ready for driver assignment.
-              </p>
-              <div className="flex gap-3">
-                <Button
-                  variant="outline"
-                  className="flex-1 bg-transparent"
-                  onClick={() => router.push(`/dashboard/shipments/new?edit=${shipment.id}`)}
-                >
-                  <Edit className="mr-2 h-4 w-4" />
-                  Edit Draft
-                </Button>
-                <Button className="flex-1" onClick={handlePublish} disabled={publishing}>
-                  {publishing ? "Publishing..." : "Publish Shipment"}
-                </Button>
-              </div>
-              <Button
-                variant="destructive"
-                className="w-full"
-                onClick={() => setShowDeleteDialog(true)}
-                disabled={deleting}
-              >
-                <Trash2 className="mr-2 h-4 w-4" />
-                Delete Draft
-              </Button>
-            </Card>
-          )}
-
-          {canAssignShipment(shipment) && shipment.status !== "draft" && (
-            <Card className="p-6 space-y-4">
-              <div className="flex items-center justify-between">
-                <h2 className="text-xl font-semibold">Assign Shipment</h2>
-                {canDelete && (
-                  <Button variant="ghost" size="sm" onClick={() => setShowDeleteDialog(true)} disabled={deleting}>
-                    <Trash2 className="h-4 w-4 text-destructive" />
-                  </Button>
-                )}
-              </div>
-
+              <h2 className="text-xl font-semibold">Assign Shipment</h2>
               <div className="space-y-4">
                 <div>
                   <Label htmlFor="driver">Driver</Label>
@@ -281,14 +212,11 @@ export default function ShipmentDetailPage() {
                         .filter((d) => d.status === "available")
                         .map((driver) => (
                           <SelectItem key={driver.id} value={driver.id}>
-                            {driver.name} ({driver.status})
+                            {driver.name}
                           </SelectItem>
                         ))}
                     </SelectContent>
                   </Select>
-                  {drivers.filter((d) => d.status === "available").length === 0 && (
-                    <p className="text-sm text-muted-foreground mt-1">No available drivers</p>
-                  )}
                 </div>
 
                 <div>
@@ -307,9 +235,6 @@ export default function ShipmentDetailPage() {
                         ))}
                     </SelectContent>
                   </Select>
-                  {trucks.filter((t) => t.status === "available").length === 0 && (
-                    <p className="text-sm text-muted-foreground mt-1">No available trucks</p>
-                  )}
                 </div>
 
                 <Button
@@ -317,30 +242,13 @@ export default function ShipmentDetailPage() {
                   onClick={handleAssign}
                   disabled={!selectedDriverId || !selectedTruckId || assigning}
                 >
-                  {assigning ? "Assigning..." : "Assign & Start Shipment"}
+                  {assigning ? "Assigning..." : "Assign Shipment"}
                 </Button>
               </div>
             </Card>
           )}
 
-          {shipment.status === "in-transit" && !shipment.startedAt && canDelete && (
-            <Card className="p-6 space-y-4 border-destructive/50">
-              <div className="flex items-center justify-between">
-                <div>
-                  <h3 className="font-semibold text-destructive">Delete Shipment</h3>
-                  <p className="text-sm text-muted-foreground">
-                    This shipment can still be deleted because the driver hasn't started the journey yet.
-                  </p>
-                </div>
-                <Button variant="destructive" onClick={() => setShowDeleteDialog(true)} disabled={deleting}>
-                  <Trash2 className="mr-2 h-4 w-4" />
-                  Delete
-                </Button>
-              </div>
-            </Card>
-          )}
-
-          {shipment.status === "in-transit" || shipment.status === "delivered" ? (
+          {(shipment.status === "assigned" || shipment.status === "in-transit" || shipment.status === "delivered") && (
             <Card className="p-6 space-y-4">
               <h2 className="text-xl font-semibold">Assignment Details</h2>
 
@@ -349,8 +257,8 @@ export default function ShipmentDetailPage() {
                   <User className="h-5 w-5 text-muted-foreground mt-0.5" />
                   <div>
                     <Label className="text-muted-foreground">Driver</Label>
-                    <p className="mt-1">{driver?.name || "Unknown"}</p>
-                    <p className="text-sm text-muted-foreground">{driver?.phone}</p>
+                    <p className="mt-1">{shipment.driverName ?? assignedDriver?.name ?? "Unknown"}</p>
+                    <p className="text-sm text-muted-foreground">{assignedDriver?.phone ?? "N/A"}</p>
                   </div>
                 </div>
 
@@ -358,18 +266,31 @@ export default function ShipmentDetailPage() {
                   <TruckIcon className="h-5 w-5 text-muted-foreground mt-0.5" />
                   <div>
                     <Label className="text-muted-foreground">Truck</Label>
-                    <p className="mt-1">{truck?.plateNumber || "Unknown"}</p>
-                    <p className="text-sm text-muted-foreground">{truck?.model}</p>
+                    <p className="mt-1">{shipment.truckPlateNumber ?? assignedTruck?.plateNumber ?? "Unknown"}</p>
+                    <p className="text-sm text-muted-foreground">{shipment.truckModel ?? assignedTruck?.model ?? "N/A"}</p>
                   </div>
                 </div>
               </div>
             </Card>
-          ) : null}
+          )}
+
+          {canCancel && (
+            <Card className="p-6 space-y-4 border-destructive/40">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h3 className="font-semibold text-destructive">Cancel Shipment</h3>
+                  <p className="text-sm text-muted-foreground">This shipment will be marked as cancelled.</p>
+                </div>
+                <Button variant="destructive" onClick={() => setShowCancelDialog(true)} disabled={cancelling}>
+                  <Trash2 className="mr-2 h-4 w-4" />
+                  Cancel
+                </Button>
+              </div>
+            </Card>
+          )}
         </div>
 
-        {/* Sidebar */}
         <div className="space-y-6">
-          {/* Timestamps */}
           <Card className="p-6 space-y-4">
             <h2 className="text-lg font-semibold flex items-center gap-2">
               <Clock className="h-4 w-4" />
@@ -381,14 +302,12 @@ export default function ShipmentDetailPage() {
                 <Label className="text-muted-foreground">Created</Label>
                 <p className="mt-1">{formatDate(shipment.createdAt)}</p>
               </div>
-
               {shipment.startedAt && (
                 <div>
                   <Label className="text-muted-foreground">Started</Label>
                   <p className="mt-1">{formatDate(shipment.startedAt)}</p>
                 </div>
               )}
-
               {shipment.deliveredAt && (
                 <div>
                   <Label className="text-muted-foreground">Delivered</Label>
@@ -398,7 +317,6 @@ export default function ShipmentDetailPage() {
             </div>
           </Card>
 
-          {/* Activity Log */}
           <Card className="p-6 space-y-4">
             <h2 className="text-lg font-semibold">Activity</h2>
 
@@ -407,12 +325,13 @@ export default function ShipmentDetailPage() {
                 <p className="text-sm text-muted-foreground">No activities yet</p>
               ) : (
                 activities
+                  .slice()
                   .sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime())
                   .map((activity) => (
                     <div key={activity.id} className="text-sm space-y-1">
                       <p className="font-medium">{activity.description}</p>
                       <p className="text-muted-foreground text-xs">
-                        {activity.userName} • {formatDate(activity.timestamp)}
+                        {activity.userName || "Unknown"} - {formatDate(activity.timestamp)}
                       </p>
                     </div>
                   ))
@@ -422,22 +341,22 @@ export default function ShipmentDetailPage() {
         </div>
       </div>
 
-      <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
+      <AlertDialog open={showCancelDialog} onOpenChange={setShowCancelDialog}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Delete Shipment</AlertDialogTitle>
+            <AlertDialogTitle>Cancel Shipment</AlertDialogTitle>
             <AlertDialogDescription>
-              Are you sure you want to delete shipment {shipment.trackingId}? This action cannot be undone.
+              Are you sure you want to cancel shipment {shipment.trackingId}? This action cannot be undone.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel disabled={deleting}>Cancel</AlertDialogCancel>
+            <AlertDialogCancel disabled={cancelling}>Back</AlertDialogCancel>
             <AlertDialogAction
-              onClick={handleDelete}
-              disabled={deleting}
+              onClick={handleCancelShipment}
+              disabled={cancelling}
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
             >
-              {deleting ? "Deleting..." : "Delete"}
+              {cancelling ? "Cancelling..." : "Cancel Shipment"}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
