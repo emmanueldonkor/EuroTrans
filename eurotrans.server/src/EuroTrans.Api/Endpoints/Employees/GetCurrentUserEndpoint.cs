@@ -3,7 +3,7 @@ using EuroTrans.Application.features.Employees.User.GetCurrentUser;
 
 namespace EuroTrans.Api.Endpoints.Employees;
 
-[EuroTrans.Api.Endpoints.ApiEndpoint]
+[ApiEndpoint]
 public static class GetCurrentUserEndpoint
 {
     public static void MapGetCurrentUserEndpoint(this IEndpointRouteBuilder app)

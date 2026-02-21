@@ -5,7 +5,7 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace EuroTrans.Api.Endpoints.Shipments;
 
-[EuroTrans.Api.Endpoints.ApiEndpoint]
+[ApiEndpoint]
 public static class GetShipmentActivitiesEndpoint
 {
     public static void MapGetShipmentActivitiesEndpoint(this IEndpointRouteBuilder app)

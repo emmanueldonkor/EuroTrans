@@ -5,7 +5,7 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace EuroTrans.Api.Endpoints.Trucks;
 
-[EuroTrans.Api.Endpoints.ApiEndpoint]
+[ApiEndpoint]
 public static class CreateTruckEndpoint
 {
     public static void MapCreateTruckEndpoint(this IEndpointRouteBuilder app)

@@ -30,6 +30,13 @@ public static class CoreServiceCollectionExtensions
 
         services.AddEndpointsApiExplorer();
         services.AddSwaggerGen();
+        services.AddProblemDetails(options =>
+        {
+            options.CustomizeProblemDetails = context =>
+            {
+                context.ProblemDetails.Extensions["traceId"] = context.HttpContext.TraceIdentifier;
+            };
+        });
         services.AddMemoryCache();
         services.AddAntiforgery();
 

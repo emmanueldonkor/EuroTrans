@@ -5,7 +5,7 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace EuroTrans.Api.Endpoints.Employees;
 
-[EuroTrans.Api.Endpoints.ApiEndpoint]
+[ApiEndpoint]
 public static class GetDriverEndpoint
 {
     public static void MapGetDriverEndpoint(this IEndpointRouteBuilder app)
