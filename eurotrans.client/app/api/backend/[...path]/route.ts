@@ -2,30 +2,33 @@ import { auth0 } from "@/lib/auth0"
 import { NextRequest } from "next/server"
 
 const BACKEND_BASE_URL = process.env.EUROTRANS_API_BASE_URL ?? process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://localhost:5002"
+const ACCESS_TOKEN_EXPIRY_BUFFER_SECONDS = 30
+
+function unauthorized(detail: string) {
+  return Response.json({ detail }, { status: 401 })
+}
 
 async function handler(request: NextRequest, context: { params: Promise<{ path: string[] }> }) {
-  let accessToken: string | undefined
+  const session = await auth0.getSession(request)
+  if (!session?.tokenSet) {
+    return unauthorized("Unauthorized: no active session")
+  }
 
-  try {
-    const tokenResult = await auth0.getAccessToken()
-    accessToken = tokenResult.token
-  } catch {
-    // Refresh flow can fail when there is no active session yet.
+  const nowInSeconds = Math.floor(Date.now() / 1000)
+  const isTokenNearExpiry = session.tokenSet.expiresAt <= nowInSeconds + ACCESS_TOKEN_EXPIRY_BUFFER_SECONDS
+
+  let accessToken = session.tokenSet.accessToken
+  if (isTokenNearExpiry) {
+    try {
+      const refreshedToken = await auth0.getAccessToken({ refresh: true })
+      accessToken = refreshedToken.token
+    } catch {
+      return unauthorized("Unauthorized: failed to refresh access token")
+    }
   }
 
   if (!accessToken) {
-    // Fallback to the current session token if refresh path is unavailable.
-    const session = await auth0.getSession(request)
-    accessToken = session?.tokenSet?.accessToken
-  }
-
-  if (!accessToken) {
-    return Response.json(
-      {
-        detail: "Unauthorized: missing access token",
-      },
-      { status: 401 },
-    )
+    return unauthorized("Unauthorized: missing access token")
   }
 
   const { path } = await context.params

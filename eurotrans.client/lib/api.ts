@@ -24,6 +24,18 @@ type ApiErrorPayload = {
   [key: string]: unknown
 }
 
+export class ApiRequestError extends Error {
+  status: number
+  path: string
+
+  constructor(message: string, status: number, path: string) {
+    super(message)
+    this.name = "ApiRequestError"
+    this.status = status
+    this.path = path
+  }
+}
+
 type ShipmentApiStatus = string
 type DriverApiStatus = string
 type TruckApiStatus = string
@@ -159,7 +171,7 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
       .filter(Boolean)
       .join("\n")
 
-    throw new Error(message)
+    throw new ApiRequestError(message, response.status, path)
   }
 
   if (response.status === 204 || response.status === 205) {

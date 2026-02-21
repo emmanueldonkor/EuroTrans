@@ -16,57 +16,79 @@ import {
 } from "@/components/ui/dropdown-menu"
 import { LanguageSwitcher } from "@/components/language-switcher"
 import { Package, Map, Truck, Users, BarChart3, FileText, Menu, X, LogOut } from "lucide-react"
-import { getSessionUser, logout, getRedirectPath } from "@/lib/auth"
-import type { User } from "@/lib/types"
+import { logout, getRedirectPath } from "@/lib/auth"
+import { ApiRequestError } from "@/lib/api"
+import { useCurrentUser } from "@/hooks/use-current-user"
+import { FullPageLoader, PageErrorState } from "@/components/ui/page-state"
+import { useI18n } from "@/components/providers/i18n-provider"
+import { TranslationKey } from "@/lib/i18n"
 
 const navigation = [
-  { name: "Shipments", href: "/dashboard/shipments", icon: Package },
-  { name: "Live Map", href: "/dashboard/map", icon: Map },
-  { name: "Fleet", href: "/dashboard/fleet", icon: Truck },
-  { name: "Employees", href: "/dashboard/employees", icon: Users },
-  { name: "Analytics", href: "/dashboard/analytics", icon: BarChart3 },
-  { name: "Documents", href: "/dashboard/documents", icon: FileText },
+  { labelKey: "nav.shipments" as TranslationKey, href: "/dashboard/shipments", icon: Package },
+  { labelKey: "nav.liveMap" as TranslationKey, href: "/dashboard/map", icon: Map },
+  { labelKey: "nav.fleet" as TranslationKey, href: "/dashboard/fleet", icon: Truck },
+  { labelKey: "nav.employees" as TranslationKey, href: "/dashboard/employees", icon: Users },
+  { labelKey: "nav.analytics" as TranslationKey, href: "/dashboard/analytics", icon: BarChart3 },
+  { labelKey: "nav.documents" as TranslationKey, href: "/dashboard/documents", icon: FileText },
 ]
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   const [sidebarOpen, setSidebarOpen] = useState(false)
-  const [user, setUser] = useState<User | null>(null)
+  const [hasScrolled, setHasScrolled] = useState(false)
   const pathname = usePathname()
   const router = useRouter()
+  const { t } = useI18n()
+  const { data: currentUser, isLoading, error, refetch } = useCurrentUser()
+  const isAuthError = error instanceof ApiRequestError && (error.status === 401 || error.status === 403)
 
   useEffect(() => {
-    async function checkAuth() {
-      const userData = await getSessionUser()
-      if (!userData) {
-        // If no user, redirect to login
-        window.location.href = "/auth/login"
-        return
-      }
+    if (isLoading) return
 
-      if (userData.role !== "manager") {
-        // If unauthorized role, redirect to their allowed area
-        router.push(getRedirectPath(userData.role))
-      } else {
-        setUser(userData)
-      }
+    if (isAuthError) {
+      router.replace("/auth/login")
+      return
     }
-    checkAuth()
-  }, [router])
+
+    if (currentUser && currentUser.role !== "manager") {
+      router.replace(getRedirectPath(currentUser.role))
+    }
+  }, [currentUser, isAuthError, isLoading, router])
+
+  useEffect(() => {
+    const onScroll = () => setHasScrolled(window.scrollY > 6)
+    onScroll()
+    window.addEventListener("scroll", onScroll, { passive: true })
+    return () => window.removeEventListener("scroll", onScroll)
+  }, [])
 
   const handleLogout = async () => {
     await logout()
   }
 
-  if (!user) {
+  if (isLoading) {
+    return <FullPageLoader label="Loading manager workspace..." />
+  }
+
+  if (error && !isAuthError) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="text-muted-foreground">Loading...</div>
-      </div>
+      <PageErrorState
+        title="Could not load your workspace"
+        message={error instanceof Error ? error.message : "An unexpected error occurred."}
+        onRetry={() => {
+          void refetch()
+        }}
+      />
+    )
+  }
+
+  if (!currentUser || currentUser.role !== "manager") {
+    return (
+      <FullPageLoader label="Redirecting..." />
     )
   }
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-gradient-to-b from-background via-background to-muted/30">
       <div className="flex min-h-screen">
         {/* Desktop Sidebar */}
         <aside className="hidden md:flex md:w-64 md:flex-col bg-sidebar text-sidebar-foreground">
@@ -82,15 +104,21 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                 const isActive = pathname === item.href || pathname?.startsWith(item.href + "/")
                 return (
                   <Link
-                    key={item.name}
+                    key={item.href}
                     href={item.href}
-                    className={`flex items-center gap-3 rounded-md px-3 py-2.5 text-sm font-medium transition-colors ${isActive
-                      ? "bg-sidebar-accent text-sidebar-accent-foreground"
-                      : "text-sidebar-foreground/60 hover:bg-sidebar-accent/50 hover:text-sidebar-foreground"
-                      }`}
+                    className={`relative flex items-center gap-3 rounded-md px-3 py-2.5 pl-4 text-sm font-medium motion-smooth ${
+                      isActive
+                        ? "bg-sidebar-accent text-sidebar-accent-foreground"
+                        : "text-sidebar-foreground/70 hover:bg-sidebar-accent/50 hover:text-sidebar-foreground"
+                    }`}
                   >
+                    <span
+                      className={`absolute left-1 top-1/2 h-6 w-1 -translate-y-1/2 rounded-full motion-smooth ${
+                        isActive ? "bg-sidebar-primary opacity-100" : "bg-sidebar-primary opacity-0"
+                      }`}
+                    />
                     <item.icon className="h-4 w-4" />
-                    {item.name}
+                    {t(item.labelKey)}
                   </Link>
                 )
               })}
@@ -98,24 +126,37 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           </nav>
           <div className="border-t border-sidebar-border p-3">
             <div className="flex items-center gap-3 rounded-md px-3 py-2">
-              <Avatar className="h-8 w-8 border border-sidebar-border">
-                <AvatarFallback className="bg-sidebar-accent text-sidebar-accent-foreground text-xs">
-                  {user.name.charAt(0)}
-                </AvatarFallback>
-              </Avatar>
-              <div className="flex-1 min-w-0">
-                <p className="text-sm font-medium text-sidebar-foreground truncate">{user.name}</p>
-                <p className="text-xs text-sidebar-foreground/50 truncate">{user.email}</p>
+                  <Avatar className="h-8 w-8 border border-sidebar-border">
+                    <AvatarFallback className="bg-sidebar-accent text-sidebar-accent-foreground text-xs">
+                      {currentUser.name.charAt(0)}
+                    </AvatarFallback>
+                  </Avatar>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-medium text-sidebar-foreground truncate">{currentUser.name}</p>
+                    <p className="text-xs text-sidebar-foreground/50 truncate">{currentUser.email}</p>
+                  </div>
+                </div>
               </div>
-            </div>
-          </div>
         </aside>
 
         {/* Mobile Sidebar */}
-        {sidebarOpen && (
-          <aside className="fixed inset-0 z-40 flex md:hidden">
-            <div className="fixed inset-0 bg-foreground/40 backdrop-blur-sm" onClick={() => setSidebarOpen(false)} />
-            <div className="relative flex w-64 flex-col bg-sidebar text-sidebar-foreground">
+        <aside
+          className={`fixed inset-0 z-40 flex md:hidden motion-smooth ${
+            sidebarOpen ? "pointer-events-auto" : "pointer-events-none"
+          }`}
+          aria-hidden={!sidebarOpen}
+        >
+          <div
+            className={`fixed inset-0 bg-foreground/40 backdrop-blur-sm motion-smooth ${
+              sidebarOpen ? "opacity-100" : "opacity-0"
+            }`}
+            onClick={() => setSidebarOpen(false)}
+          />
+          <div
+            className={`relative flex w-64 flex-col bg-sidebar text-sidebar-foreground motion-smooth ${
+              sidebarOpen ? "translate-x-0" : "-translate-x-full"
+            }`}
+          >
               <div className="flex h-16 items-center gap-2 px-5 border-b border-sidebar-border">
                 <div className="flex h-8 w-8 items-center justify-center rounded-md bg-sidebar-primary">
                   <Truck className="h-4 w-4 text-sidebar-primary-foreground" />
@@ -128,29 +169,38 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                     const isActive = pathname === item.href || pathname?.startsWith(item.href + "/")
                     return (
                       <Link
-                        key={item.name}
+                        key={item.href}
                         href={item.href}
                         onClick={() => setSidebarOpen(false)}
-                        className={`flex items-center gap-3 rounded-md px-3 py-2.5 text-sm font-medium transition-colors ${isActive
-                          ? "bg-sidebar-accent text-sidebar-accent-foreground"
-                          : "text-sidebar-foreground/60 hover:bg-sidebar-accent/50 hover:text-sidebar-foreground"
-                          }`}
+                        className={`relative flex items-center gap-3 rounded-md px-3 py-2.5 pl-4 text-sm font-medium motion-smooth ${
+                          isActive
+                            ? "bg-sidebar-accent text-sidebar-accent-foreground"
+                            : "text-sidebar-foreground/70 hover:bg-sidebar-accent/50 hover:text-sidebar-foreground"
+                        }`}
                       >
+                        <span
+                          className={`absolute left-1 top-1/2 h-6 w-1 -translate-y-1/2 rounded-full motion-smooth ${
+                            isActive ? "bg-sidebar-primary opacity-100" : "bg-sidebar-primary opacity-0"
+                          }`}
+                        />
                         <item.icon className="h-4 w-4" />
-                        {item.name}
+                        {t(item.labelKey)}
                       </Link>
                     )
                   })}
                 </div>
               </nav>
             </div>
-          </aside>
-        )}
+        </aside>
 
         {/* Main content area */}
         <div className="flex-1 flex flex-col">
           {/* Top Header */}
-          <header className="sticky top-0 z-30 flex h-16 items-center gap-4 border-b bg-card px-4 md:px-6">
+          <header
+            className={`sticky top-0 z-30 flex h-16 items-center gap-4 border-b bg-card/95 px-4 backdrop-blur md:px-6 motion-smooth ${
+              hasScrolled ? "shadow-sm" : "shadow-none"
+            }`}
+          >
             <Button variant="ghost" size="icon" className="md:hidden text-foreground" onClick={() => setSidebarOpen(!sidebarOpen)}>
               {sidebarOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
               <span className="sr-only">Toggle menu</span>
@@ -166,22 +216,22 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                   <Button variant="ghost" className="relative h-9 w-9 rounded-full">
                     <Avatar className="h-9 w-9">
                       <AvatarFallback className="bg-primary/10 text-primary text-sm font-semibold">
-                        {user.name.charAt(0)}
+                        {currentUser.name.charAt(0)}
                       </AvatarFallback>
                     </Avatar>
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end" className="w-56">
-                  <div className="flex items-center justify-start gap-2 p-2">
-                    <div className="flex flex-col space-y-1">
-                      <p className="text-sm font-medium">{user.name}</p>
-                      <p className="text-xs text-muted-foreground">{user.email}</p>
+                    <div className="flex items-center justify-start gap-2 p-2">
+                      <div className="flex flex-col space-y-1">
+                        <p className="text-sm font-medium">{currentUser.name}</p>
+                        <p className="text-xs text-muted-foreground">{currentUser.email}</p>
+                      </div>
                     </div>
-                  </div>
                   <DropdownMenuSeparator />
                   <DropdownMenuItem onClick={handleLogout}>
                     <LogOut className="mr-2 h-4 w-4" />
-                    <span>Logout</span>
+                    <span>{t("common.logout")}</span>
                   </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
@@ -189,7 +239,9 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           </header>
 
           {/* Main Content */}
-          <main className="flex-1 p-4 md:p-6 lg:p-8">{children}</main>
+          <main className="flex-1 p-4 md:p-6 lg:p-8">
+            <div className="mx-auto w-full max-w-7xl">{children}</div>
+          </main>
         </div>
       </div>
     </div>

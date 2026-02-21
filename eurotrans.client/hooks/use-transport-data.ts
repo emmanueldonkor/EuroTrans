@@ -10,10 +10,12 @@ export function useShipments(filters?: {
     startDate?: string
     endDate?: string
     search?: string
-}) {
+}, options?: { enabled?: boolean }) {
     return useQuery({
         queryKey: ["shipments", filters],
         queryFn: () => api.getShipments(filters),
+        enabled: options?.enabled ?? true,
+        placeholderData: (previousData) => previousData,
     })
 }
 

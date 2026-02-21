@@ -81,17 +81,17 @@ export function getAvailableActions(shipment: Shipment, userRole: "manager" | "d
 export function getStatusBadgeColor(status: ShipmentStatus): string {
   switch (status) {
     case "unassigned":
-      return "bg-amber-50 text-amber-700 border border-amber-200"
+      return "bg-amber-50 text-amber-700 border border-amber-200 dark:bg-amber-500/10 dark:text-amber-300 dark:border-amber-400/30"
     case "assigned":
-      return "bg-cyan-50 text-cyan-700 border border-cyan-200"
+      return "bg-cyan-50 text-cyan-700 border border-cyan-200 dark:bg-cyan-500/10 dark:text-cyan-300 dark:border-cyan-400/30"
     case "in-transit":
-      return "bg-teal-50 text-teal-700 border border-teal-200"
+      return "bg-teal-50 text-teal-700 border border-teal-200 dark:bg-teal-500/10 dark:text-teal-300 dark:border-teal-400/30"
     case "delivered":
-      return "bg-emerald-50 text-emerald-700 border border-emerald-200"
+      return "bg-emerald-50 text-emerald-700 border border-emerald-200 dark:bg-emerald-500/10 dark:text-emerald-300 dark:border-emerald-400/30"
     case "cancelled":
-      return "bg-rose-50 text-rose-700 border border-rose-200"
+      return "bg-rose-50 text-rose-700 border border-rose-200 dark:bg-rose-500/10 dark:text-rose-300 dark:border-rose-400/30"
     default:
-      return "bg-slate-100 text-slate-600 border border-slate-200"
+      return "bg-slate-100 text-slate-600 border border-slate-200 dark:bg-slate-500/10 dark:text-slate-300 dark:border-slate-400/30"
   }
 }
 

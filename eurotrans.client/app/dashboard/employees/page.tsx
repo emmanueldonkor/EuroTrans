@@ -1,7 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
-import { Card } from "@/components/ui/card"
+import { useState } from "react"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
@@ -16,33 +15,20 @@ import {
 import { Label } from "@/components/ui/label"
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 import { Alert, AlertDescription } from "@/components/ui/alert"
-import { api } from "@/lib/api"
 import type { Driver } from "@/lib/types"
-import { AlertCircle, User } from "lucide-react"
+import { AlertCircle, User, Loader2 } from "lucide-react"
+import { useDriverMutations, useDrivers } from "@/hooks/use-transport-data"
+import { PageErrorState, SectionLoader } from "@/components/ui/page-state"
+import { PageHeading, PageShell, PageSurface } from "@/components/ui/page-shell"
 
 export default function EmployeesPage() {
-  const [drivers, setDrivers] = useState<Driver[]>([])
-  const [loading, setLoading] = useState(true)
+  const { data: drivers = [], isLoading, error: queryError, refetch } = useDrivers()
+  const { updateStatus } = useDriverMutations()
   const [selectedDriver, setSelectedDriver] = useState<Driver | null>(null)
   const [showStatusDialog, setShowStatusDialog] = useState(false)
   const [newStatus, setNewStatus] = useState<"available" | "on-duty" | "off-duty">("available")
-  const [updating, setUpdating] = useState(false)
+  const updating = updateStatus.isPending
   const [error, setError] = useState<string | null>(null)
-
-  useEffect(() => {
-    loadDrivers()
-  }, [])
-
-  const loadDrivers = async () => {
-    try {
-      const data = await api.getDrivers()
-      setDrivers(data)
-    } catch (error) {
-      console.error("Failed to load drivers:", error)
-    } finally {
-      setLoading(false)
-    }
-  }
 
   const getStatusColor = (status: string) => {
     const colors = {
@@ -66,14 +52,13 @@ export default function EmployeesPage() {
   const confirmUpdateStatus = async () => {
     if (!selectedDriver) return
 
-    setUpdating(true)
     setError(null)
 
     try {
-      const result = await api.updateDriverStatus(selectedDriver.id, newStatus)
+      const result = await updateStatus.mutateAsync({ id: selectedDriver.id, status: newStatus })
 
       if (result.success) {
-        await loadDrivers()
+        await refetch()
         setShowStatusDialog(false)
         setSelectedDriver(null)
       } else {
@@ -82,19 +67,30 @@ export default function EmployeesPage() {
     } catch (err) {
       setError("An error occurred while updating status")
       console.error("Failed to update driver status:", err)
-    } finally {
-      setUpdating(false)
     }
   }
 
-  return (
-    <div className="space-y-6">
-      <div>
-        <h1 className="text-3xl font-bold tracking-tight">Employees</h1>
-        <p className="text-muted-foreground">Manage your driver workforce</p>
-      </div>
+  if (isLoading) {
+    return <SectionLoader label="Loading drivers..." />
+  }
 
-      <Card>
+  if (queryError) {
+    return (
+      <PageErrorState
+        title="Could not load employees"
+        message={queryError instanceof Error ? queryError.message : "Unexpected error while loading employees."}
+        onRetry={() => {
+          void refetch()
+        }}
+      />
+    )
+  }
+
+  return (
+    <PageShell>
+      <PageHeading title="Employees" description="Manage your driver workforce" />
+
+      <PageSurface className="overflow-hidden">
         <Table>
           <TableHeader>
             <TableRow>
@@ -107,13 +103,7 @@ export default function EmployeesPage() {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {loading ? (
-              <TableRow>
-                <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
-                  Loading drivers...
-                </TableCell>
-              </TableRow>
-            ) : drivers.length === 0 ? (
+            {drivers.length === 0 ? (
               <TableRow>
                 <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
                   No drivers found
@@ -121,7 +111,7 @@ export default function EmployeesPage() {
               </TableRow>
             ) : (
               drivers.map((driver) => (
-                <TableRow key={driver.id}>
+                <TableRow key={driver.id} className="motion-smooth hover:bg-muted/40">
                   <TableCell className="font-medium">{driver.name}</TableCell>
                   <TableCell>{driver.email}</TableCell>
                   <TableCell>{driver.phone}</TableCell>
@@ -140,7 +130,7 @@ export default function EmployeesPage() {
             )}
           </TableBody>
         </Table>
-      </Card>
+      </PageSurface>
 
       <Dialog open={showStatusDialog} onOpenChange={setShowStatusDialog}>
         <DialogContent>
@@ -197,11 +187,12 @@ export default function EmployeesPage() {
               Cancel
             </Button>
             <Button onClick={confirmUpdateStatus} disabled={updating || newStatus === selectedDriver?.status}>
+              {updating && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
               {updating ? "Updating..." : "Update Status"}
             </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
-    </div>
+    </PageShell>
   )
 }

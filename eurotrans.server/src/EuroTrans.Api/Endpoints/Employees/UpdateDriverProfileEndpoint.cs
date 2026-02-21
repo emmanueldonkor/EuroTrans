@@ -4,7 +4,7 @@ using FluentValidation;
 
 namespace EuroTrans.Api.Endpoints.Employees;
 
-[EuroTrans.Api.Endpoints.ApiEndpoint]
+[ApiEndpoint]
 public static class UpdateDriverProfileEndpoint
 {
     public static void MapUpdateDriverProfileEndpoint(this IEndpointRouteBuilder app)

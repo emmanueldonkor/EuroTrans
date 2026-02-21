@@ -5,7 +5,7 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace EuroTrans.Api.Endpoints.Trucks;
 
-[EuroTrans.Api.Endpoints.ApiEndpoint]
+[ApiEndpoint]
 public static class UpdateTruckStatusEndpoint
 {
     public static void MapUpdateTruckStatusEndpoint(this IEndpointRouteBuilder app)
