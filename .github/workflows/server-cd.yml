@@ -12,9 +12,6 @@ on:
 jobs:
   build-and-deploy:
     runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: eurotrans.server
 
     steps:
       - name: Checkout
@@ -26,17 +23,17 @@ jobs:
           dotnet-version: "8.0.x"
 
       - name: Restore
-        run: dotnet restore EuroTrans.sln
+        run: dotnet restore eurotrans.server/EuroTrans.sln
 
       - name: Build
-        run: dotnet build EuroTrans.sln --configuration Release --no-restore
+        run: dotnet build eurotrans.server/EuroTrans.sln --configuration Release --no-restore
 
       - name: Publish API
-        run: dotnet publish src/EuroTrans.Api/EuroTrans.Api.csproj --configuration Release --output ../publish/api --no-build
+        run: dotnet publish eurotrans.server/src/EuroTrans.Api/EuroTrans.Api.csproj --configuration Release --output ./publish/api --no-build
 
       - name: Deploy to Azure Web App
         uses: azure/webapps-deploy@v3
         with:
           app-name: ${{ secrets.AZURE_WEBAPP_NAME }}
           publish-profile: ${{ secrets.AZURE_WEBAPP_PUBLISH_PROFILE }}
-          package: publish/api
+          package: ./publish/api
