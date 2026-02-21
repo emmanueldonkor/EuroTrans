@@ -2,6 +2,9 @@
   "name": "eurotrans-client",
   "version": "0.1.0",
   "private": true,
+  "engines": {
+    "node": ">=20.9.0"
+  },
   "scripts": {
     "build": "pnpm exec next build",
     "dev": "pnpm exec next dev",

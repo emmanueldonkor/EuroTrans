@@ -7,7 +7,12 @@ public static class AuthorizationServiceCollectionExtensions
 {
     public static IServiceCollection AddApiAuthorization(this IServiceCollection services, IConfiguration configuration)
     {
-        var tokenIssuer = $"https://{configuration["Auth0:Domain"]}/";
+        var auth0Domain = configuration["Auth0:Domain"];
+
+        if (string.IsNullOrWhiteSpace(auth0Domain))
+            throw new InvalidOperationException("Auth0:Domain is missing.");
+
+        var tokenIssuer = $"https://{auth0Domain}/";
 
         services.AddSingleton<IAuthorizationHandler, HasScopeHandler>();
         services.AddSingleton<IAuthorizationHandler, HasRoleHandler>();

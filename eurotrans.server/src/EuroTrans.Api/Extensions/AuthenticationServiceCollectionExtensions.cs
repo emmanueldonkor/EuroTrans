@@ -9,7 +9,14 @@ public static class AuthenticationServiceCollectionExtensions
     {
         var auth0Domain = configuration["Auth0:Domain"];
         var auth0Audience = configuration["Auth0:Audience"];
-        var audienceClaimPrefix = auth0Audience?.TrimEnd('/');
+
+        if (string.IsNullOrWhiteSpace(auth0Domain))
+            throw new InvalidOperationException("Auth0:Domain is missing.");
+
+        if (string.IsNullOrWhiteSpace(auth0Audience))
+            throw new InvalidOperationException("Auth0:Audience is missing.");
+
+        var audienceClaimPrefix = auth0Audience.TrimEnd('/');
 
         services.AddAuth0ApiAuthentication(options =>
         {

@@ -1,0 +1,42 @@
+name: Server CD
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+    paths:
+      - "eurotrans.server/**"
+      - ".github/workflows/server-cd.yml"
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: eurotrans.server
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup .NET 8
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: "8.0.x"
+
+      - name: Restore
+        run: dotnet restore EuroTrans.sln
+
+      - name: Build
+        run: dotnet build EuroTrans.sln --configuration Release --no-restore
+
+      - name: Publish API
+        run: dotnet publish src/EuroTrans.Api/EuroTrans.Api.csproj --configuration Release --output ../publish/api --no-build
+
+      - name: Deploy to Azure Web App
+        uses: azure/webapps-deploy@v3
+        with:
+          app-name: ${{ secrets.AZURE_WEBAPP_NAME }}
+          publish-profile: ${{ secrets.AZURE_WEBAPP_PUBLISH_PROFILE }}
+          package: publish/api

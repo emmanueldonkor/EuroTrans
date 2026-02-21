@@ -5,46 +5,50 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
+using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
 #nullable disable
 
 namespace EuroTrans.Infrastructure.Persistence.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    [Migration("20260220142200_AlignDriverFkAndPodModel")]
-    partial class AlignDriverFkAndPodModel
+    [Migration("20260221180545_InitialPostgres")]
+    partial class InitialPostgres
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
-            modelBuilder.HasAnnotation("ProductVersion", "8.0.21");
+            modelBuilder
+                .HasAnnotation("ProductVersion", "8.0.21")
+                .HasAnnotation("Relational:MaxIdentifierLength", 63);
+
+            NpgsqlModelBuilderExtensions.UseIdentityByDefaultColumns(modelBuilder);
 
             modelBuilder.Entity("EuroTrans.Domain.Employees.Driver", b =>
                 {
                     b.Property<Guid>("Id")
-                        .HasColumnType("TEXT")
+                        .HasColumnType("uuid")
                         .HasColumnName("employee_id");
 
                     b.Property<string>("LicenseNumber")
                         .HasMaxLength(100)
-                        .HasColumnType("TEXT")
+                        .HasColumnType("character varying(100)")
                         .HasColumnName("license_number");
 
                     b.Property<string>("Phone")
                         .HasMaxLength(50)
-                        .HasColumnType("TEXT")
+                        .HasColumnType("character varying(50)")
                         .HasColumnName("phone");
 
                     b.Property<byte[]>("RowVersion")
                         .IsConcurrencyToken()
                         .IsRequired()
-                        .ValueGeneratedOnAddOrUpdate()
-                        .HasColumnType("BLOB");
+                        .HasColumnType("bytea");
 
                     b.Property<string>("Status")
                         .IsRequired()
-                        .HasColumnType("TEXT")
+                        .HasColumnType("text")
                         .HasColumnName("status");
 
                     b.HasKey("Id");
@@ -55,42 +59,42 @@ namespace EuroTrans.Infrastructure.Persistence.Migrations
             modelBuilder.Entity("EuroTrans.Domain.Employees.Employee", b =>
                 {
                     b.Property<Guid>("Id")
-                        .HasColumnType("TEXT")
+                        .HasColumnType("uuid")
                         .HasColumnName("id");
 
                     b.Property<string>("Auth0UserId")
                         .IsRequired()
-                        .HasColumnType("TEXT")
+                        .HasColumnType("text")
                         .HasColumnName("auth0_user_id");
 
                     b.Property<string>("AvatarUrl")
                         .HasMaxLength(500)
-                        .HasColumnType("TEXT")
+                        .HasColumnType("character varying(500)")
                         .HasColumnName("avatar_url");
 
                     b.Property<DateTime>("CreatedAtUtc")
-                        .HasColumnType("TEXT")
+                        .HasColumnType("timestamp with time zone")
                         .HasColumnName("created_at");
 
                     b.Property<string>("Email")
                         .IsRequired()
                         .HasMaxLength(200)
-                        .HasColumnType("TEXT")
+                        .HasColumnType("character varying(200)")
                         .HasColumnName("email");
 
                     b.Property<bool>("IsActive")
-                        .HasColumnType("INTEGER")
+                        .HasColumnType("boolean")
                         .HasColumnName("is_active");
 
                     b.Property<string>("Name")
                         .IsRequired()
                         .HasMaxLength(200)
-                        .HasColumnType("TEXT")
+                        .HasColumnType("character varying(200)")
                         .HasColumnName("name");
 
                     b.Property<string>("Role")
                         .IsRequired()
-                        .HasColumnType("TEXT")
+                        .HasColumnType("text")
                         .HasColumnName("role");
 
                     b.HasKey("Id");
@@ -104,11 +108,11 @@ namespace EuroTrans.Infrastructure.Persistence.Migrations
                         new
                         {
                             Id = new Guid("aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee"),
-                            Auth0UserId = "google-oauth2|100148582346131912486",
-                            CreatedAtUtc = new DateTime(2026, 2, 20, 14, 21, 58, 818, DateTimeKind.Utc).AddTicks(1504),
-                            Email = "your@email.com",
+                            Auth0UserId = "seed|manager",
+                            CreatedAtUtc = new DateTime(2026, 2, 20, 0, 0, 0, 0, DateTimeKind.Utc),
+                            Email = "manager@eurotrans.local",
                             IsActive = true,
-                            Name = "Emmanuel Donkor",
+                            Name = "Seed Manager",
                             Role = "Manager"
                         });
                 });
@@ -116,30 +120,30 @@ namespace EuroTrans.Infrastructure.Persistence.Migrations
             modelBuilder.Entity("EuroTrans.Domain.Shipments.Activity", b =>
                 {
                     b.Property<Guid>("Id")
-                        .HasColumnType("TEXT")
+                        .HasColumnType("uuid")
                         .HasColumnName("id");
 
                     b.Property<string>("Description")
                         .IsRequired()
                         .HasMaxLength(1000)
-                        .HasColumnType("TEXT")
+                        .HasColumnType("character varying(1000)")
                         .HasColumnName("description");
 
                     b.Property<Guid>("EmployeeId")
-                        .HasColumnType("TEXT")
+                        .HasColumnType("uuid")
                         .HasColumnName("employee_id");
 
                     b.Property<Guid>("ShipmentId")
-                        .HasColumnType("TEXT")
+                        .HasColumnType("uuid")
                         .HasColumnName("shipment_id");
 
                     b.Property<DateTime>("TimestampUtc")
-                        .HasColumnType("TEXT")
+                        .HasColumnType("timestamp with time zone")
                         .HasColumnName("timestamp");
 
                     b.Property<string>("Type")
                         .IsRequired()
-                        .HasColumnType("TEXT")
+                        .HasColumnType("text")
                         .HasColumnName("type");
 
                     b.HasKey("Id");
@@ -154,30 +158,30 @@ namespace EuroTrans.Infrastructure.Persistence.Migrations
             modelBuilder.Entity("EuroTrans.Domain.Shipments.Document", b =>
                 {
                     b.Property<Guid>("Id")
-                        .HasColumnType("TEXT")
+                        .HasColumnType("uuid")
                         .HasColumnName("id");
 
                     b.Property<Guid>("EmployeeId")
-                        .HasColumnType("TEXT")
+                        .HasColumnType("uuid")
                         .HasColumnName("uploaded_by_employee_id");
 
                     b.Property<Guid>("ShipmentId")
-                        .HasColumnType("TEXT")
+                        .HasColumnType("uuid")
                         .HasColumnName("shipment_id");
 
                     b.Property<string>("Type")
                         .IsRequired()
-                        .HasColumnType("TEXT")
+                        .HasColumnType("text")
                         .HasColumnName("type");
 
                     b.Property<DateTime>("UploadedAtUtc")
-                        .HasColumnType("TEXT")
+                        .HasColumnType("timestamp with time zone")
                         .HasColumnName("uploaded_at");
 
                     b.Property<string>("Url")
                         .IsRequired()
                         .HasMaxLength(1000)
-                        .HasColumnType("TEXT")
+                        .HasColumnType("character varying(1000)")
                         .HasColumnName("url");
 
                     b.HasKey("Id");
@@ -192,62 +196,65 @@ namespace EuroTrans.Infrastructure.Persistence.Migrations
             modelBuilder.Entity("EuroTrans.Domain.Shipments.Shipment", b =>
                 {
                     b.Property<Guid>("Id")
-                        .HasColumnType("TEXT")
+                        .HasColumnType("uuid")
                         .HasColumnName("id");
 
                     b.Property<DateTime>("CreatedAtUtc")
-                        .HasColumnType("TEXT")
+                        .HasColumnType("timestamp with time zone")
                         .HasColumnName("created_at");
 
                     b.Property<DateTime?>("DeliveredAtUtc")
-                        .HasColumnType("TEXT")
+                        .HasColumnType("timestamp with time zone")
                         .HasColumnName("delivered_at");
 
                     b.Property<Guid?>("DriverId")
-                        .HasColumnType("TEXT")
+                        .HasColumnType("uuid")
                         .HasColumnName("driver_id");
 
                     b.Property<DateTime?>("EstimatedDeliveryDateUtc")
-                        .HasColumnType("TEXT")
+                        .HasColumnType("timestamp with time zone")
                         .HasColumnName("estimated_delivery_date");
 
                     b.Property<byte[]>("RowVersion")
                         .IsConcurrencyToken()
                         .IsRequired()
-                        .ValueGeneratedOnAddOrUpdate()
-                        .HasColumnType("BLOB");
+                        .HasColumnType("bytea");
 
                     b.Property<DateTime?>("StartedAtUtc")
-                        .HasColumnType("TEXT")
+                        .HasColumnType("timestamp with time zone")
                         .HasColumnName("started_at");
 
                     b.Property<string>("Status")
                         .IsRequired()
-                        .HasColumnType("TEXT")
+                        .HasColumnType("text")
                         .HasColumnName("status");
 
                     b.Property<string>("TrackingId")
                         .IsRequired()
                         .HasMaxLength(100)
-                        .HasColumnType("TEXT")
+                        .HasColumnType("character varying(100)")
                         .HasColumnName("tracking_id");
 
                     b.Property<Guid?>("TruckId")
-                        .HasColumnType("TEXT")
+                        .HasColumnType("uuid")
                         .HasColumnName("truck_id");
 
                     b.Property<DateTime?>("UpdatedAtUtc")
-                        .HasColumnType("TEXT")
+                        .HasColumnType("timestamp with time zone")
                         .HasColumnName("updated_at");
 
                     b.HasKey("Id");
 
-                    b.HasIndex("DriverId");
+                    b.HasIndex("DriverId")
+                        .IsUnique()
+                        .HasFilter("driver_id IS NOT NULL AND status IN ('Assigned', 'InTransit')");
 
                     b.HasIndex("TrackingId")
                         .IsUnique();
 
-                    b.HasIndex("TruckId");
+                    b.HasIndex("TruckId")
+                        .IsUnique()
+                        .HasFilter("truck_id IS NOT NULL AND status IN ('Assigned', 'InTransit')");
 
                     b.ToTable("shipments", (string)null);
                 });
@@ -255,38 +262,43 @@ namespace EuroTrans.Infrastructure.Persistence.Migrations
             modelBuilder.Entity("EuroTrans.Domain.Trucks.Truck", b =>
                 {
                     b.Property<Guid>("Id")
-                        .HasColumnType("TEXT")
+                        .HasColumnType("uuid")
                         .HasColumnName("id");
 
                     b.Property<float>("Capacity")
-                        .HasColumnType("REAL")
+                        .HasColumnType("real")
                         .HasColumnName("capacity");
 
                     b.Property<DateTime>("CreatedAtUtc")
-                        .HasColumnType("TEXT")
+                        .HasColumnType("timestamp with time zone")
                         .HasColumnName("created_at");
+
+                    b.Property<bool>("IsActive")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("boolean")
+                        .HasDefaultValue(true)
+                        .HasColumnName("is_active");
 
                     b.Property<string>("Model")
                         .IsRequired()
                         .HasMaxLength(200)
-                        .HasColumnType("TEXT")
+                        .HasColumnType("character varying(200)")
                         .HasColumnName("model");
 
                     b.Property<string>("PlateNumber")
                         .IsRequired()
                         .HasMaxLength(50)
-                        .HasColumnType("TEXT")
+                        .HasColumnType("character varying(50)")
                         .HasColumnName("plate_number");
 
                     b.Property<byte[]>("RowVersion")
                         .IsConcurrencyToken()
                         .IsRequired()
-                        .ValueGeneratedOnAddOrUpdate()
-                        .HasColumnType("BLOB");
+                        .HasColumnType("bytea");
 
                     b.Property<string>("Status")
                         .IsRequired()
-                        .HasColumnType("TEXT")
+                        .HasColumnType("text")
                         .HasColumnName("status");
 
                     b.HasKey("Id");
@@ -300,34 +312,44 @@ namespace EuroTrans.Infrastructure.Persistence.Migrations
             modelBuilder.Entity("Milestone", b =>
                 {
                     b.Property<Guid>("Id")
-                        .HasColumnType("TEXT")
+                        .HasColumnType("uuid")
                         .HasColumnName("id");
 
                     b.Property<Guid>("EmployeeId")
-                        .HasColumnType("TEXT")
+                        .HasColumnType("uuid")
                         .HasColumnName("created_by_employee_id");
 
+                    b.Property<string>("LocationLabel")
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)")
+                        .HasColumnName("location_label");
+
                     b.Property<double>("LocationLat")
-                        .HasColumnType("REAL")
+                        .HasColumnType("double precision")
                         .HasColumnName("location_lat");
 
                     b.Property<double>("LocationLng")
-                        .HasColumnType("REAL")
+                        .HasColumnType("double precision")
                         .HasColumnName("location_lng");
 
                     b.Property<string>("Note")
                         .IsRequired()
                         .HasMaxLength(1000)
-                        .HasColumnType("TEXT")
+                        .HasColumnType("character varying(1000)")
                         .HasColumnName("note");
 
                     b.Property<Guid>("ShipmentId")
-                        .HasColumnType("TEXT")
+                        .HasColumnType("uuid")
                         .HasColumnName("shipment_id");
 
                     b.Property<DateTime>("TimestampUtc")
-                        .HasColumnType("TEXT")
+                        .HasColumnType("timestamp with time zone")
                         .HasColumnName("timestamp");
+
+                    b.Property<string>("Type")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("type");
 
                     b.HasKey("Id");
 
@@ -402,30 +424,30 @@ namespace EuroTrans.Infrastructure.Persistence.Migrations
                     b.OwnsOne("EuroTrans.Domain.Shipments.ValueObjects.Address", "DestinationAddress", b1 =>
                         {
                             b1.Property<Guid>("ShipmentId")
-                                .HasColumnType("TEXT");
+                                .HasColumnType("uuid");
 
                             b1.Property<string>("AddressLine")
                                 .IsRequired()
                                 .HasMaxLength(500)
-                                .HasColumnType("TEXT")
+                                .HasColumnType("character varying(500)")
                                 .HasColumnName("destination_address");
 
                             b1.Property<string>("City")
                                 .IsRequired()
                                 .HasMaxLength(200)
-                                .HasColumnType("TEXT")
+                                .HasColumnType("character varying(200)")
                                 .HasColumnName("destination_city");
 
                             b1.Property<string>("Country")
                                 .IsRequired()
                                 .HasMaxLength(200)
-                                .HasColumnType("TEXT")
+                                .HasColumnType("character varying(200)")
                                 .HasColumnName("destination_country");
 
                             b1.Property<string>("PostalCode")
                                 .IsRequired()
                                 .HasMaxLength(50)
-                                .HasColumnType("TEXT")
+                                .HasColumnType("character varying(50)")
                                 .HasColumnName("destination_postal_code");
 
                             b1.HasKey("ShipmentId");
@@ -439,14 +461,14 @@ namespace EuroTrans.Infrastructure.Persistence.Migrations
                     b.OwnsOne("EuroTrans.Domain.Shipments.ValueObjects.GeoLocation", "DestinationLocation", b1 =>
                         {
                             b1.Property<Guid>("ShipmentId")
-                                .HasColumnType("TEXT");
+                                .HasColumnType("uuid");
 
                             b1.Property<float>("Latitude")
-                                .HasColumnType("REAL")
+                                .HasColumnType("real")
                                 .HasColumnName("destination_lat");
 
                             b1.Property<float>("Longitude")
-                                .HasColumnType("REAL")
+                                .HasColumnType("real")
                                 .HasColumnName("destination_lng");
 
                             b1.HasKey("ShipmentId");
@@ -460,30 +482,30 @@ namespace EuroTrans.Infrastructure.Persistence.Migrations
                     b.OwnsOne("EuroTrans.Domain.Shipments.ValueObjects.Address", "OriginAddress", b1 =>
                         {
                             b1.Property<Guid>("ShipmentId")
-                                .HasColumnType("TEXT");
+                                .HasColumnType("uuid");
 
                             b1.Property<string>("AddressLine")
                                 .IsRequired()
                                 .HasMaxLength(500)
-                                .HasColumnType("TEXT")
+                                .HasColumnType("character varying(500)")
                                 .HasColumnName("origin_address");
 
                             b1.Property<string>("City")
                                 .IsRequired()
                                 .HasMaxLength(200)
-                                .HasColumnType("TEXT")
+                                .HasColumnType("character varying(200)")
                                 .HasColumnName("origin_city");
 
                             b1.Property<string>("Country")
                                 .IsRequired()
                                 .HasMaxLength(200)
-                                .HasColumnType("TEXT")
+                                .HasColumnType("character varying(200)")
                                 .HasColumnName("origin_country");
 
                             b1.Property<string>("PostalCode")
                                 .IsRequired()
                                 .HasMaxLength(50)
-                                .HasColumnType("TEXT")
+                                .HasColumnType("character varying(50)")
                                 .HasColumnName("origin_postal_code");
 
                             b1.HasKey("ShipmentId");
@@ -497,14 +519,14 @@ namespace EuroTrans.Infrastructure.Persistence.Migrations
                     b.OwnsOne("EuroTrans.Domain.Shipments.ValueObjects.GeoLocation", "OriginLocation", b1 =>
                         {
                             b1.Property<Guid>("ShipmentId")
-                                .HasColumnType("TEXT");
+                                .HasColumnType("uuid");
 
                             b1.Property<float>("Latitude")
-                                .HasColumnType("REAL")
+                                .HasColumnType("real")
                                 .HasColumnName("origin_lat");
 
                             b1.Property<float>("Longitude")
-                                .HasColumnType("REAL")
+                                .HasColumnType("real")
                                 .HasColumnName("origin_lng");
 
                             b1.HasKey("ShipmentId");
@@ -518,20 +540,20 @@ namespace EuroTrans.Infrastructure.Persistence.Migrations
                     b.OwnsOne("EuroTrans.Domain.Shipments.ValueObjects.Cargo", "Cargo", b1 =>
                         {
                             b1.Property<Guid>("ShipmentId")
-                                .HasColumnType("TEXT");
+                                .HasColumnType("uuid");
 
                             b1.Property<string>("Description")
                                 .IsRequired()
                                 .HasMaxLength(500)
-                                .HasColumnType("TEXT")
+                                .HasColumnType("character varying(500)")
                                 .HasColumnName("cargo_description");
 
                             b1.Property<float>("Volume")
-                                .HasColumnType("REAL")
+                                .HasColumnType("real")
                                 .HasColumnName("cargo_volume");
 
                             b1.Property<float>("Weight")
-                                .HasColumnType("REAL")
+                                .HasColumnType("real")
                                 .HasColumnName("cargo_weight");
 
                             b1.HasKey("ShipmentId");
@@ -542,17 +564,22 @@ namespace EuroTrans.Infrastructure.Persistence.Migrations
                                 .HasForeignKey("ShipmentId");
                         });
 
-                    b.Navigation("Cargo");
+                    b.Navigation("Cargo")
+                        .IsRequired();
 
-                    b.Navigation("DestinationAddress");
+                    b.Navigation("DestinationAddress")
+                        .IsRequired();
 
-                    b.Navigation("DestinationLocation");
+                    b.Navigation("DestinationLocation")
+                        .IsRequired();
 
                     b.Navigation("Driver");
 
-                    b.Navigation("OriginAddress");
+                    b.Navigation("OriginAddress")
+                        .IsRequired();
 
-                    b.Navigation("OriginLocation");
+                    b.Navigation("OriginLocation")
+                        .IsRequired();
 
                     b.Navigation("Truck");
                 });
