@@ -7,9 +7,10 @@ import { Label } from "@/components/ui/label"
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
 import { Alert, AlertDescription } from "@/components/ui/alert"
-import { UserIcon, Mail, Phone, BadgeAlert } from "lucide-react"
+import { UserIcon, Mail, Phone, BadgeAlert, Loader2 } from "lucide-react"
 import { api } from "@/lib/api"
 import type { CurrentUserContext } from "@/lib/types"
+import { SectionLoader } from "@/components/ui/page-state"
 
 export default function DriverProfilePage() {
   const router = useRouter()
@@ -84,9 +85,7 @@ export default function DriverProfilePage() {
     }
 
     return (
-      <div className="flex items-center justify-center min-h-[400px]">
-        <div className="text-muted-foreground">Loading profile...</div>
-      </div>
+      <SectionLoader label="Loading profile..." />
     )
   }
 
@@ -165,6 +164,7 @@ export default function DriverProfilePage() {
         </div>
 
         <Button onClick={handleSave} disabled={saving} className="w-full">
+          {saving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
           {saving ? "Saving..." : profile.driverProfileComplete ? "Update Profile" : "Complete Profile"}
         </Button>
       </Card>

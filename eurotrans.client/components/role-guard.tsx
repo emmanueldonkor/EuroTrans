@@ -6,6 +6,7 @@ import { useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
 import { getSessionUser, getRedirectPath } from "@/lib/auth"
 import type { UserRole } from "@/lib/types"
+import { SectionLoader } from "@/components/ui/page-state"
 
 interface RoleGuardProps {
   allowedRoles: UserRole[]
@@ -35,11 +36,7 @@ export function RoleGuard({ allowedRoles, children }: RoleGuardProps) {
   }, [allowedRoles, router])
 
   if (isLoading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="text-muted-foreground">Loading...</div>
-      </div>
-    )
+    return <SectionLoader label="Loading your session..." />
   }
 
   if (!isAuthorized) {

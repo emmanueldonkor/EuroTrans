@@ -1,107 +1,90 @@
 "use client"
 
-import { useState, useEffect, useCallback } from "react"
+import { useMemo } from "react"
 import { useRouter } from "next/navigation"
 import { Card } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Package, MapPin, ArrowRight, Play } from "lucide-react"
-import { api } from "@/lib/api"
-import type { Shipment, User } from "@/lib/types"
 import { getStatusColor } from "@/lib/utils/format"
-import { getSessionUser } from "@/lib/auth"
 import { canStartShipment } from "@/lib/shipment-rules"
 import { useToast } from "@/hooks/use-toast"
+import { useCurrentUser } from "@/hooks/use-current-user"
+import { useShipmentMutations, useShipments } from "@/hooks/use-transport-data"
+import { PageErrorState, SectionLoader } from "@/components/ui/page-state"
 
 export default function DriverHomePage() {
   const router = useRouter()
   const { toast } = useToast()
-  const [user, setUser] = useState<User | null>(null)
-  const [activeShipment, setActiveShipment] = useState<Shipment | null>(null)
-  const [loading, setLoading] = useState(true)
-  const [starting, setStarting] = useState(false)
+  const { data: currentUser, isLoading: isUserLoading, error: userError } = useCurrentUser()
+  const {
+    data: shipments = [],
+    isLoading: isShipmentsLoading,
+    error: shipmentsError,
+    refetch,
+  } = useShipments(
+    currentUser?.role === "driver" ? { driverId: currentUser.employeeId } : undefined,
+    { enabled: currentUser?.role === "driver" },
+  )
+  const { startShipment } = useShipmentMutations()
 
-  const loadData = useCallback(async () => {
-    setLoading(true)
-    try {
-      const userData = await getSessionUser()
+  const activeShipment = useMemo(
+    () => shipments.find((shipment) => shipment.status !== "delivered" && shipment.status !== "cancelled") ?? null,
+    [shipments],
+  )
 
-      if (!userData) {
-        window.location.href = "/auth/login"
-        return
-      }
-
-      if (userData.role === "manager") {
-        router.push("/dashboard")
-        return
-      }
-
-      if (userData.role === "guest") {
-        router.push("/access-denied")
-        return
-      }
-
-      setUser(userData)
-
-      const shipments = await api.getShipments()
-      const active = shipments.find((s) => s.status !== "delivered" && s.status !== "cancelled")
-      setActiveShipment(active || null)
-    } catch (error) {
-      console.error("Failed to load data:", error)
-    } finally {
-      setLoading(false)
-    }
-  }, [router])
-
-  useEffect(() => {
-    loadData()
-  }, [loadData])
+  const canStart = activeShipment ? canStartShipment(activeShipment) : false
+  const isLoading = isUserLoading || isShipmentsLoading
+  const error = userError ?? shipmentsError
 
   const handleStartJourney = async () => {
     if (!activeShipment) return
 
-    setStarting(true)
-
     try {
-      await api.startShipment(activeShipment.id)
-
+      await startShipment.mutateAsync(activeShipment.id)
       toast({
         title: "Journey Started",
         description: "Your shipment journey has begun.",
       })
-
-      await loadData()
-    } catch (error) {
-      console.error("Failed to start journey:", error)
+      await refetch()
+    } catch (err) {
       toast({
         title: "Error",
-        description: "Failed to start journey. Please try again.",
+        description: err instanceof Error ? err.message : "Failed to start journey. Please try again.",
         variant: "destructive",
       })
-    } finally {
-      setStarting(false)
     }
   }
 
-  if (loading) {
+  if (isLoading) {
+    return <SectionLoader label="Loading your assignments..." />
+  }
+
+  if (error) {
     return (
-      <div className="flex items-center justify-center min-h-[400px]">
-        <div className="text-muted-foreground">Loading...</div>
-      </div>
+      <PageErrorState
+        title="Could not load driver home"
+        message={error instanceof Error ? error.message : "Unexpected error while loading your dashboard."}
+        onRetry={() => {
+          void refetch()
+        }}
+      />
     )
   }
 
-  const canStart = activeShipment ? canStartShipment(activeShipment) : false
+  if (!currentUser || currentUser.role !== "driver") {
+    return <SectionLoader label="Redirecting..." />
+  }
 
   return (
     <div className="max-w-lg mx-auto space-y-6">
       <div>
-        <h1 className="text-3xl font-bold">Hello, {user?.name.split(" ")[0]}</h1>
+        <h1 className="text-3xl font-bold">Hello, {currentUser.name.split(" ")[0]}</h1>
         <p className="text-muted-foreground">Welcome back to your driver portal</p>
       </div>
 
       {activeShipment ? (
-        <Card className="p-6 space-y-6">
+        <Card className="p-6 space-y-6 surface-hover">
           <div className="flex items-start justify-between">
             <div>
               <h2 className="text-xl font-semibold mb-1">Current Job</h2>
@@ -135,9 +118,9 @@ export default function DriverHomePage() {
           </div>
 
           {canStart && (
-            <Button className="w-full h-12 text-base" onClick={handleStartJourney} disabled={starting}>
+            <Button className="w-full h-12 text-base" onClick={handleStartJourney} disabled={startShipment.isPending}>
               <Play className="mr-2 h-5 w-5" />
-              {starting ? "Starting Journey..." : "Start Journey"}
+              {startShipment.isPending ? "Starting Journey..." : "Start Journey"}
             </Button>
           )}
 
@@ -151,7 +134,7 @@ export default function DriverHomePage() {
           </Button>
         </Card>
       ) : (
-        <Card className="p-12 flex flex-col items-center justify-center text-center">
+        <Card className="p-12 flex flex-col items-center justify-center text-center surface-hover">
           <Package className="h-16 w-16 text-muted-foreground mb-4" />
           <h3 className="text-lg font-medium mb-2">No Active Jobs</h3>
           <p className="text-sm text-muted-foreground max-w-sm">
@@ -161,11 +144,11 @@ export default function DriverHomePage() {
       )}
 
       <div className="grid grid-cols-2 gap-4">
-        <Card className="p-4">
+        <Card className="p-4 surface-hover">
           <p className="text-sm text-muted-foreground mb-1">Status</p>
           <p className="text-lg font-bold">On Duty</p>
         </Card>
-        <Card className="p-4">
+        <Card className="p-4 surface-hover">
           <p className="text-sm text-muted-foreground mb-1">Active Jobs</p>
           <p className="text-lg font-bold">{activeShipment ? "1" : "0"}</p>
         </Card>

@@ -7,7 +7,7 @@ import { Card } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
-import { ArrowLeft, AlertCircle } from "lucide-react"
+import { ArrowLeft, AlertCircle, Loader2 } from "lucide-react"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import Link from "next/link"
 import { api } from "@/lib/api"
@@ -20,7 +20,6 @@ export default function NewShipmentPage() {
   const [step, setStep] = useState(1)
   const [errors, setErrors] = useState<string[]>([])
 
-  // Form state
   const [cargo, setCargo] = useState({
     description: "",
     weight: "",
@@ -83,7 +82,6 @@ export default function NewShipmentPage() {
 
       router.push(`/dashboard/shipments/${newShipment.id}`)
     } catch (error) {
-      console.error("Failed to create shipment:", error)
       const fullMessage = error instanceof Error ? error.message : String(error)
       setErrors([fullMessage || "Unknown error"])
     } finally {
@@ -92,8 +90,7 @@ export default function NewShipmentPage() {
   }
 
   return (
-    <div className="max-w-3xl space-y-6">
-      {/* Header */}
+    <div className="max-w-3xl space-y-6 animate-fade-in">
       <div className="flex items-center gap-4">
         <Link href="/dashboard/shipments">
           <Button variant="ghost" size="icon">
@@ -104,6 +101,30 @@ export default function NewShipmentPage() {
           <h1 className="text-3xl font-bold tracking-tight">Create Shipment</h1>
           <p className="text-muted-foreground">Step {step} of 3</p>
         </div>
+      </div>
+
+      <div className="grid grid-cols-3 gap-3 rounded-xl border bg-card/80 p-3">
+        {[
+          { index: 1, label: "Cargo" },
+          { index: 2, label: "Route" },
+          { index: 3, label: "Review" },
+        ].map((item) => {
+          const isActive = step === item.index
+          const isComplete = step > item.index
+
+          return (
+            <div key={item.index} className="space-y-2">
+              <div className="h-1.5 rounded-full bg-muted overflow-hidden">
+                <div
+                  className={`h-full motion-smooth ${isComplete || isActive ? "w-full bg-primary" : "w-0 bg-primary"}`}
+                />
+              </div>
+              <p className={`text-xs font-medium ${isComplete || isActive ? "text-foreground" : "text-muted-foreground"}`}>
+                {item.label}
+              </p>
+            </div>
+          )
+        })}
       </div>
 
       {errors.length > 0 && (
@@ -119,12 +140,9 @@ export default function NewShipmentPage() {
         </Alert>
       )}
 
-      {/* Step 1: Cargo & Description */}
       {step === 1 && (
-        <Card className="p-6 space-y-6">
-          <div>
-            <h2 className="text-xl font-semibold mb-4">Cargo Details</h2>
-          </div>
+        <Card className="p-6 space-y-6 surface-hover">
+          <h2 className="text-xl font-semibold">Cargo Details</h2>
 
           <div className="space-y-4">
             <div>
@@ -151,7 +169,7 @@ export default function NewShipmentPage() {
                 />
               </div>
               <div>
-                <Label htmlFor="volume">Volume (m³)</Label>
+                <Label htmlFor="volume">Volume (m3)</Label>
                 <Input
                   id="volume"
                   type="number"
@@ -166,20 +184,16 @@ export default function NewShipmentPage() {
           </div>
 
           <Button onClick={() => setStep(2)} className="w-full">
-            Next: Origin & Destination
+            Next: Origin and Destination
           </Button>
         </Card>
       )}
 
-      {/* Step 2: Origin & Destination */}
       {step === 2 && (
-        <Card className="p-6 space-y-6">
-          <div>
-            <h2 className="text-xl font-semibold mb-4">Route Information</h2>
-          </div>
+        <Card className="p-6 space-y-6 surface-hover">
+          <h2 className="text-xl font-semibold">Route Information</h2>
 
           <div className="space-y-6">
-            {/* Origin */}
             <div className="space-y-4">
               <h3 className="text-lg font-medium">Origin</h3>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -226,7 +240,6 @@ export default function NewShipmentPage() {
               </div>
             </div>
 
-            {/* Destination */}
             <div className="space-y-4">
               <h3 className="text-lg font-medium">Destination</h3>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -285,14 +298,11 @@ export default function NewShipmentPage() {
         </Card>
       )}
 
-      {/* Step 3: Review */}
       {step === 3 && (
-        <Card className="p-6 space-y-6">
+        <Card className="p-6 space-y-6 surface-hover">
           <div>
-            <h2 className="text-xl font-semibold mb-4">Review & Create Shipment</h2>
-            <p className="text-sm text-muted-foreground">
-              Review the details and create this shipment.
-            </p>
+            <h2 className="text-xl font-semibold mb-4">Review and Create Shipment</h2>
+            <p className="text-sm text-muted-foreground">Review the details and create this shipment.</p>
           </div>
 
           <div className="space-y-6">
@@ -300,7 +310,7 @@ export default function NewShipmentPage() {
               <h3 className="text-sm font-medium text-muted-foreground mb-2">Cargo</h3>
               <p className="text-base">{cargo.description}</p>
               <p className="text-sm text-muted-foreground mt-1">
-                {cargo.weight} kg • {cargo.volume} m³
+                {cargo.weight} kg | {cargo.volume} m3
               </p>
             </div>
 
@@ -326,6 +336,7 @@ export default function NewShipmentPage() {
               Back
             </Button>
             <Button onClick={handleSubmit} className="flex-1" disabled={loading}>
+              {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
               {loading ? "Creating Shipment..." : "Create Shipment"}
             </Button>
           </div>

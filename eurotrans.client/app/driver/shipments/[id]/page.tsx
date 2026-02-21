@@ -24,6 +24,7 @@ import { api } from "@/lib/api"
 import type { Shipment, Location, Milestone } from "@/lib/types"
 import { getStatusColor } from "@/lib/utils/format"
 import { useToast } from "@/hooks/use-toast"
+import { SectionLoader } from "@/components/ui/page-state"
 
 export default function DriverShipmentDetailPage() {
   const params = useParams()
@@ -351,11 +352,7 @@ export default function DriverShipmentDetailPage() {
   }
 
   if (loading || !shipment) {
-    return (
-      <div className="flex items-center justify-center min-h-[400px]">
-        <div className="text-muted-foreground">Loading shipment...</div>
-      </div>
-    )
+    return <SectionLoader label="Loading shipment..." />
   }
 
   const canStart = shipment.status === "assigned" && !shipment.startedAt
@@ -439,7 +436,7 @@ export default function DriverShipmentDetailPage() {
         <div className="space-y-3">
           {canStart && (
             <Button className="w-full h-14 text-lg" onClick={handleStartJourney} disabled={actionLoading}>
-              <Play className="mr-2 h-5 w-5" />
+              {actionLoading ? <Loader2 className="mr-2 h-5 w-5 animate-spin" /> : <Play className="mr-2 h-5 w-5" />}
               {actionLoading ? "Starting..." : "Start Transit"}
             </Button>
           )}
@@ -518,6 +515,7 @@ export default function DriverShipmentDetailPage() {
                   Cancel
                 </Button>
                 <Button className="flex-1" onClick={handleDeliverShipment} disabled={uploadingProof || !selectedFile}>
+                  {uploadingProof && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                   {uploadingProof ? "Delivering..." : "Confirm Delivery"}
                 </Button>
               </div>
@@ -603,6 +601,7 @@ export default function DriverShipmentDetailPage() {
               Cancel
             </Button>
             <Button onClick={handleUpdateLocationManual} disabled={actionLoading || !locationData.lat || !locationData.lng}>
+              {actionLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
               Update Location
             </Button>
           </DialogFooter>
@@ -685,6 +684,7 @@ export default function DriverShipmentDetailPage() {
               Cancel
             </Button>
             <Button onClick={handleAddMilestone} disabled={actionLoading || !milestoneData.note.trim() || !milestoneData.lat || !milestoneData.lng}>
+              {actionLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
               Add Milestone
             </Button>
           </DialogFooter>

@@ -1,7 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
-import { Card } from "@/components/ui/card"
+import { useState } from "react"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
@@ -26,14 +25,16 @@ import {
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { api } from "@/lib/api"
 import type { Truck as TruckType } from "@/lib/types"
-import { Plus, Edit, Trash2 } from "lucide-react"
+import { Plus, Edit, Trash2, Loader2 } from "lucide-react"
 import { Alert, AlertDescription } from "@/components/ui/alert"
+import { useTruckMutations, useTrucks } from "@/hooks/use-transport-data"
+import { PageErrorState, SectionLoader } from "@/components/ui/page-state"
+import { PageHeader, PageHeading, PageShell, PageSurface } from "@/components/ui/page-shell"
 
 export default function FleetPage() {
-  const [trucks, setTrucks] = useState<TruckType[]>([])
-  const [loading, setLoading] = useState(true)
+  const { data: trucks = [], isLoading, error: queryError, refetch } = useTrucks()
+  const { createTruck, updateTruck, deleteTruck } = useTruckMutations()
   const [showCreateDialog, setShowCreateDialog] = useState(false)
   const [showEditDialog, setShowEditDialog] = useState(false)
   const [showDeleteDialog, setShowDeleteDialog] = useState(false)
@@ -47,27 +48,10 @@ export default function FleetPage() {
     status: "available" as TruckType["status"],
   })
 
-  useEffect(() => {
-    loadTrucks()
-  }, [])
-
-  const loadTrucks = async () => {
-    setError(null)
-    try {
-      const data = await api.getTrucks()
-      setTrucks(data)
-    } catch (error) {
-      console.error("Failed to load trucks:", error)
-      setError(error instanceof Error ? error.message : String(error))
-    } finally {
-      setLoading(false)
-    }
-  }
-
   const handleCreate = async () => {
     setError(null)
     try {
-      await api.createTruck({
+      await createTruck.mutateAsync({
         plateNumber: formData.plateNumber,
         model: formData.model,
         capacity: Number(formData.capacity),
@@ -75,7 +59,7 @@ export default function FleetPage() {
       })
       setShowCreateDialog(false)
       setFormData({ plateNumber: "", model: "", capacity: "", status: "available" })
-      await loadTrucks()
+      await refetch()
     } catch (err) {
       setError(err instanceof Error ? err.message : String(err))
       console.error(err)
@@ -87,11 +71,14 @@ export default function FleetPage() {
     setError(null)
 
     try {
-      const result = await api.updateTruck(selectedTruck.id, {
+      const result = await updateTruck.mutateAsync({
+        id: selectedTruck.id,
+        data: {
         plateNumber: formData.plateNumber,
         model: formData.model,
         capacity: Number(formData.capacity),
         status: formData.status,
+        },
       })
 
       if (!result.success) {
@@ -102,7 +89,7 @@ export default function FleetPage() {
       setShowEditDialog(false)
       setSelectedTruck(null)
       setFormData({ plateNumber: "", model: "", capacity: "", status: "available" })
-      await loadTrucks()
+      await refetch()
     } catch (err) {
       setError(err instanceof Error ? err.message : String(err))
       console.error(err)
@@ -114,7 +101,7 @@ export default function FleetPage() {
     setError(null)
 
     try {
-      const result = await api.deleteTruck(selectedTruck.id)
+      const result = await deleteTruck.mutateAsync(selectedTruck.id)
 
       if (!result.success) {
         setError(result.error || "Failed to delete truck")
@@ -124,7 +111,7 @@ export default function FleetPage() {
 
       setShowDeleteDialog(false)
       setSelectedTruck(null)
-      await loadTrucks()
+      await refetch()
     } catch (err) {
       setError(err instanceof Error ? err.message : String(err))
       console.error(err)
@@ -158,18 +145,31 @@ export default function FleetPage() {
     return colors[status as keyof typeof colors] || colors.available
   }
 
+  if (isLoading) {
+    return <SectionLoader label="Loading trucks..." />
+  }
+
+  if (queryError) {
+    return (
+      <PageErrorState
+        title="Could not load fleet"
+        message={queryError instanceof Error ? queryError.message : "Unexpected error while loading fleet."}
+        onRetry={() => {
+          void refetch()
+        }}
+      />
+    )
+  }
+
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold tracking-tight">Fleet</h1>
-          <p className="text-muted-foreground">Manage your truck fleet</p>
-        </div>
+    <PageShell>
+      <PageHeader>
+        <PageHeading title="Fleet" description="Manage your truck fleet" />
         <Button onClick={() => setShowCreateDialog(true)}>
           <Plus className="mr-2 h-4 w-4" />
           Add Truck
         </Button>
-      </div>
+      </PageHeader>
 
       {error && (
         <Alert variant="destructive">
@@ -177,7 +177,7 @@ export default function FleetPage() {
         </Alert>
       )}
 
-      <Card>
+      <PageSurface className="overflow-hidden">
         <Table>
           <TableHeader>
             <TableRow>
@@ -189,13 +189,7 @@ export default function FleetPage() {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {loading ? (
-              <TableRow>
-                <TableCell colSpan={5} className="text-center py-8 text-muted-foreground">
-                  Loading trucks...
-                </TableCell>
-              </TableRow>
-            ) : trucks.length === 0 ? (
+            {trucks.length === 0 ? (
               <TableRow>
                 <TableCell colSpan={5} className="text-center py-8 text-muted-foreground">
                   No trucks found
@@ -203,7 +197,7 @@ export default function FleetPage() {
               </TableRow>
             ) : (
               trucks.map((truck) => (
-                <TableRow key={truck.id}>
+                <TableRow key={truck.id} className="motion-smooth hover:bg-muted/40">
                   <TableCell className="font-medium">{truck.plateNumber}</TableCell>
                   <TableCell>{truck.model}</TableCell>
                   <TableCell>{truck.capacity.toLocaleString()} kg</TableCell>
@@ -223,7 +217,7 @@ export default function FleetPage() {
             )}
           </TableBody>
         </Table>
-      </Card>
+      </PageSurface>
 
       <Dialog open={showCreateDialog} onOpenChange={setShowCreateDialog}>
         <DialogContent>
@@ -278,10 +272,13 @@ export default function FleetPage() {
             </div>
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setShowCreateDialog(false)}>
+            <Button variant="outline" onClick={() => setShowCreateDialog(false)} disabled={createTruck.isPending}>
               Cancel
             </Button>
-            <Button onClick={handleCreate}>Create Truck</Button>
+            <Button onClick={handleCreate} disabled={createTruck.isPending}>
+              {createTruck.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              {createTruck.isPending ? "Creating..." : "Create Truck"}
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
@@ -341,10 +338,13 @@ export default function FleetPage() {
             </div>
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setShowEditDialog(false)}>
+            <Button variant="outline" onClick={() => setShowEditDialog(false)} disabled={updateTruck.isPending}>
               Cancel
             </Button>
-            <Button onClick={handleEdit}>Update Truck</Button>
+            <Button onClick={handleEdit} disabled={updateTruck.isPending}>
+              {updateTruck.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              {updateTruck.isPending ? "Updating..." : "Update Truck"}
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
@@ -364,11 +364,16 @@ export default function FleetPage() {
             </Alert>
           )}
           <AlertDialogFooter>
-            <AlertDialogCancel onClick={() => setShowDeleteDialog(false)}>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={handleDelete}>Delete</AlertDialogAction>
+            <AlertDialogCancel onClick={() => setShowDeleteDialog(false)} disabled={deleteTruck.isPending}>
+              Cancel
+            </AlertDialogCancel>
+            <AlertDialogAction onClick={handleDelete} disabled={deleteTruck.isPending}>
+              {deleteTruck.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              {deleteTruck.isPending ? "Deleting..." : "Delete"}
+            </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-    </div>
+    </PageShell>
   )
 }

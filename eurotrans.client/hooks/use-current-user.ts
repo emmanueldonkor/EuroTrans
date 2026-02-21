@@ -1,0 +1,13 @@
+"use client"
+
+import { useQuery } from "@tanstack/react-query"
+import { api } from "@/lib/api"
+
+export function useCurrentUser() {
+  return useQuery({
+    queryKey: ["current-user"],
+    queryFn: () => api.getCurrentUserContext(),
+    staleTime: 5 * 60 * 1000,
+    gcTime: 15 * 60 * 1000,
+  })
+}

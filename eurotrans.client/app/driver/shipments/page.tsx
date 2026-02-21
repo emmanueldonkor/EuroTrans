@@ -1,41 +1,44 @@
 "use client"
 
-import { useEffect, useState } from "react"
 import Link from "next/link"
 import { Card } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Package } from "lucide-react"
-import { api } from "@/lib/api"
-import type { Shipment } from "@/lib/types"
 import { getStatusColor, formatDate } from "@/lib/utils/format"
+import { useCurrentUser } from "@/hooks/use-current-user"
+import { useShipments } from "@/hooks/use-transport-data"
+import { PageErrorState, SectionLoader } from "@/components/ui/page-state"
 
 export default function DriverShipmentsPage() {
-  const [shipments, setShipments] = useState<Shipment[]>([])
-  const [loading, setLoading] = useState(true)
+  const { data: currentUser, isLoading: isUserLoading } = useCurrentUser()
+  const {
+    data: shipments = [],
+    isLoading,
+    error,
+    refetch,
+  } = useShipments(
+    currentUser?.role === "driver" ? { driverId: currentUser.employeeId } : undefined,
+    { enabled: currentUser?.role === "driver" },
+  )
 
-  useEffect(() => {
-    loadData()
-  }, [])
-
-  const loadData = async () => {
-    setLoading(true)
-    try {
-      // Backend already limits driver users to their own shipments.
-      const data = await api.getShipments()
-      setShipments(data)
-    } catch (error) {
-      console.error("Failed to load shipments:", error)
-    } finally {
-      setLoading(false)
-    }
+  if (isUserLoading || isLoading) {
+    return <SectionLoader label="Loading shipments..." />
   }
 
-  if (loading) {
+  if (error) {
     return (
-      <div className="flex items-center justify-center min-h-[400px]">
-        <div className="text-muted-foreground">Loading shipments...</div>
-      </div>
+      <PageErrorState
+        title="Could not load shipments"
+        message={error instanceof Error ? error.message : "Unexpected error while loading shipments."}
+        onRetry={() => {
+          void refetch()
+        }}
+      />
     )
+  }
+
+  if (!currentUser || currentUser.role !== "driver") {
+    return <SectionLoader label="Redirecting..." />
   }
 
   return (
@@ -46,7 +49,7 @@ export default function DriverShipmentsPage() {
       </div>
 
       {shipments.length === 0 ? (
-        <Card className="p-12 flex flex-col items-center justify-center text-center">
+        <Card className="p-12 flex flex-col items-center justify-center text-center surface-hover">
           <Package className="h-16 w-16 text-muted-foreground mb-4" />
           <h3 className="text-lg font-medium mb-2">No Shipments</h3>
           <p className="text-sm text-muted-foreground">You have no shipments assigned yet.</p>
@@ -55,7 +58,7 @@ export default function DriverShipmentsPage() {
         <div className="space-y-3">
           {shipments.map((shipment) => (
             <Link key={shipment.id} href={`/driver/shipments/${shipment.id}`}>
-              <Card className="p-4 hover:bg-muted/50 transition-colors">
+              <Card className="p-4 motion-smooth hover:bg-muted/40 hover:shadow-md">
                 <div className="space-y-3">
                   <div className="flex items-start justify-between gap-2">
                     <div>

@@ -1,50 +1,37 @@
 "use client"
 
-import { useState, useEffect } from "react"
 import { Card } from "@/components/ui/card"
-import { Package, TrendingUp, Users, Clock } from "lucide-react"
-import { api } from "@/lib/api"
-
-type AnalyticsSnapshot = Awaited<ReturnType<typeof api.getAnalytics>>
+import { Package, TrendingUp, Users, Clock, ArrowUpRight } from "lucide-react"
+import { useAnalytics } from "@/hooks/use-transport-data"
+import { PageErrorState, SectionLoader } from "@/components/ui/page-state"
+import { PageHeading, PageShell, PageSurface } from "@/components/ui/page-shell"
 
 export default function AnalyticsPage() {
-  const [analytics, setAnalytics] = useState<AnalyticsSnapshot | null>(null)
-  const [loading, setLoading] = useState(true)
+  const { data: analytics, isLoading, error, refetch } = useAnalytics()
 
-  useEffect(() => {
-    loadAnalytics()
-  }, [])
-
-  const loadAnalytics = async () => {
-    try {
-      const data = await api.getAnalytics()
-      setAnalytics(data)
-    } catch (error) {
-      console.error("Failed to load analytics:", error)
-    } finally {
-      setLoading(false)
-    }
+  if (isLoading) {
+    return <SectionLoader label="Loading analytics..." />
   }
 
-  if (loading) {
+  if (error) {
     return (
-      <div className="flex items-center justify-center min-h-[400px]">
-        <div className="text-muted-foreground">Loading analytics...</div>
-      </div>
+      <PageErrorState
+        title="Could not load analytics"
+        message={error instanceof Error ? error.message : "Unexpected error while loading analytics."}
+        onRetry={() => {
+          void refetch()
+        }}
+      />
     )
   }
 
   return (
-    <div className="space-y-6">
-      {/* Header */}
-      <div>
-        <h1 className="text-3xl font-bold tracking-tight">Analytics</h1>
-        <p className="text-muted-foreground">Performance metrics and insights</p>
-      </div>
+    <PageShell>
+      <PageHeading title="Analytics" description="Performance metrics and insights" />
 
       {/* KPI Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        <Card className="p-6">
+        <Card className="p-6 surface-hover">
           <div className="flex items-center gap-4">
             <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-primary/10">
               <Package className="h-6 w-6 text-primary" />
@@ -52,11 +39,15 @@ export default function AnalyticsPage() {
             <div>
               <p className="text-sm text-muted-foreground">Total Shipments</p>
               <p className="text-2xl font-bold">{analytics?.totalShipments || 0}</p>
+              <p className="mt-1 inline-flex items-center gap-1 text-xs text-emerald-600 dark:text-emerald-400">
+                <ArrowUpRight className="h-3.5 w-3.5" />
+                Live portfolio volume
+              </p>
             </div>
           </div>
         </Card>
 
-        <Card className="p-6">
+        <Card className="p-6 surface-hover">
           <div className="flex items-center gap-4">
             <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-orange-500/10">
               <TrendingUp className="h-6 w-6 text-orange-500" />
@@ -64,11 +55,15 @@ export default function AnalyticsPage() {
             <div>
               <p className="text-sm text-muted-foreground">Active Shipments</p>
               <p className="text-2xl font-bold">{analytics?.activeShipments || 0}</p>
+              <p className="mt-1 inline-flex items-center gap-1 text-xs text-orange-600 dark:text-orange-400">
+                <ArrowUpRight className="h-3.5 w-3.5" />
+                In execution now
+              </p>
             </div>
           </div>
         </Card>
 
-        <Card className="p-6">
+        <Card className="p-6 surface-hover">
           <div className="flex items-center gap-4">
             <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-green-500/10">
               <Package className="h-6 w-6 text-green-500" />
@@ -76,11 +71,15 @@ export default function AnalyticsPage() {
             <div>
               <p className="text-sm text-muted-foreground">Delivered</p>
               <p className="text-2xl font-bold">{analytics?.deliveredShipments || 0}</p>
+              <p className="mt-1 inline-flex items-center gap-1 text-xs text-emerald-600 dark:text-emerald-400">
+                <ArrowUpRight className="h-3.5 w-3.5" />
+                Completed shipments
+              </p>
             </div>
           </div>
         </Card>
 
-        <Card className="p-6">
+        <Card className="p-6 surface-hover">
           <div className="flex items-center gap-4">
             <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-blue-500/10">
               <Users className="h-6 w-6 text-blue-500" />
@@ -88,6 +87,10 @@ export default function AnalyticsPage() {
             <div>
               <p className="text-sm text-muted-foreground">Active Drivers</p>
               <p className="text-2xl font-bold">{analytics?.activeDrivers || 0}</p>
+              <p className="mt-1 inline-flex items-center gap-1 text-xs text-blue-600 dark:text-blue-400">
+                <ArrowUpRight className="h-3.5 w-3.5" />
+                Capacity online
+              </p>
             </div>
           </div>
         </Card>
@@ -95,7 +98,7 @@ export default function AnalyticsPage() {
 
       {/* Charts Placeholder */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <Card className="p-6">
+        <PageSurface className="p-6 surface-hover">
           <h2 className="text-lg font-semibold mb-4">Shipments Over Time</h2>
           <div className="h-64 flex items-center justify-center bg-muted/20 rounded-lg">
             <div className="text-center">
@@ -103,9 +106,9 @@ export default function AnalyticsPage() {
               <p className="text-sm text-muted-foreground">Chart visualization coming soon</p>
             </div>
           </div>
-        </Card>
+        </PageSurface>
 
-        <Card className="p-6">
+        <PageSurface className="p-6 surface-hover">
           <h2 className="text-lg font-semibold mb-4">Driver Workload Distribution</h2>
           <div className="h-64 flex items-center justify-center bg-muted/20 rounded-lg">
             <div className="text-center">
@@ -113,11 +116,11 @@ export default function AnalyticsPage() {
               <p className="text-sm text-muted-foreground">Chart visualization coming soon</p>
             </div>
           </div>
-        </Card>
+        </PageSurface>
       </div>
 
       {/* Additional Stats */}
-      <Card className="p-6">
+      <PageSurface className="p-6 surface-hover">
         <h2 className="text-lg font-semibold mb-4">Performance Metrics</h2>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           <div>
@@ -137,7 +140,7 @@ export default function AnalyticsPage() {
             </p>
           </div>
         </div>
-      </Card>
-    </div>
+      </PageSurface>
+    </PageShell>
   )
 }

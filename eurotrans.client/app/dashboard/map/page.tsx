@@ -1,48 +1,45 @@
 "use client"
 
-import { useState, useEffect } from "react"
-import { Card } from "@/components/ui/card"
+import { useState } from "react"
 import { Badge } from "@/components/ui/badge"
 import { MapPin } from "lucide-react"
-import { api } from "@/lib/api"
 import type { LiveMapPin } from "@/lib/types"
 import { getStatusColor, formatDate } from "@/lib/utils/format"
+import { useLiveMap } from "@/hooks/use-transport-data"
+import { PageErrorState, SectionLoader } from "@/components/ui/page-state"
+import { PageHeading, PageShell, PageSurface } from "@/components/ui/page-shell"
 
 export default function LiveMapPage() {
-  const [pins, setPins] = useState<LiveMapPin[]>([])
-  const [loading, setLoading] = useState(true)
   const [selectedPin, setSelectedPin] = useState<LiveMapPin | null>(null)
+  const { data: pins = [], isLoading, error, refetch } = useLiveMap()
 
-  useEffect(() => {
-    loadPins()
-    const interval = setInterval(loadPins, 30000) // Refresh every 30 seconds
-    return () => clearInterval(interval)
-  }, [])
+  if (isLoading) {
+    return <SectionLoader label="Loading map data..." />
+  }
 
-  const loadPins = async () => {
-    try {
-      const data = await api.getLiveMapPins()
-      setPins(data)
-    } catch (error) {
-      console.error("Failed to load map pins:", error)
-    } finally {
-      setLoading(false)
-    }
+  if (error) {
+    return (
+      <PageErrorState
+        title="Could not load live map"
+        message={error instanceof Error ? error.message : "Unexpected error while loading map pins."}
+        onRetry={() => {
+          void refetch()
+        }}
+      />
+    )
   }
 
   return (
-    <div className="space-y-6">
-      {/* Header */}
-      <div>
-        <h1 className="text-3xl font-bold tracking-tight">Live Map</h1>
-        <p className="text-muted-foreground">Real-time tracking of in-transit shipments</p>
-      </div>
+    <PageShell>
+      <PageHeading title="Live Map" description="Real-time tracking of in-transit shipments" />
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Map Placeholder */}
-        <Card className="lg:col-span-2 p-6 min-h-[600px] flex items-center justify-center bg-muted/20">
-          <div className="text-center space-y-4">
-            <MapPin className="h-16 w-16 mx-auto text-muted-foreground" />
+        <PageSurface className="lg:col-span-2 p-6 min-h-[600px] flex items-center justify-center bg-[radial-gradient(circle_at_20%_20%,rgba(11,137,143,0.08),transparent_35%),radial-gradient(circle_at_80%_20%,rgba(16,185,129,0.08),transparent_30%)]">
+          <div className="text-center space-y-4 rounded-2xl border border-dashed border-border bg-card/70 p-8">
+            <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-primary/10">
+              <MapPin className="h-8 w-8 text-primary" />
+            </div>
             <div>
               <p className="text-lg font-medium">Interactive Map Coming Soon</p>
               <p className="text-sm text-muted-foreground">
@@ -53,15 +50,13 @@ export default function LiveMapPage() {
               {pins.length} active shipment{pins.length !== 1 ? "s" : ""}
             </div>
           </div>
-        </Card>
+        </PageSurface>
 
         {/* Active Shipments List */}
-        <Card className="p-6 space-y-4">
+        <PageSurface className="p-6 space-y-4">
           <h2 className="text-lg font-semibold">Active Shipments</h2>
 
-          {loading ? (
-            <p className="text-sm text-muted-foreground">Loading...</p>
-          ) : pins.length === 0 ? (
+          {pins.length === 0 ? (
             <p className="text-sm text-muted-foreground">No active shipments</p>
           ) : (
             <div className="space-y-3">
@@ -69,7 +64,7 @@ export default function LiveMapPage() {
                 <button
                   key={pin.id}
                   onClick={() => setSelectedPin(pin)}
-                  className={`w-full text-left p-3 rounded-lg border transition-colors ${
+                  className={`w-full text-left p-3 rounded-lg border motion-smooth ${
                     selectedPin?.id === pin.id ? "bg-primary/5 border-primary" : "hover:bg-muted/50"
                   }`}
                 >
@@ -91,8 +86,8 @@ export default function LiveMapPage() {
               ))}
             </div>
           )}
-        </Card>
+        </PageSurface>
       </div>
-    </div>
+    </PageShell>
   )
 }

@@ -23,6 +23,7 @@ export const translations = {
     "landing.login": "Login",
 
     // Navigation
+    "nav.home": "Home",
     "nav.shipments": "Shipments",
     "nav.liveMap": "Live Map",
     "nav.fleet": "Fleet",
@@ -75,6 +76,7 @@ export const translations = {
     "landing.login": "Anmelden",
 
     // Navigation
+    "nav.home": "Startseite",
     "nav.shipments": "Sendungen",
     "nav.liveMap": "Live-Karte",
     "nav.fleet": "Flotte",
@@ -127,6 +129,7 @@ export const translations = {
     "landing.login": "Se connecter",
 
     // Navigation
+    "nav.home": "Accueil",
     "nav.shipments": "Expéditions",
     "nav.liveMap": "Carte en Direct",
     "nav.fleet": "Flotte",
@@ -161,10 +164,14 @@ export const translations = {
   },
 }
 
+export type TranslationKey = keyof typeof translations.en
+
+export function translate(locale: Locale, key: TranslationKey): string {
+  return translations[locale][key] || translations.en[key] || key
+}
+
 export function useTranslation(locale: Locale = "en") {
-  const t = (key: keyof typeof translations.en): string => {
-    return translations[locale][key] || translations.en[key] || key
-  }
+  const t = (key: TranslationKey): string => translate(locale, key)
 
   return { t, locale }
 }

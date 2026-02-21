@@ -4,7 +4,6 @@ import { useState } from "react"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import { Card } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
@@ -13,27 +12,29 @@ import { useShipments, useDrivers } from "@/hooks/use-transport-data"
 import { getStatusColor, formatDate } from "@/lib/utils/format"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import type { ShipmentStatus } from "@/lib/types"
+import { useDebouncedValue } from "@/hooks/use-debounced-value"
+import { SectionLoader } from "@/components/ui/page-state"
+import { PageHeader, PageHeading, PageShell, PageSurface } from "@/components/ui/page-shell"
 
 export default function ShipmentsPage() {
   const [searchTerm, setSearchTerm] = useState("")
   const [statusFilter, setStatusFilter] = useState<string>("all")
   const [driverFilter, setDriverFilter] = useState<string>("all")
+  const debouncedSearchTerm = useDebouncedValue(searchTerm, 300)
 
-  const { data: shipments = [], isLoading: shipmentsLoading, error: shipmentsError } = useShipments({
+  const {
+    data: shipments = [],
+    isLoading: shipmentsLoading,
+    isFetching: shipmentsFetching,
+    error: shipmentsError,
+  } = useShipments({
     status: statusFilter !== "all" ? (statusFilter as ShipmentStatus) : undefined,
     driverId: driverFilter !== "all" ? driverFilter : undefined,
-    search: searchTerm || undefined,
+    search: debouncedSearchTerm || undefined,
   })
 
   const { data: drivers = [], isLoading: driversLoading } = useDrivers()
   const isLoading = shipmentsLoading || driversLoading
-
-  const filteredShipments = shipments.filter((shipment) => {
-    const matchesSearch = !searchTerm || shipment.trackingId.toLowerCase().includes(searchTerm.toLowerCase())
-    const matchesStatus = statusFilter === "all" || shipment.status === statusFilter
-    const matchesDriver = driverFilter === "all" || shipment.driverId === driverFilter
-    return matchesSearch && matchesStatus && matchesDriver
-  })
 
   const getDriverName = (driverId?: string, driverName?: string) => {
     if (driverName) return driverName
@@ -42,28 +43,29 @@ export default function ShipmentsPage() {
     return driver?.name || "Unknown"
   }
 
-  if (isLoading) {
-    return (
-      <div className="flex items-center justify-center min-h-[400px]">
-        <div className="text-muted-foreground">Loading shipments...</div>
-      </div>
-    )
+  if (isLoading && shipments.length === 0) {
+    return <SectionLoader label="Loading shipments..." />
   }
 
   return (
-    <div className="space-y-6">
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-        <div>
-          <h1 className="text-3xl font-bold tracking-tight">Shipments</h1>
-          <p className="text-muted-foreground">Manage and track all shipments</p>
-        </div>
+    <PageShell>
+      <PageHeader>
+        <PageHeading
+          title="Shipments"
+          description={
+            <>
+              Manage and track all shipments
+              {shipmentsFetching && <span className="ml-2 text-xs">Refreshing...</span>}
+            </>
+          }
+        />
         <Link href="/dashboard/shipments/new">
           <Button>
             <Plus className="mr-2 h-4 w-4" />
             Create Shipment
           </Button>
         </Link>
-      </div>
+      </PageHeader>
 
       {shipmentsError && (
         <Alert variant="destructive">
@@ -71,7 +73,7 @@ export default function ShipmentsPage() {
         </Alert>
       )}
 
-      <Card className="p-4">
+      <PageSurface className="p-4 bg-gradient-to-r from-card to-muted/30">
         <div className="flex flex-col gap-4 sm:flex-row">
           <div className="flex-1 relative">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
@@ -79,11 +81,11 @@ export default function ShipmentsPage() {
               placeholder="Search by tracking ID..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="pl-9"
+              className="pl-9 bg-background/90"
             />
           </div>
           <Select value={statusFilter} onValueChange={setStatusFilter}>
-            <SelectTrigger className="w-full sm:w-44">
+            <SelectTrigger className="w-full sm:w-44 bg-background/90">
               <SelectValue placeholder="Status" />
             </SelectTrigger>
             <SelectContent>
@@ -96,7 +98,7 @@ export default function ShipmentsPage() {
             </SelectContent>
           </Select>
           <Select value={driverFilter} onValueChange={setDriverFilter}>
-            <SelectTrigger className="w-full sm:w-44">
+            <SelectTrigger className="w-full sm:w-44 bg-background/90">
               <SelectValue placeholder="Driver" />
             </SelectTrigger>
             <SelectContent>
@@ -109,9 +111,9 @@ export default function ShipmentsPage() {
             </SelectContent>
           </Select>
         </div>
-      </Card>
+      </PageSurface>
 
-      <Card>
+      <PageSurface className="overflow-hidden">
         <Table>
           <TableHeader>
             <TableRow>
@@ -123,17 +125,17 @@ export default function ShipmentsPage() {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {filteredShipments.length === 0 ? (
+            {shipments.length === 0 ? (
               <TableRow>
                 <TableCell colSpan={5} className="text-center text-muted-foreground py-8">
                   {shipmentsError ? "Could not load shipments." : "No shipments found"}
                 </TableCell>
               </TableRow>
             ) : (
-              filteredShipments.map((shipment) => (
-                <TableRow key={shipment.id} className="cursor-pointer hover:bg-muted/50">
+              shipments.map((shipment) => (
+                <TableRow key={shipment.id} className="cursor-pointer motion-smooth hover:bg-muted/40">
                   <TableCell>
-                    <Link href={`/dashboard/shipments/${shipment.id}`} className="font-medium hover:underline">
+                    <Link href={`/dashboard/shipments/${shipment.id}`} className="font-medium hover:underline underline-offset-4">
                       {shipment.trackingId}
                     </Link>
                   </TableCell>
@@ -150,7 +152,7 @@ export default function ShipmentsPage() {
             )}
           </TableBody>
         </Table>
-      </Card>
-    </div>
+      </PageSurface>
+    </PageShell>
   )
 }

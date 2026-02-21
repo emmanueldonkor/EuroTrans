@@ -18,12 +18,13 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog"
-import { ArrowLeft, Package, MapPin, Clock, User, TruckIcon, Trash2 } from "lucide-react"
+import { ArrowLeft, Package, MapPin, Clock, User, TruckIcon, Trash2, Loader2, CircleDot } from "lucide-react"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { api } from "@/lib/api"
 import type { Shipment, Driver, Truck, Activity } from "@/lib/types"
 import { formatDate } from "@/lib/utils/format"
 import { getStatusBadgeColor, getStatusLabel, canAssignShipment, canDeleteShipment } from "@/lib/shipment-rules"
+import { SectionLoader } from "@/components/ui/page-state"
 
 export default function ShipmentDetailPage() {
   const params = useParams()
@@ -107,11 +108,7 @@ export default function ShipmentDetailPage() {
   }
 
   if (loading || !shipment) {
-    return (
-      <div className="flex items-center justify-center min-h-[400px]">
-        <div className="text-muted-foreground">Loading shipment...</div>
-      </div>
-    )
+    return <SectionLoader label="Loading shipment..." />
   }
 
   const assignedDriver = drivers.find((d) => d.id === shipment.driverId)
@@ -119,7 +116,7 @@ export default function ShipmentDetailPage() {
   const canCancel = canDeleteShipment(shipment)
 
   return (
-    <div className="max-w-5xl space-y-6">
+    <div className="max-w-5xl space-y-6 animate-fade-in">
       <div className="flex items-center gap-4">
         <Link href="/dashboard/shipments">
           <Button variant="ghost" size="icon">
@@ -147,7 +144,7 @@ export default function ShipmentDetailPage() {
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <div className="lg:col-span-2 space-y-6">
-          <Card className="p-6 space-y-4">
+          <Card className="p-6 space-y-4 surface-hover">
             <h2 className="text-xl font-semibold flex items-center gap-2">
               <Package className="h-5 w-5" />
               Shipment Information
@@ -172,7 +169,7 @@ export default function ShipmentDetailPage() {
             </div>
           </Card>
 
-          <Card className="p-6 space-y-4">
+          <Card className="p-6 space-y-4 surface-hover">
             <h2 className="text-xl font-semibold flex items-center gap-2">
               <MapPin className="h-5 w-5" />
               Route
@@ -198,7 +195,7 @@ export default function ShipmentDetailPage() {
           </Card>
 
           {canAssignShipment(shipment) && (
-            <Card className="p-6 space-y-4">
+            <Card className="p-6 space-y-4 surface-hover">
               <h2 className="text-xl font-semibold">Assign Shipment</h2>
               <div className="space-y-4">
                 <div>
@@ -242,6 +239,7 @@ export default function ShipmentDetailPage() {
                   onClick={handleAssign}
                   disabled={!selectedDriverId || !selectedTruckId || assigning}
                 >
+                  {assigning && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                   {assigning ? "Assigning..." : "Assign Shipment"}
                 </Button>
               </div>
@@ -249,7 +247,7 @@ export default function ShipmentDetailPage() {
           )}
 
           {(shipment.status === "assigned" || shipment.status === "in-transit" || shipment.status === "delivered") && (
-            <Card className="p-6 space-y-4">
+            <Card className="p-6 space-y-4 surface-hover">
               <h2 className="text-xl font-semibold">Assignment Details</h2>
 
               <div className="space-y-4">
@@ -282,7 +280,7 @@ export default function ShipmentDetailPage() {
                   <p className="text-sm text-muted-foreground">This shipment will be marked as cancelled.</p>
                 </div>
                 <Button variant="destructive" onClick={() => setShowCancelDialog(true)} disabled={cancelling}>
-                  <Trash2 className="mr-2 h-4 w-4" />
+                  {cancelling ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Trash2 className="mr-2 h-4 w-4" />}
                   Cancel
                 </Button>
               </div>
@@ -291,33 +289,35 @@ export default function ShipmentDetailPage() {
         </div>
 
         <div className="space-y-6">
-          <Card className="p-6 space-y-4">
+          <Card className="p-6 space-y-4 surface-hover">
             <h2 className="text-lg font-semibold flex items-center gap-2">
               <Clock className="h-4 w-4" />
               Timeline
             </h2>
 
-            <div className="space-y-3 text-sm">
-              <div>
-                <Label className="text-muted-foreground">Created</Label>
-                <p className="mt-1">{formatDate(shipment.createdAt)}</p>
-              </div>
-              {shipment.startedAt && (
-                <div>
-                  <Label className="text-muted-foreground">Started</Label>
-                  <p className="mt-1">{formatDate(shipment.startedAt)}</p>
-                </div>
-              )}
-              {shipment.deliveredAt && (
-                <div>
-                  <Label className="text-muted-foreground">Delivered</Label>
-                  <p className="mt-1">{formatDate(shipment.deliveredAt)}</p>
-                </div>
-              )}
+            <div className="space-y-4 text-sm">
+              {[
+                { label: "Created", value: shipment.createdAt },
+                { label: "Started", value: shipment.startedAt },
+                { label: "Delivered", value: shipment.deliveredAt },
+              ]
+                .filter((item) => Boolean(item.value))
+                .map((item, index, source) => (
+                  <div key={item.label} className="flex gap-3">
+                    <div className="flex flex-col items-center">
+                      <CircleDot className="h-4 w-4 text-primary mt-0.5" />
+                      {index < source.length - 1 && <div className="mt-1 h-full w-px bg-border" />}
+                    </div>
+                    <div>
+                      <Label className="text-muted-foreground">{item.label}</Label>
+                      <p className="mt-1">{formatDate(String(item.value))}</p>
+                    </div>
+                  </div>
+                ))}
             </div>
           </Card>
 
-          <Card className="p-6 space-y-4">
+          <Card className="p-6 space-y-4 surface-hover">
             <h2 className="text-lg font-semibold">Activity</h2>
 
             <div className="space-y-3">
@@ -356,6 +356,7 @@ export default function ShipmentDetailPage() {
               disabled={cancelling}
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
             >
+              {cancelling && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
               {cancelling ? "Cancelling..." : "Cancel Shipment"}
             </AlertDialogAction>
           </AlertDialogFooter>
