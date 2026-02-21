@@ -14,7 +14,7 @@ public static class CoreServiceCollectionExtensions
     public static IServiceCollection AddApiCoreServices(this IServiceCollection services, IConfiguration configuration)
     {
         services.AddDbContext<AppDbContext>(options =>
-            options.UseSqlite(configuration.GetConnectionString("Default")));
+            options.UseNpgsql(configuration.GetConnectionString("Default")));
 
         services.AddApplication()
             .AddInfrastructure();

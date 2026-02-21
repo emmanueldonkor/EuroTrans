@@ -1,8 +1,8 @@
 using ErrorOr;
 using EuroTrans.Application.features;
 using EuroTrans.Infrastructure.Persistence;
-using Microsoft.Data.Sqlite;
 using Microsoft.EntityFrameworkCore;
+using Npgsql;
 
 namespace EuroTrans.Infrastructure.Repositories;
 
@@ -33,7 +33,7 @@ public class UnitOfWork : IUnitOfWork
                 code: "Concurrency.Conflict",
                 description: "The record was updated by another request. Refresh and retry.");
         }
-        catch (DbUpdateException ex) when (IsSqliteConstraintViolation(ex))
+        catch (DbUpdateException ex) when (IsPostgresConstraintViolation(ex))
         {
             return Error.Conflict(
                 code: "Data.ConstraintViolation",
@@ -41,7 +41,10 @@ public class UnitOfWork : IUnitOfWork
         }
     }
 
-    private static bool IsSqliteConstraintViolation(DbUpdateException ex)
-        => ex.InnerException is SqliteException { SqliteErrorCode: 19 };
+    private static bool IsPostgresConstraintViolation(DbUpdateException ex)
+        => ex.InnerException is PostgresException
+        {
+            SqlState: "23505" or "23503" or "23514"
+        };
 }
 
