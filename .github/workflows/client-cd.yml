@@ -4,8 +4,8 @@ on:
   workflow_dispatch:
   push:
     branches:
-      - master
       - main
+      - master
     paths:
       - "eurotrans.client/**"
       - ".github/workflows/client-cd.yml"
@@ -13,35 +13,53 @@ on:
 jobs:
   deploy:
     runs-on: ubuntu-latest
+
     defaults:
       run:
         working-directory: eurotrans.client
 
     steps:
-      - name: Checkout
+      - name: Checkout repository
         uses: actions/checkout@v4
 
+      # ✅ Use modern Node (fixes EBADENGINE warnings)
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
-          node-version: "20.9.0"
+          node-version: "22"
+          cache: "pnpm"
 
+      # ✅ Setup pnpm
       - name: Setup pnpm
         uses: pnpm/action-setup@v4
         with:
           version: 10
 
+      # ✅ Install dependencies
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
+      # ✅ Lint
       - name: Lint
         run: pnpm lint
 
+      # ✅ Build
       - name: Build
         run: pnpm build
 
+      # ✅ Safety check (optional but smart)
+      - name: Ensure Vercel token exists
+        run: |
+          if [ -z "$VERCEL_TOKEN" ]; then
+            echo "VERCEL_TOKEN is missing"
+            exit 1
+          fi
+        env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+
+      # 🚀 Deploy
       - name: Deploy to Vercel
-        run: npx vercel deploy --prod --token=${{ secrets.VERCEL_TOKEN }} --yes
+        run: pnpm exec vercel deploy --prod --yes --token=${{ secrets.VERCEL_TOKEN }}
         env:
           VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
           VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
