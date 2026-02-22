@@ -502,7 +502,7 @@ export const api = {
       body: JSON.stringify(payload),
     })
 
-    const shipment = await this.getShipment(created.id)
+    const shipment = await api.getShipment(created.id)
     if (!shipment) throw new Error("Shipment created but not found")
     return shipment
   },
@@ -516,14 +516,14 @@ export const api = {
       method: "POST",
       body: JSON.stringify({ driverId, truckId }),
     })
-    const shipment = await this.getShipment(id)
+    const shipment = await api.getShipment(id)
     if (!shipment) throw new Error("Shipment not found after assign")
     return shipment
   },
 
   async startShipment(id: string): Promise<Shipment> {
     await request<void>(`/api/shipments/${id}/start`, { method: "POST" })
-    const shipment = await this.getShipment(id)
+    const shipment = await api.getShipment(id)
     if (!shipment) throw new Error("Shipment not found after start")
     return shipment
   },
@@ -541,7 +541,7 @@ export const api = {
       body: formData,
     })
 
-    const shipment = await this.getShipment(id)
+    const shipment = await api.getShipment(id)
     if (!shipment) throw new Error("Shipment not found after delivery")
     return shipment
   },
@@ -583,7 +583,7 @@ export const api = {
       }),
     })
 
-    const shipment = await this.getShipment(id)
+    const shipment = await api.getShipment(id)
     if (!shipment) throw new Error("Shipment not found after location update")
     return shipment
   },
@@ -604,7 +604,7 @@ export const api = {
       }),
     })
 
-    const shipment = await this.getShipment(id)
+    const shipment = await api.getShipment(id)
     if (!shipment) throw new Error("Shipment not found after milestone")
     return shipment
   },
@@ -662,7 +662,7 @@ export const api = {
         method: "PUT",
         body: JSON.stringify({ status: toDriverApiStatus(newStatus) }),
       })
-      const driver = await this.getDriver(driverId)
+      const driver = await api.getDriver(driverId)
       return { success: true, driver: driver ?? undefined }
     } catch (error) {
       return { success: false, error: error instanceof Error ? error.message : "Unknown error" }
@@ -720,7 +720,7 @@ export const api = {
       }),
     })
 
-    const truck = await this.getTruck(response.id)
+    const truck = await api.getTruck(response.id)
     if (!truck) throw new Error("Truck created but not found")
     return truck
   },
@@ -736,7 +736,7 @@ export const api = {
         body: JSON.stringify({ status: toTruckApiStatus(data.status) }),
       })
 
-      const truck = await this.getTruck(id)
+      const truck = await api.getTruck(id)
       return { success: true, truck: truck ?? undefined }
     } catch (error) {
       return { success: false, error: error instanceof Error ? error.message : "Unknown error" }
@@ -753,7 +753,7 @@ export const api = {
   },
 
   async getLiveMapPins(): Promise<LiveMapPin[]> {
-    const shipments = await this.getShipments({ status: "in-transit" })
+    const shipments = await api.getShipments({ status: "in-transit" })
 
     return shipments.map((shipment) => {
       const position = shipment.currentLocation ?? shipment.origin
@@ -774,7 +774,7 @@ export const api = {
   },
 
   async getAnalytics() {
-    const [shipments, drivers] = await Promise.all([this.getShipments(), this.getDrivers()])
+    const [shipments, drivers] = await Promise.all([api.getShipments(), api.getDrivers()])
     const activeShipmentStatuses: ShipmentStatus[] = ["assigned", "in-transit"]
 
     return {
