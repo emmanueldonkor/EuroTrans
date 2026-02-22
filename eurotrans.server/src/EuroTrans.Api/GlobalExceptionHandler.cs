@@ -24,10 +24,12 @@ public class GlobalExceptionHandler : IExceptionHandler
 
         await Results.Problem(
            title: title,
+           detail: exception.Message,
            statusCode: statusCode,
            extensions: new Dictionary<string, object?>
            {
-                { "traceId", traceId }
+                { "traceId", traceId },
+                { "exceptionType", exception.GetType().FullName }
            }
        ).ExecuteAsync(httpContext);
         return true;
