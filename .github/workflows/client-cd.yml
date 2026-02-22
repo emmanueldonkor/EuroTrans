@@ -22,30 +22,27 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      # Setup Node
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10
+
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
-          node-version: "22"
+          node-version: "20.9.0"
           cache: "pnpm"
+          cache-dependency-path: "eurotrans.client/pnpm-lock.yaml"
 
-      # ✅ Install pnpm via Corepack
-      - name: Setup pnpm
-        run: corepack enable && corepack prepare pnpm@latest --activate
-
-      # Install dependencies
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
-      # Lint
       - name: Lint
         run: pnpm lint
 
-      # Build
       - name: Build
         run: pnpm build
 
-      # Ensure Vercel token exists
       - name: Ensure Vercel token
         run: |
           if [ -z "$VERCEL_TOKEN" ]; then
@@ -55,7 +52,6 @@ jobs:
         env:
           VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
 
-      # Deploy
       - name: Deploy to Vercel
         run: pnpm exec vercel deploy --prod --yes --token=${{ secrets.VERCEL_TOKEN }}
         env:
