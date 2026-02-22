@@ -36,6 +36,7 @@ app.UseHttpsRedirection();
 app.UseExceptionHandler();
 app.UseAuthentication();
 app.UseAuthorization();
+app.UseMiddleware<EnsureCurrentUserMiddleware>();
 app.UseAntiforgery();
 
 app.MapAllEndpoints();
