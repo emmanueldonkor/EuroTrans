@@ -22,33 +22,31 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      # ✅ Use modern Node (fixes EBADENGINE warnings)
+      # Setup Node
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
           node-version: "22"
           cache: "pnpm"
 
-      # ✅ Setup pnpm
+      # ✅ Install pnpm via Corepack
       - name: Setup pnpm
-        uses: pnpm/action-setup@v4
-        with:
-          version: 10
+        run: corepack enable && corepack prepare pnpm@latest --activate
 
-      # ✅ Install dependencies
+      # Install dependencies
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
-      # ✅ Lint
+      # Lint
       - name: Lint
         run: pnpm lint
 
-      # ✅ Build
+      # Build
       - name: Build
         run: pnpm build
 
-      # ✅ Safety check (optional but smart)
-      - name: Ensure Vercel token exists
+      # Ensure Vercel token exists
+      - name: Ensure Vercel token
         run: |
           if [ -z "$VERCEL_TOKEN" ]; then
             echo "VERCEL_TOKEN is missing"
@@ -57,7 +55,7 @@ jobs:
         env:
           VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
 
-      # 🚀 Deploy
+      # Deploy
       - name: Deploy to Vercel
         run: pnpm exec vercel deploy --prod --yes --token=${{ secrets.VERCEL_TOKEN }}
         env:
