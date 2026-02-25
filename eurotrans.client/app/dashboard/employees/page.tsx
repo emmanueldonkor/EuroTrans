@@ -18,12 +18,15 @@ import { Alert, AlertDescription } from "@/components/ui/alert"
 import type { Driver } from "@/lib/types"
 import { AlertCircle, User, Loader2 } from "lucide-react"
 import { useDriverMutations, useDrivers } from "@/hooks/use-transport-data"
+import { useToast } from "@/hooks/use-toast"
 import { PageErrorState, SectionLoader } from "@/components/ui/page-state"
 import { PageHeading, PageShell, PageSurface } from "@/components/ui/page-shell"
+import { toActionErrorMessage } from "@/lib/utils/error"
 
 export default function EmployeesPage() {
   const { data: drivers = [], isLoading, error: queryError, refetch } = useDrivers()
   const { updateStatus } = useDriverMutations()
+  const { toast } = useToast()
   const [selectedDriver, setSelectedDriver] = useState<Driver | null>(null)
   const [showStatusDialog, setShowStatusDialog] = useState(false)
   const [newStatus, setNewStatus] = useState<"available" | "on-duty" | "off-duty">("available")
@@ -64,12 +67,27 @@ export default function EmployeesPage() {
         await refetch()
         setShowStatusDialog(false)
         setSelectedDriver(null)
+        toast({
+          title: "Status updated",
+          description: `${selectedDriver.name} is now ${newStatus.replace("-", " ")}.`,
+        })
       } else {
-        setError(result.error || "Failed to update status")
+        const message = result.error || "Failed to update status"
+        setError(message)
+        toast({
+          title: "Update failed",
+          description: message,
+          variant: "destructive",
+        })
       }
     } catch (err) {
-      setError("An error occurred while updating status")
-      console.error("Failed to update driver status:", err)
+      const message = toActionErrorMessage(err, "An error occurred while updating status.")
+      setError(message)
+      toast({
+        title: "Update failed",
+        description: message,
+        variant: "destructive",
+      })
     }
   }
 

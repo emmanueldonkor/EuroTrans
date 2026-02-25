@@ -25,10 +25,13 @@ import type { Shipment, Driver, Truck, Activity } from "@/lib/types"
 import { formatDate } from "@/lib/utils/format"
 import { getStatusBadgeColor, getStatusLabel, canAssignShipment, canDeleteShipment } from "@/lib/shipment-rules"
 import { SectionLoader } from "@/components/ui/page-state"
+import { useToast } from "@/hooks/use-toast"
+import { toActionErrorMessage } from "@/lib/utils/error"
 
 export default function ShipmentDetailPage() {
   const params = useParams()
   const router = useRouter()
+  const { toast } = useToast()
   const [shipment, setShipment] = useState<Shipment | null>(null)
   const [drivers, setDrivers] = useState<Driver[]>([])
   const [trucks, setTrucks] = useState<Truck[]>([])
@@ -71,7 +74,8 @@ export default function ShipmentDetailPage() {
       setSelectedDriverId(shipmentData.driverId ?? "")
       setSelectedTruckId(shipmentData.truckId ?? "")
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to load shipment.")
+      const message = toActionErrorMessage(err, "Failed to load shipment.")
+      setError(message)
     } finally {
       setLoading(false)
     }
@@ -85,8 +89,18 @@ export default function ShipmentDetailPage() {
     try {
       await api.assignShipment(shipment.id, selectedDriverId, selectedTruckId)
       await loadData()
+      toast({
+        title: "Shipment assigned",
+        description: "Driver and truck assignment saved.",
+      })
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to assign shipment.")
+      const message = toActionErrorMessage(err, "Failed to assign shipment.")
+      setError(message)
+      toast({
+        title: "Assignment failed",
+        description: message,
+        variant: "destructive",
+      })
     } finally {
       setAssigning(false)
     }
@@ -99,9 +113,19 @@ export default function ShipmentDetailPage() {
 
     try {
       await api.deleteShipment(shipment.id)
+      toast({
+        title: "Shipment cancelled",
+        description: `${shipment.trackingId} has been cancelled.`,
+      })
       router.push("/dashboard/shipments")
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to cancel shipment.")
+      const message = toActionErrorMessage(err, "Failed to cancel shipment.")
+      setError(message)
+      toast({
+        title: "Cancel failed",
+        description: message,
+        variant: "destructive",
+      })
       setShowCancelDialog(false)
       setCancelling(false)
     }

@@ -13,9 +13,12 @@ import Link from "next/link"
 import { api } from "@/lib/api"
 import type { Location } from "@/lib/types"
 import { validateShipmentData } from "@/lib/shipment-rules"
+import { useToast } from "@/hooks/use-toast"
+import { toActionErrorMessage } from "@/lib/utils/error"
 
 export default function NewShipmentPage() {
   const router = useRouter()
+  const { toast } = useToast()
   const [loading, setLoading] = useState(false)
   const [step, setStep] = useState(1)
   const [errors, setErrors] = useState<string[]>([])
@@ -55,6 +58,11 @@ export default function NewShipmentPage() {
 
     if (!validation.valid) {
       setErrors(validation.errors)
+      toast({
+        title: "Validation failed",
+        description: validation.errors[0] ?? "Please review shipment details.",
+        variant: "destructive",
+      })
       return
     }
 
@@ -80,10 +88,19 @@ export default function NewShipmentPage() {
         } as Location,
       })
 
+      toast({
+        title: "Shipment created",
+        description: "New shipment is ready for assignment.",
+      })
       router.push(`/dashboard/shipments/${newShipment.id}`)
     } catch (error) {
-      const fullMessage = error instanceof Error ? error.message : String(error)
+      const fullMessage = toActionErrorMessage(error, "Failed to create shipment.")
       setErrors([fullMessage || "Unknown error"])
+      toast({
+        title: "Create failed",
+        description: fullMessage,
+        variant: "destructive",
+      })
     } finally {
       setLoading(false)
     }

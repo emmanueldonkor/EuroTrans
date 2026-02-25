@@ -29,12 +29,15 @@ import type { Truck as TruckType } from "@/lib/types"
 import { Plus, Edit, Trash2, Loader2 } from "lucide-react"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { useTruckMutations, useTrucks } from "@/hooks/use-transport-data"
+import { useToast } from "@/hooks/use-toast"
 import { PageErrorState, SectionLoader } from "@/components/ui/page-state"
 import { PageHeader, PageHeading, PageShell, PageSurface } from "@/components/ui/page-shell"
+import { toActionErrorMessage } from "@/lib/utils/error"
 
 export default function FleetPage() {
   const { data: trucks = [], isLoading, error: queryError, refetch } = useTrucks()
   const { createTruck, updateTruck, deleteTruck } = useTruckMutations()
+  const { toast } = useToast()
   const [showCreateDialog, setShowCreateDialog] = useState(false)
   const [showEditDialog, setShowEditDialog] = useState(false)
   const [showDeleteDialog, setShowDeleteDialog] = useState(false)
@@ -60,9 +63,18 @@ export default function FleetPage() {
       setShowCreateDialog(false)
       setFormData({ plateNumber: "", model: "", capacity: "", status: "available" })
       await refetch()
+      toast({
+        title: "Truck created",
+        description: "The fleet has been updated.",
+      })
     } catch (err) {
-      setError(err instanceof Error ? err.message : String(err))
-      console.error(err)
+      const message = toActionErrorMessage(err, "Failed to create truck.")
+      setError(message)
+      toast({
+        title: "Create failed",
+        description: message,
+        variant: "destructive",
+      })
     }
   }
 
@@ -90,9 +102,18 @@ export default function FleetPage() {
       setSelectedTruck(null)
       setFormData({ plateNumber: "", model: "", capacity: "", status: "available" })
       await refetch()
+      toast({
+        title: "Truck updated",
+        description: `${selectedTruck.plateNumber} was updated successfully.`,
+      })
     } catch (err) {
-      setError(err instanceof Error ? err.message : String(err))
-      console.error(err)
+      const message = toActionErrorMessage(err, "Failed to update truck.")
+      setError(message)
+      toast({
+        title: "Update failed",
+        description: message,
+        variant: "destructive",
+      })
     }
   }
 
@@ -112,9 +133,18 @@ export default function FleetPage() {
       setShowDeleteDialog(false)
       setSelectedTruck(null)
       await refetch()
+      toast({
+        title: "Truck deleted",
+        description: "Truck removed from fleet.",
+      })
     } catch (err) {
-      setError(err instanceof Error ? err.message : String(err))
-      console.error(err)
+      const message = toActionErrorMessage(err, "Failed to delete truck.")
+      setError(message)
+      toast({
+        title: "Delete failed",
+        description: message,
+        variant: "destructive",
+      })
     }
   }
 

@@ -11,11 +11,14 @@ import { UserIcon, Mail, Phone, BadgeAlert, Loader2 } from "lucide-react"
 import { api } from "@/lib/api"
 import type { CurrentUserContext } from "@/lib/types"
 import { SectionLoader } from "@/components/ui/page-state"
+import { useToast } from "@/hooks/use-toast"
+import { toActionErrorMessage } from "@/lib/utils/error"
 
 export default function DriverProfilePage() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const isForcedCompletion = searchParams.get("complete") === "1"
+  const { toast } = useToast()
 
   const [profile, setProfile] = useState<CurrentUserContext | null>(null)
   const [phone, setPhone] = useState("")
@@ -48,7 +51,13 @@ export default function DriverProfilePage() {
     setSuccess(null)
 
     if (!phone.trim() || !licenseNumber.trim()) {
-      setError("Phone and license number are required.")
+      const message = "Phone and license number are required."
+      setError(message)
+      toast({
+        title: "Validation failed",
+        description: message,
+        variant: "destructive",
+      })
       return
     }
 
@@ -62,12 +71,22 @@ export default function DriverProfilePage() {
       const me = await api.getCurrentUserContext()
       setProfile(me)
       setSuccess("Profile updated successfully.")
+      toast({
+        title: "Profile saved",
+        description: "Your driver profile was updated.",
+      })
 
       if (me.driverProfileComplete) {
         router.push("/driver")
       }
     } catch (err) {
-      setError(err instanceof Error ? err.message : String(err))
+      const message = toActionErrorMessage(err, "Failed to update profile.")
+      setError(message)
+      toast({
+        title: "Save failed",
+        description: message,
+        variant: "destructive",
+      })
     } finally {
       setSaving(false)
     }
