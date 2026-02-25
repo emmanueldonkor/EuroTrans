@@ -7,8 +7,7 @@ import { Card } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
-import { ArrowLeft, AlertCircle, Loader2 } from "lucide-react"
-import { Alert, AlertDescription } from "@/components/ui/alert"
+import { ArrowLeft, Loader2 } from "lucide-react"
 import Link from "next/link"
 import { api } from "@/lib/api"
 import type { Location } from "@/lib/types"
@@ -21,7 +20,6 @@ export default function NewShipmentPage() {
   const { toast } = useToast()
   const [loading, setLoading] = useState(false)
   const [step, setStep] = useState(1)
-  const [errors, setErrors] = useState<string[]>([])
 
   const [cargo, setCargo] = useState({
     description: "",
@@ -57,7 +55,6 @@ export default function NewShipmentPage() {
     })
 
     if (!validation.valid) {
-      setErrors(validation.errors)
       toast({
         title: "Validation failed",
         description: validation.errors[0] ?? "Please review shipment details.",
@@ -67,7 +64,6 @@ export default function NewShipmentPage() {
     }
 
     setLoading(true)
-    setErrors([])
 
     try {
       const newShipment = await api.createShipment({
@@ -95,7 +91,6 @@ export default function NewShipmentPage() {
       router.push(`/dashboard/shipments/${newShipment.id}`)
     } catch (error) {
       const fullMessage = toActionErrorMessage(error, "Failed to create shipment.")
-      setErrors([fullMessage || "Unknown error"])
       toast({
         title: "Create failed",
         description: fullMessage,
@@ -143,19 +138,6 @@ export default function NewShipmentPage() {
           )
         })}
       </div>
-
-      {errors.length > 0 && (
-        <Alert variant="destructive">
-          <AlertCircle className="h-4 w-4" />
-          <AlertDescription>
-            <ul className="list-disc list-inside space-y-1">
-              {errors.map((error, i) => (
-                <li key={i}>{error}</li>
-              ))}
-            </ul>
-          </AlertDescription>
-        </Alert>
-      )}
 
       {step === 1 && (
         <Card className="panel p-6 space-y-6 surface-hover">

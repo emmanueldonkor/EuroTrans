@@ -24,7 +24,7 @@ import { api } from "@/lib/api"
 import type { Shipment, Driver, Truck, Activity } from "@/lib/types"
 import { formatDate } from "@/lib/utils/format"
 import { getStatusBadgeColor, getStatusLabel, canAssignShipment, canDeleteShipment } from "@/lib/shipment-rules"
-import { SectionLoader } from "@/components/ui/page-state"
+import { PageErrorState, SectionLoader } from "@/components/ui/page-state"
 import { useToast } from "@/hooks/use-toast"
 import { toActionErrorMessage } from "@/lib/utils/error"
 
@@ -40,7 +40,7 @@ export default function ShipmentDetailPage() {
   const [assigning, setAssigning] = useState(false)
   const [cancelling, setCancelling] = useState(false)
   const [showCancelDialog, setShowCancelDialog] = useState(false)
-  const [error, setError] = useState<string | null>(null)
+  const [loadError, setLoadError] = useState<string | null>(null)
 
   const [selectedDriverId, setSelectedDriverId] = useState<string>("")
   const [selectedTruckId, setSelectedTruckId] = useState<string>("")
@@ -52,7 +52,7 @@ export default function ShipmentDetailPage() {
 
   const loadData = async () => {
     setLoading(true)
-    setError(null)
+    setLoadError(null)
     try {
       const shipmentId = String(params.id)
       const [shipmentData, driversData, trucksData, activitiesData] = await Promise.all([
@@ -75,7 +75,7 @@ export default function ShipmentDetailPage() {
       setSelectedTruckId(shipmentData.truckId ?? "")
     } catch (err) {
       const message = toActionErrorMessage(err, "Failed to load shipment.")
-      setError(message)
+      setLoadError(message)
     } finally {
       setLoading(false)
     }
@@ -84,7 +84,6 @@ export default function ShipmentDetailPage() {
   const handleAssign = async () => {
     if (!shipment || !selectedDriverId || !selectedTruckId) return
     setAssigning(true)
-    setError(null)
 
     try {
       await api.assignShipment(shipment.id, selectedDriverId, selectedTruckId)
@@ -95,7 +94,6 @@ export default function ShipmentDetailPage() {
       })
     } catch (err) {
       const message = toActionErrorMessage(err, "Failed to assign shipment.")
-      setError(message)
       toast({
         title: "Assignment failed",
         description: message,
@@ -109,7 +107,6 @@ export default function ShipmentDetailPage() {
   const handleCancelShipment = async () => {
     if (!shipment) return
     setCancelling(true)
-    setError(null)
 
     try {
       await api.deleteShipment(shipment.id)
@@ -120,7 +117,6 @@ export default function ShipmentDetailPage() {
       router.push("/dashboard/shipments")
     } catch (err) {
       const message = toActionErrorMessage(err, "Failed to cancel shipment.")
-      setError(message)
       toast({
         title: "Cancel failed",
         description: message,
@@ -131,8 +127,20 @@ export default function ShipmentDetailPage() {
     }
   }
 
-  if (loading || !shipment) {
+  if (loading) {
     return <SectionLoader label="Loading shipment..." />
+  }
+
+  if (!shipment) {
+    return (
+      <PageErrorState
+        title="Could not load shipment"
+        message={loadError ?? "Shipment is unavailable."}
+        onRetry={() => {
+          void loadData()
+        }}
+      />
+    )
   }
 
   const assignedDriver = drivers.find((d) => d.id === shipment.driverId)
@@ -153,12 +161,6 @@ export default function ShipmentDetailPage() {
         </div>
         <Badge className={getStatusBadgeColor(shipment.status)}>{getStatusLabel(shipment.status)}</Badge>
       </div>
-
-      {error && (
-        <Alert variant="destructive">
-          <AlertDescription>{error}</AlertDescription>
-        </Alert>
-      )}
 
       {shipment.status === "unassigned" && (
         <Alert>

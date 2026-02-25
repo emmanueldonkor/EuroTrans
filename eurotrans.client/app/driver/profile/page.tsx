@@ -25,19 +25,18 @@ export default function DriverProfilePage() {
   const [licenseNumber, setLicenseNumber] = useState("")
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
-  const [error, setError] = useState<string | null>(null)
-  const [success, setSuccess] = useState<string | null>(null)
+  const [loadError, setLoadError] = useState<string | null>(null)
 
   useEffect(() => {
     const load = async () => {
-      setError(null)
+      setLoadError(null)
       try {
         const me = await api.getCurrentUserContext()
         setProfile(me)
         setPhone(me.phone ?? "")
         setLicenseNumber(me.licenseNumber ?? "")
       } catch (err) {
-        setError(err instanceof Error ? err.message : String(err))
+        setLoadError(toActionErrorMessage(err, "Failed to load driver profile."))
       } finally {
         setLoading(false)
       }
@@ -47,12 +46,8 @@ export default function DriverProfilePage() {
   }, [])
 
   const handleSave = async () => {
-    setError(null)
-    setSuccess(null)
-
     if (!phone.trim() || !licenseNumber.trim()) {
       const message = "Phone and license number are required."
-      setError(message)
       toast({
         title: "Validation failed",
         description: message,
@@ -70,7 +65,6 @@ export default function DriverProfilePage() {
 
       const me = await api.getCurrentUserContext()
       setProfile(me)
-      setSuccess("Profile updated successfully.")
       toast({
         title: "Profile saved",
         description: "Your driver profile was updated.",
@@ -81,7 +75,6 @@ export default function DriverProfilePage() {
       }
     } catch (err) {
       const message = toActionErrorMessage(err, "Failed to update profile.")
-      setError(message)
       toast({
         title: "Save failed",
         description: message,
@@ -97,7 +90,7 @@ export default function DriverProfilePage() {
       return (
         <div className="max-w-lg mx-auto">
           <Alert variant="destructive">
-            <AlertDescription>{error ?? "Failed to load driver profile."}</AlertDescription>
+            <AlertDescription>{loadError ?? "Failed to load driver profile."}</AlertDescription>
           </Alert>
         </div>
       )
@@ -121,18 +114,6 @@ export default function DriverProfilePage() {
           <AlertDescription>
             Complete your driver profile to access shipments and the rest of the driver app.
           </AlertDescription>
-        </Alert>
-      )}
-
-      {error && (
-        <Alert variant="destructive">
-          <AlertDescription>{error}</AlertDescription>
-        </Alert>
-      )}
-
-      {success && (
-        <Alert>
-          <AlertDescription>{success}</AlertDescription>
         </Alert>
       )}
 

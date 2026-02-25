@@ -27,7 +27,6 @@ import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import type { Truck as TruckType } from "@/lib/types"
 import { Plus, Edit, Trash2, Loader2 } from "lucide-react"
-import { Alert, AlertDescription } from "@/components/ui/alert"
 import { useTruckMutations, useTrucks } from "@/hooks/use-transport-data"
 import { useToast } from "@/hooks/use-toast"
 import { PageErrorState, SectionLoader } from "@/components/ui/page-state"
@@ -42,7 +41,6 @@ export default function FleetPage() {
   const [showEditDialog, setShowEditDialog] = useState(false)
   const [showDeleteDialog, setShowDeleteDialog] = useState(false)
   const [selectedTruck, setSelectedTruck] = useState<TruckType | null>(null)
-  const [error, setError] = useState<string | null>(null)
 
   const [formData, setFormData] = useState({
     plateNumber: "",
@@ -52,7 +50,6 @@ export default function FleetPage() {
   })
 
   const handleCreate = async () => {
-    setError(null)
     try {
       await createTruck.mutateAsync({
         plateNumber: formData.plateNumber,
@@ -69,7 +66,6 @@ export default function FleetPage() {
       })
     } catch (err) {
       const message = toActionErrorMessage(err, "Failed to create truck.")
-      setError(message)
       toast({
         title: "Create failed",
         description: message,
@@ -80,7 +76,6 @@ export default function FleetPage() {
 
   const handleEdit = async () => {
     if (!selectedTruck) return
-    setError(null)
 
     try {
       const result = await updateTruck.mutateAsync({
@@ -94,7 +89,11 @@ export default function FleetPage() {
       })
 
       if (!result.success) {
-        setError(result.error || "Failed to update truck")
+        toast({
+          title: "Update failed",
+          description: result.error || "Failed to update truck.",
+          variant: "destructive",
+        })
         return
       }
 
@@ -108,7 +107,6 @@ export default function FleetPage() {
       })
     } catch (err) {
       const message = toActionErrorMessage(err, "Failed to update truck.")
-      setError(message)
       toast({
         title: "Update failed",
         description: message,
@@ -119,13 +117,16 @@ export default function FleetPage() {
 
   const handleDelete = async () => {
     if (!selectedTruck) return
-    setError(null)
 
     try {
       const result = await deleteTruck.mutateAsync(selectedTruck.id)
 
       if (!result.success) {
-        setError(result.error || "Failed to delete truck")
+        toast({
+          title: "Delete failed",
+          description: result.error || "Failed to delete truck.",
+          variant: "destructive",
+        })
         setShowDeleteDialog(false)
         return
       }
@@ -139,7 +140,6 @@ export default function FleetPage() {
       })
     } catch (err) {
       const message = toActionErrorMessage(err, "Failed to delete truck.")
-      setError(message)
       toast({
         title: "Delete failed",
         description: message,
@@ -156,13 +156,11 @@ export default function FleetPage() {
       capacity: String(truck.capacity),
       status: truck.status,
     })
-    setError(null)
     setShowEditDialog(true)
   }
 
   const openDeleteDialog = (truck: TruckType) => {
     setSelectedTruck(truck)
-    setError(null)
     setShowDeleteDialog(true)
   }
 
@@ -203,12 +201,6 @@ export default function FleetPage() {
           Add Truck
         </Button>
       </PageHeader>
-
-      {error && (
-        <Alert variant="destructive">
-          <AlertDescription>{error}</AlertDescription>
-        </Alert>
-      )}
 
       <PageSurface className="table-shell">
         <Table>
@@ -322,11 +314,6 @@ export default function FleetPage() {
             <DialogTitle>Edit Truck</DialogTitle>
             <DialogDescription>Update truck information (only if not in use)</DialogDescription>
           </DialogHeader>
-          {error && (
-            <Alert variant="destructive">
-              <AlertDescription>{error}</AlertDescription>
-            </Alert>
-          )}
           <div className="space-y-4">
             <div>
               <Label htmlFor="edit-plateNumber">Plate Number</Label>
@@ -391,11 +378,6 @@ export default function FleetPage() {
               truck can only be deleted if it is not assigned to any active shipments.
             </AlertDialogDescription>
           </AlertDialogHeader>
-          {error && (
-            <Alert variant="destructive">
-              <AlertDescription>{error}</AlertDescription>
-            </Alert>
-          )}
           <AlertDialogFooter>
             <AlertDialogCancel onClick={() => setShowDeleteDialog(false)} disabled={deleteTruck.isPending}>
               Cancel

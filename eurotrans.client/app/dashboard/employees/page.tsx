@@ -14,9 +14,8 @@ import {
 } from "@/components/ui/dialog"
 import { Label } from "@/components/ui/label"
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
-import { Alert, AlertDescription } from "@/components/ui/alert"
 import type { Driver } from "@/lib/types"
-import { AlertCircle, User, Loader2 } from "lucide-react"
+import { User, Loader2 } from "lucide-react"
 import { useDriverMutations, useDrivers } from "@/hooks/use-transport-data"
 import { useToast } from "@/hooks/use-toast"
 import { PageErrorState, SectionLoader } from "@/components/ui/page-state"
@@ -31,7 +30,6 @@ export default function EmployeesPage() {
   const [showStatusDialog, setShowStatusDialog] = useState(false)
   const [newStatus, setNewStatus] = useState<"available" | "on-duty" | "off-duty">("available")
   const updating = updateStatus.isPending
-  const [error, setError] = useState<string | null>(null)
 
   const getStatusColor = (status: string) => {
     const colors = {
@@ -51,14 +49,11 @@ export default function EmployeesPage() {
   const handleUpdateStatus = (driver: Driver) => {
     setSelectedDriver(driver)
     setNewStatus(driver.status)
-    setError(null)
     setShowStatusDialog(true)
   }
 
   const confirmUpdateStatus = async () => {
     if (!selectedDriver) return
-
-    setError(null)
 
     try {
       const result = await updateStatus.mutateAsync({ id: selectedDriver.id, status: newStatus })
@@ -72,8 +67,7 @@ export default function EmployeesPage() {
           description: `${selectedDriver.name} is now ${newStatus.replace("-", " ")}.`,
         })
       } else {
-        const message = result.error || "Failed to update status"
-        setError(message)
+        const message = result.error || "Failed to update status."
         toast({
           title: "Update failed",
           description: message,
@@ -82,7 +76,6 @@ export default function EmployeesPage() {
       }
     } catch (err) {
       const message = toActionErrorMessage(err, "An error occurred while updating status.")
-      setError(message)
       toast({
         title: "Update failed",
         description: message,
@@ -164,13 +157,6 @@ export default function EmployeesPage() {
           </DialogHeader>
 
           <div className="space-y-4 py-4">
-            {error && (
-              <Alert variant="destructive">
-                <AlertCircle className="h-4 w-4" />
-                <AlertDescription>{error}</AlertDescription>
-              </Alert>
-            )}
-
             <div className="space-y-2">
               <Label>New Status</Label>
               <RadioGroup
