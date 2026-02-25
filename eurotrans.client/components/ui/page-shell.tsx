@@ -2,7 +2,7 @@ import type { ReactNode } from "react"
 import { cn } from "@/lib/utils"
 
 export function PageShell({ children, className }: { children: ReactNode; className?: string }) {
-  return <div className={cn("space-y-6", className)}>{children}</div>
+  return <div className={cn("space-y-[var(--space-section)] animate-fade-in", className)}>{children}</div>
 }
 
 export function PageHeader({ children, className }: { children: ReactNode; className?: string }) {
@@ -21,13 +21,13 @@ export function PageHeading({
   className?: string
 }) {
   return (
-    <div className={cn("space-y-1", className)}>
-      <h1 className="text-3xl font-semibold tracking-tight">{title}</h1>
+    <div className={cn("space-y-1.5", className)}>
+      <h1 className="text-3xl font-semibold tracking-tight md:text-4xl [font-family:var(--font-display)]">{title}</h1>
       {description ? <p className="text-sm text-muted-foreground sm:text-base">{description}</p> : null}
     </div>
   )
 }
 
 export function PageSurface({ children, className }: { children: ReactNode; className?: string }) {
-  return <div className={cn("rounded-xl border bg-card/90 shadow-sm", className)}>{children}</div>
+  return <div className={cn("panel", className)}>{children}</div>
 }

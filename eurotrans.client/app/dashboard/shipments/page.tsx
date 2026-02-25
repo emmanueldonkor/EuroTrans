@@ -74,18 +74,18 @@ export default function ShipmentsPage() {
       )}
 
       <PageSurface className="p-4 bg-gradient-to-r from-card to-muted/30">
-        <div className="flex flex-col gap-4 sm:flex-row">
-          <div className="flex-1 relative">
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-center">
+          <div className="relative flex-1">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <Input
               placeholder="Search by tracking ID..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="pl-9 bg-background/90"
+              className="h-10 pl-9 bg-background/90"
             />
           </div>
           <Select value={statusFilter} onValueChange={setStatusFilter}>
-            <SelectTrigger className="w-full sm:w-44 bg-background/90">
+            <SelectTrigger className="h-10 w-full sm:w-44 bg-background/90">
               <SelectValue placeholder="Status" />
             </SelectTrigger>
             <SelectContent>
@@ -98,7 +98,7 @@ export default function ShipmentsPage() {
             </SelectContent>
           </Select>
           <Select value={driverFilter} onValueChange={setDriverFilter}>
-            <SelectTrigger className="w-full sm:w-44 bg-background/90">
+            <SelectTrigger className="h-10 w-full sm:w-44 bg-background/90">
               <SelectValue placeholder="Driver" />
             </SelectTrigger>
             <SelectContent>
@@ -113,9 +113,9 @@ export default function ShipmentsPage() {
         </div>
       </PageSurface>
 
-      <PageSurface className="overflow-hidden">
+      <PageSurface className="table-shell">
         <Table>
-          <TableHeader>
+          <TableHeader className="table-head-sticky">
             <TableRow>
               <TableHead>Tracking ID</TableHead>
               <TableHead>Status</TableHead>
@@ -133,7 +133,7 @@ export default function ShipmentsPage() {
               </TableRow>
             ) : (
               shipments.map((shipment) => (
-                <TableRow key={shipment.id} className="cursor-pointer motion-smooth hover:bg-muted/40">
+                <TableRow key={shipment.id} className="cursor-pointer table-row-interactive">
                   <TableCell>
                     <Link href={`/dashboard/shipments/${shipment.id}`} className="font-medium hover:underline underline-offset-4">
                       {shipment.trackingId}

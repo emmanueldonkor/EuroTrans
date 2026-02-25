@@ -88,33 +88,33 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-background via-background to-muted/30">
+    <div className="min-h-screen bg-gradient-to-b from-background via-background to-[var(--surface-2)]/50">
       <div className="flex min-h-screen">
         {/* Desktop Sidebar */}
-        <aside className="hidden md:flex md:w-64 md:flex-col bg-sidebar text-sidebar-foreground">
-          <div className="flex h-16 items-center gap-2 px-5 border-b border-sidebar-border">
-            <div className="flex h-8 w-8 items-center justify-center rounded-md bg-sidebar-primary">
+        <aside className="hidden md:flex md:w-72 md:flex-col border-r border-sidebar-border/70 bg-sidebar text-sidebar-foreground shadow-[inset_-1px_0_0_0_color-mix(in_oklab,var(--sidebar-border)_60%,transparent)]">
+          <div className="flex h-16 items-center gap-2 px-5 border-b border-sidebar-border/80">
+            <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-sidebar-primary/90 shadow-sm">
               <Truck className="h-4 w-4 text-sidebar-primary-foreground" />
             </div>
-            <span className="font-semibold text-sidebar-foreground tracking-tight">EuroTrans</span>
+            <span className="font-semibold text-sidebar-foreground tracking-tight [font-family:var(--font-display)]">EuroTrans</span>
           </div>
-          <nav className="flex-1 p-3">
-            <div className="space-y-0.5">
+          <nav className="flex-1 p-3.5">
+            <div className="space-y-1">
               {navigation.map((item) => {
                 const isActive = pathname === item.href || pathname?.startsWith(item.href + "/")
                 return (
                   <Link
                     key={item.href}
                     href={item.href}
-                    className={`relative flex items-center gap-3 rounded-md px-3 py-2.5 pl-4 text-sm font-medium motion-smooth ${
+                    className={`relative flex items-center gap-3 rounded-lg px-3 py-2.5 pl-4 text-sm font-medium motion-smooth ${
                       isActive
-                        ? "bg-sidebar-accent text-sidebar-accent-foreground"
+                        ? "bg-sidebar-accent text-sidebar-accent-foreground shadow-sm"
                         : "text-sidebar-foreground/70 hover:bg-sidebar-accent/50 hover:text-sidebar-foreground"
                     }`}
                   >
                     <span
-                      className={`absolute left-1 top-1/2 h-6 w-1 -translate-y-1/2 rounded-full motion-smooth ${
-                        isActive ? "bg-sidebar-primary opacity-100" : "bg-sidebar-primary opacity-0"
+                      className={`absolute left-1 top-1/2 h-6 w-1.5 -translate-y-1/2 rounded-full motion-smooth ${
+                        isActive ? "bg-sidebar-primary opacity-100 shadow-[0_0_12px_color-mix(in_oklab,var(--sidebar-primary)_60%,transparent)]" : "bg-sidebar-primary opacity-0"
                       }`}
                     />
                     <item.icon className="h-4 w-4" />
@@ -124,19 +124,19 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
               })}
             </div>
           </nav>
-          <div className="border-t border-sidebar-border p-3">
-            <div className="flex items-center gap-3 rounded-md px-3 py-2">
-                  <Avatar className="h-8 w-8 border border-sidebar-border">
-                    <AvatarFallback className="bg-sidebar-accent text-sidebar-accent-foreground text-xs">
-                      {currentUser.name.charAt(0)}
-                    </AvatarFallback>
-                  </Avatar>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium text-sidebar-foreground truncate">{currentUser.name}</p>
-                    <p className="text-xs text-sidebar-foreground/50 truncate">{currentUser.email}</p>
-                  </div>
-                </div>
+          <div className="border-t border-sidebar-border/80 p-3">
+            <div className="glass-surface flex items-center gap-3 rounded-lg px-3 py-2">
+              <Avatar className="h-8 w-8 border border-sidebar-border">
+                <AvatarFallback className="bg-sidebar-accent text-sidebar-accent-foreground text-xs">
+                  {currentUser.name.charAt(0)}
+                </AvatarFallback>
+              </Avatar>
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-medium text-sidebar-foreground truncate">{currentUser.name}</p>
+                <p className="text-xs text-sidebar-foreground/50 truncate">{currentUser.email}</p>
               </div>
+            </div>
+          </div>
         </aside>
 
         {/* Mobile Sidebar */}
@@ -153,7 +153,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             onClick={() => setSidebarOpen(false)}
           />
           <div
-            className={`relative flex w-64 flex-col bg-sidebar text-sidebar-foreground motion-smooth ${
+            className={`relative flex w-72 flex-col bg-sidebar text-sidebar-foreground shadow-xl motion-smooth ${
               sidebarOpen ? "translate-x-0" : "-translate-x-full"
             }`}
           >
@@ -163,8 +163,8 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                 </div>
                 <span className="font-semibold tracking-tight">EuroTrans</span>
               </div>
-              <nav className="flex-1 p-3">
-                <div className="space-y-0.5">
+              <nav className="flex-1 p-3.5">
+                <div className="space-y-1">
                   {navigation.map((item) => {
                     const isActive = pathname === item.href || pathname?.startsWith(item.href + "/")
                     return (
@@ -172,14 +172,14 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                         key={item.href}
                         href={item.href}
                         onClick={() => setSidebarOpen(false)}
-                        className={`relative flex items-center gap-3 rounded-md px-3 py-2.5 pl-4 text-sm font-medium motion-smooth ${
+                        className={`relative flex items-center gap-3 rounded-lg px-3 py-2.5 pl-4 text-sm font-medium motion-smooth ${
                           isActive
                             ? "bg-sidebar-accent text-sidebar-accent-foreground"
                             : "text-sidebar-foreground/70 hover:bg-sidebar-accent/50 hover:text-sidebar-foreground"
                         }`}
                       >
                         <span
-                          className={`absolute left-1 top-1/2 h-6 w-1 -translate-y-1/2 rounded-full motion-smooth ${
+                          className={`absolute left-1 top-1/2 h-6 w-1.5 -translate-y-1/2 rounded-full motion-smooth ${
                             isActive ? "bg-sidebar-primary opacity-100" : "bg-sidebar-primary opacity-0"
                           }`}
                         />
@@ -197,8 +197,8 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         <div className="flex-1 flex flex-col">
           {/* Top Header */}
           <header
-            className={`sticky top-0 z-30 flex h-16 items-center gap-4 border-b bg-card/95 px-4 backdrop-blur md:px-6 motion-smooth ${
-              hasScrolled ? "shadow-sm" : "shadow-none"
+            className={`sticky top-0 z-30 flex h-16 items-center gap-4 border-b border-border/70 bg-card/85 px-4 backdrop-blur-xl md:px-6 motion-smooth ${
+              hasScrolled ? "shadow-md shadow-black/5" : "shadow-none"
             }`}
           >
             <Button variant="ghost" size="icon" className="md:hidden text-foreground" onClick={() => setSidebarOpen(!sidebarOpen)}>
@@ -213,7 +213,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <Button variant="ghost" className="relative h-9 w-9 rounded-full">
+                  <Button variant="ghost" className="relative h-9 w-9 rounded-full border border-border/60 bg-background/70">
                     <Avatar className="h-9 w-9">
                       <AvatarFallback className="bg-primary/10 text-primary text-sm font-semibold">
                         {currentUser.name.charAt(0)}

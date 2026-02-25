@@ -97,7 +97,7 @@ export default function DriverLayout({ children }: { children: React.ReactNode }
     : [{ labelKey: "nav.profile" as TranslationKey, href: "/driver/profile", icon: User }]
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-background via-background to-muted/30 pb-20">
+    <div className="min-h-screen bg-gradient-to-b from-background via-background to-[var(--surface-2)]/50 pb-24">
       {/* Top Header */}
       <header
         className={`sticky top-0 z-50 w-full border-b bg-sidebar/95 text-sidebar-foreground backdrop-blur motion-smooth ${
@@ -156,22 +156,22 @@ export default function DriverLayout({ children }: { children: React.ReactNode }
       </main>
 
       {/* Bottom Navigation - Mobile First */}
-      <nav className="fixed bottom-0 left-0 right-0 z-50 border-t bg-card/95 backdrop-blur">
-        <div className="flex items-center justify-around h-[4.5rem] max-w-lg mx-auto px-2">
+      <nav className="fixed bottom-3 left-0 right-0 z-50 px-3 sm:px-6">
+        <div className="mx-auto flex max-w-lg items-center justify-around rounded-2xl border border-border/70 bg-card/95 p-1.5 shadow-lg backdrop-blur-xl">
           {navigation.map((item) => {
             const isActive = pathname === item.href
             return (
               <Link
                 key={item.href}
                 href={item.href}
-                className={`relative flex min-h-14 flex-col items-center justify-center flex-1 gap-1 rounded-lg motion-smooth ${
+                className={`relative flex min-h-14 flex-col items-center justify-center flex-1 gap-1 rounded-xl motion-smooth ${
                   isActive
-                    ? "text-primary font-semibold bg-primary/10"
+                    ? "text-primary font-semibold bg-primary/10 shadow-sm"
                     : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
                 }`}
               >
                 <span
-                  className={`absolute top-1.5 h-1.5 w-1.5 rounded-full motion-smooth ${
+                  className={`absolute bottom-1 h-1 w-5 rounded-full motion-smooth ${
                     isActive ? "bg-primary opacity-100" : "bg-primary opacity-0"
                   }`}
                 />

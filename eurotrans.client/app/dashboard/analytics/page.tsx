@@ -31,7 +31,7 @@ export default function AnalyticsPage() {
 
       {/* KPI Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        <Card className="p-6 surface-hover">
+        <Card className="kpi-card">
           <div className="flex items-center gap-4">
             <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-primary/10">
               <Package className="h-6 w-6 text-primary" />
@@ -47,7 +47,7 @@ export default function AnalyticsPage() {
           </div>
         </Card>
 
-        <Card className="p-6 surface-hover">
+        <Card className="kpi-card">
           <div className="flex items-center gap-4">
             <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-orange-500/10">
               <TrendingUp className="h-6 w-6 text-orange-500" />
@@ -63,7 +63,7 @@ export default function AnalyticsPage() {
           </div>
         </Card>
 
-        <Card className="p-6 surface-hover">
+        <Card className="kpi-card">
           <div className="flex items-center gap-4">
             <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-green-500/10">
               <Package className="h-6 w-6 text-green-500" />
@@ -79,7 +79,7 @@ export default function AnalyticsPage() {
           </div>
         </Card>
 
-        <Card className="p-6 surface-hover">
+        <Card className="kpi-card">
           <div className="flex items-center gap-4">
             <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-blue-500/10">
               <Users className="h-6 w-6 text-blue-500" />
@@ -98,9 +98,9 @@ export default function AnalyticsPage() {
 
       {/* Charts Placeholder */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <PageSurface className="p-6 surface-hover">
+        <PageSurface className="p-6 surface-hover panel-muted">
           <h2 className="text-lg font-semibold mb-4">Shipments Over Time</h2>
-          <div className="h-64 flex items-center justify-center bg-muted/20 rounded-lg">
+          <div className="h-64 flex items-center justify-center rounded-lg border border-dashed border-border/80 bg-background/60">
             <div className="text-center">
               <Clock className="h-12 w-12 mx-auto text-muted-foreground mb-2" />
               <p className="text-sm text-muted-foreground">Chart visualization coming soon</p>
@@ -108,9 +108,9 @@ export default function AnalyticsPage() {
           </div>
         </PageSurface>
 
-        <PageSurface className="p-6 surface-hover">
+        <PageSurface className="p-6 surface-hover panel-muted">
           <h2 className="text-lg font-semibold mb-4">Driver Workload Distribution</h2>
-          <div className="h-64 flex items-center justify-center bg-muted/20 rounded-lg">
+          <div className="h-64 flex items-center justify-center rounded-lg border border-dashed border-border/80 bg-background/60">
             <div className="text-center">
               <Users className="h-12 w-12 mx-auto text-muted-foreground mb-2" />
               <p className="text-sm text-muted-foreground">Chart visualization coming soon</p>

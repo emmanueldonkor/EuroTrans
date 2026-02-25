@@ -103,7 +103,7 @@ export default function NewShipmentPage() {
         </div>
       </div>
 
-      <div className="grid grid-cols-3 gap-3 rounded-xl border bg-card/80 p-3">
+      <div className="grid grid-cols-3 gap-3 panel p-3">
         {[
           { index: 1, label: "Cargo" },
           { index: 2, label: "Route" },
@@ -141,7 +141,7 @@ export default function NewShipmentPage() {
       )}
 
       {step === 1 && (
-        <Card className="p-6 space-y-6 surface-hover">
+        <Card className="panel p-6 space-y-6 surface-hover">
           <h2 className="text-xl font-semibold">Cargo Details</h2>
 
           <div className="space-y-4">
@@ -190,7 +190,7 @@ export default function NewShipmentPage() {
       )}
 
       {step === 2 && (
-        <Card className="p-6 space-y-6 surface-hover">
+        <Card className="panel p-6 space-y-6 surface-hover">
           <h2 className="text-xl font-semibold">Route Information</h2>
 
           <div className="space-y-6">
@@ -299,7 +299,7 @@ export default function NewShipmentPage() {
       )}
 
       {step === 3 && (
-        <Card className="p-6 space-y-6 surface-hover">
+        <Card className="panel p-6 space-y-6 surface-hover">
           <div>
             <h2 className="text-xl font-semibold mb-4">Review and Create Shipment</h2>
             <p className="text-sm text-muted-foreground">Review the details and create this shipment.</p>

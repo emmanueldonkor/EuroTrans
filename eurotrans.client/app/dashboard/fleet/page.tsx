@@ -138,9 +138,12 @@ export default function FleetPage() {
 
   const getStatusColor = (status: string) => {
     const colors = {
-      available: "bg-emerald-50 text-emerald-700 border border-emerald-200",
-      "in-use": "bg-teal-50 text-teal-700 border border-teal-200",
-      maintenance: "bg-amber-50 text-amber-700 border border-amber-200",
+      available:
+        "bg-emerald-50 text-emerald-700 border border-emerald-200 dark:bg-emerald-500/10 dark:text-emerald-300 dark:border-emerald-400/30",
+      "in-use":
+        "bg-teal-50 text-teal-700 border border-teal-200 dark:bg-teal-500/10 dark:text-teal-300 dark:border-teal-400/30",
+      maintenance:
+        "bg-amber-50 text-amber-700 border border-amber-200 dark:bg-amber-500/10 dark:text-amber-300 dark:border-amber-400/30",
     }
     return colors[status as keyof typeof colors] || colors.available
   }
@@ -177,9 +180,9 @@ export default function FleetPage() {
         </Alert>
       )}
 
-      <PageSurface className="overflow-hidden">
+      <PageSurface className="table-shell">
         <Table>
-          <TableHeader>
+          <TableHeader className="table-head-sticky">
             <TableRow>
               <TableHead>Plate Number</TableHead>
               <TableHead>Model</TableHead>
@@ -197,7 +200,7 @@ export default function FleetPage() {
               </TableRow>
             ) : (
               trucks.map((truck) => (
-                <TableRow key={truck.id} className="motion-smooth hover:bg-muted/40">
+                <TableRow key={truck.id} className="table-row-interactive">
                   <TableCell className="font-medium">{truck.plateNumber}</TableCell>
                   <TableCell>{truck.model}</TableCell>
                   <TableCell>{truck.capacity.toLocaleString()} kg</TableCell>
@@ -205,10 +208,10 @@ export default function FleetPage() {
                     <Badge className={getStatusColor(truck.status)}>{truck.status}</Badge>
                   </TableCell>
                   <TableCell className="text-right space-x-2">
-                    <Button variant="outline" size="sm" onClick={() => openEditDialog(truck)}>
+                    <Button variant="outline" size="sm" className="bg-background/70" onClick={() => openEditDialog(truck)}>
                       <Edit className="h-4 w-4" />
                     </Button>
-                    <Button variant="outline" size="sm" onClick={() => openDeleteDialog(truck)}>
+                    <Button variant="outline" size="sm" className="bg-background/70" onClick={() => openDeleteDialog(truck)}>
                       <Trash2 className="h-4 w-4" />
                     </Button>
                   </TableCell>
@@ -220,7 +223,7 @@ export default function FleetPage() {
       </PageSurface>
 
       <Dialog open={showCreateDialog} onOpenChange={setShowCreateDialog}>
-        <DialogContent>
+        <DialogContent className="panel">
           <DialogHeader>
             <DialogTitle>Add New Truck</DialogTitle>
             <DialogDescription>Create a new truck in your fleet</DialogDescription>
@@ -284,7 +287,7 @@ export default function FleetPage() {
       </Dialog>
 
       <Dialog open={showEditDialog} onOpenChange={setShowEditDialog}>
-        <DialogContent>
+        <DialogContent className="panel">
           <DialogHeader>
             <DialogTitle>Edit Truck</DialogTitle>
             <DialogDescription>Update truck information (only if not in use)</DialogDescription>
@@ -350,7 +353,7 @@ export default function FleetPage() {
       </Dialog>
 
       <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
-        <AlertDialogContent>
+        <AlertDialogContent className="panel">
           <AlertDialogHeader>
             <AlertDialogTitle>Delete Truck</AlertDialogTitle>
             <AlertDialogDescription>

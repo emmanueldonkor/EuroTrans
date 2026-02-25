@@ -1,17 +1,23 @@
 import type React from "react"
 import type { Metadata } from "next"
 import { Analytics } from "@vercel/analytics/next"
-import { IBM_Plex_Mono, Inter } from "next/font/google"
+import { IBM_Plex_Mono, Manrope, Space_Grotesk } from "next/font/google"
 import { Toaster } from "@/components/toaster"
 import { Auth0Provider } from "@auth0/nextjs-auth0/client"
 import "./globals.css"
 import { ReactQueryProvider } from "@/lib/react-query"
 import { I18nProvider } from "@/components/providers/i18n-provider"
 
-const inter = Inter({
+const manrope = Manrope({
   subsets: ["latin"],
   display: "swap",
-  variable: "--font-inter",
+  variable: "--font-manrope",
+})
+
+const spaceGrotesk = Space_Grotesk({
+  subsets: ["latin"],
+  display: "swap",
+  variable: "--font-space-grotesk",
 })
 
 const ibmPlexMono = IBM_Plex_Mono({
@@ -50,7 +56,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <body className={`${inter.variable} ${ibmPlexMono.variable} font-sans antialiased`}>
+      <body className={`${manrope.variable} ${spaceGrotesk.variable} ${ibmPlexMono.variable} font-sans antialiased`}>
         <Auth0Provider>
           <I18nProvider>
             <ReactQueryProvider>

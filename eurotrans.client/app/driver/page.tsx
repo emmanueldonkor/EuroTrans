@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation"
 import { Card } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-import { Package, MapPin, ArrowRight, Play } from "lucide-react"
+import { Package, MapPin, ArrowRight, Play, Loader2 } from "lucide-react"
 import { getStatusColor } from "@/lib/utils/format"
 import { canStartShipment } from "@/lib/shipment-rules"
 import { useToast } from "@/hooks/use-toast"
@@ -84,7 +84,7 @@ export default function DriverHomePage() {
       </div>
 
       {activeShipment ? (
-        <Card className="p-6 space-y-6 surface-hover">
+        <Card className="panel p-6 space-y-6 surface-hover">
           <div className="flex items-start justify-between">
             <div>
               <h2 className="text-xl font-semibold mb-1">Current Job</h2>
@@ -119,7 +119,7 @@ export default function DriverHomePage() {
 
           {canStart && (
             <Button className="w-full h-12 text-base" onClick={handleStartJourney} disabled={startShipment.isPending}>
-              <Play className="mr-2 h-5 w-5" />
+              {startShipment.isPending ? <Loader2 className="mr-2 h-5 w-5 animate-spin" /> : <Play className="mr-2 h-5 w-5" />}
               {startShipment.isPending ? "Starting Journey..." : "Start Journey"}
             </Button>
           )}
@@ -134,7 +134,7 @@ export default function DriverHomePage() {
           </Button>
         </Card>
       ) : (
-        <Card className="p-12 flex flex-col items-center justify-center text-center surface-hover">
+        <Card className="panel p-12 flex flex-col items-center justify-center text-center surface-hover">
           <Package className="h-16 w-16 text-muted-foreground mb-4" />
           <h3 className="text-lg font-medium mb-2">No Active Jobs</h3>
           <p className="text-sm text-muted-foreground max-w-sm">
@@ -144,11 +144,11 @@ export default function DriverHomePage() {
       )}
 
       <div className="grid grid-cols-2 gap-4">
-        <Card className="p-4 surface-hover">
+        <Card className="panel p-4 surface-hover">
           <p className="text-sm text-muted-foreground mb-1">Status</p>
           <p className="text-lg font-bold">On Duty</p>
         </Card>
-        <Card className="p-4 surface-hover">
+        <Card className="panel p-4 surface-hover">
           <p className="text-sm text-muted-foreground mb-1">Active Jobs</p>
           <p className="text-lg font-bold">{activeShipment ? "1" : "0"}</p>
         </Card>

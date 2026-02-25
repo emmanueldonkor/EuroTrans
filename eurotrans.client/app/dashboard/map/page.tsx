@@ -35,13 +35,13 @@ export default function LiveMapPage() {
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Map Placeholder */}
-        <PageSurface className="lg:col-span-2 p-6 min-h-[600px] flex items-center justify-center bg-[radial-gradient(circle_at_20%_20%,rgba(11,137,143,0.08),transparent_35%),radial-gradient(circle_at_80%_20%,rgba(16,185,129,0.08),transparent_30%)]">
-          <div className="text-center space-y-4 rounded-2xl border border-dashed border-border bg-card/70 p-8">
-            <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-primary/10">
+        <PageSurface className="lg:col-span-2 panel-muted p-6 min-h-[600px] flex items-center justify-center">
+          <div className="text-center space-y-4 rounded-2xl border border-dashed border-border/70 bg-card/70 p-8 shadow-sm backdrop-blur-sm">
+            <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-2xl bg-primary/10">
               <MapPin className="h-8 w-8 text-primary" />
             </div>
             <div>
-              <p className="text-lg font-medium">Interactive Map Coming Soon</p>
+              <p className="text-lg font-semibold">Interactive Map Coming Soon</p>
               <p className="text-sm text-muted-foreground">
                 Leaflet integration will show real-time positions of all in-transit shipments
               </p>
@@ -65,7 +65,7 @@ export default function LiveMapPage() {
                   key={pin.id}
                   onClick={() => setSelectedPin(pin)}
                   className={`w-full text-left p-3 rounded-lg border motion-smooth ${
-                    selectedPin?.id === pin.id ? "bg-primary/5 border-primary" : "hover:bg-muted/50"
+                    selectedPin?.id === pin.id ? "bg-primary/5 border-primary shadow-sm" : "hover:bg-muted/50"
                   }`}
                 >
                   <div className="space-y-2">

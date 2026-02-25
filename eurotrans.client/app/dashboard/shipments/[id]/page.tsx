@@ -144,7 +144,7 @@ export default function ShipmentDetailPage() {
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <div className="lg:col-span-2 space-y-6">
-          <Card className="p-6 space-y-4 surface-hover">
+          <Card className="panel p-6 space-y-4 surface-hover">
             <h2 className="text-xl font-semibold flex items-center gap-2">
               <Package className="h-5 w-5" />
               Shipment Information
@@ -169,7 +169,7 @@ export default function ShipmentDetailPage() {
             </div>
           </Card>
 
-          <Card className="p-6 space-y-4 surface-hover">
+          <Card className="panel p-6 space-y-4 surface-hover">
             <h2 className="text-xl font-semibold flex items-center gap-2">
               <MapPin className="h-5 w-5" />
               Route
@@ -195,7 +195,7 @@ export default function ShipmentDetailPage() {
           </Card>
 
           {canAssignShipment(shipment) && (
-            <Card className="p-6 space-y-4 surface-hover">
+            <Card className="panel p-6 space-y-4 surface-hover">
               <h2 className="text-xl font-semibold">Assign Shipment</h2>
               <div className="space-y-4">
                 <div>
@@ -247,7 +247,7 @@ export default function ShipmentDetailPage() {
           )}
 
           {(shipment.status === "assigned" || shipment.status === "in-transit" || shipment.status === "delivered") && (
-            <Card className="p-6 space-y-4 surface-hover">
+            <Card className="panel p-6 space-y-4 surface-hover">
               <h2 className="text-xl font-semibold">Assignment Details</h2>
 
               <div className="space-y-4">
@@ -273,7 +273,7 @@ export default function ShipmentDetailPage() {
           )}
 
           {canCancel && (
-            <Card className="p-6 space-y-4 border-destructive/40">
+            <Card className="panel p-6 space-y-4 border-destructive/40">
               <div className="flex items-center justify-between">
                 <div>
                   <h3 className="font-semibold text-destructive">Cancel Shipment</h3>
@@ -289,13 +289,13 @@ export default function ShipmentDetailPage() {
         </div>
 
         <div className="space-y-6">
-          <Card className="p-6 space-y-4 surface-hover">
+          <Card className="panel p-6 space-y-4 surface-hover">
             <h2 className="text-lg font-semibold flex items-center gap-2">
               <Clock className="h-4 w-4" />
               Timeline
             </h2>
 
-            <div className="space-y-4 text-sm">
+            <div className="space-y-4 text-sm rounded-xl border border-border/60 bg-muted/20 p-4">
               {[
                 { label: "Created", value: shipment.createdAt },
                 { label: "Started", value: shipment.startedAt },
@@ -317,7 +317,7 @@ export default function ShipmentDetailPage() {
             </div>
           </Card>
 
-          <Card className="p-6 space-y-4 surface-hover">
+          <Card className="panel p-6 space-y-4 surface-hover">
             <h2 className="text-lg font-semibold">Activity</h2>
 
             <div className="space-y-3">
@@ -328,7 +328,7 @@ export default function ShipmentDetailPage() {
                   .slice()
                   .sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime())
                   .map((activity) => (
-                    <div key={activity.id} className="text-sm space-y-1">
+                    <div key={activity.id} className="rounded-lg border border-border/60 bg-muted/20 p-3 text-sm space-y-1">
                       <p className="font-medium">{activity.description}</p>
                       <p className="text-muted-foreground text-xs">
                         {activity.userName || "Unknown"} - {formatDate(activity.timestamp)}
@@ -342,7 +342,7 @@ export default function ShipmentDetailPage() {
       </div>
 
       <AlertDialog open={showCancelDialog} onOpenChange={setShowCancelDialog}>
-        <AlertDialogContent>
+        <AlertDialogContent className="panel">
           <AlertDialogHeader>
             <AlertDialogTitle>Cancel Shipment</AlertDialogTitle>
             <AlertDialogDescription>

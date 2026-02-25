@@ -49,7 +49,7 @@ export default function DriverShipmentsPage() {
       </div>
 
       {shipments.length === 0 ? (
-        <Card className="p-12 flex flex-col items-center justify-center text-center surface-hover">
+        <Card className="panel p-12 flex flex-col items-center justify-center text-center surface-hover">
           <Package className="h-16 w-16 text-muted-foreground mb-4" />
           <h3 className="text-lg font-medium mb-2">No Shipments</h3>
           <p className="text-sm text-muted-foreground">You have no shipments assigned yet.</p>
@@ -58,7 +58,7 @@ export default function DriverShipmentsPage() {
         <div className="space-y-3">
           {shipments.map((shipment) => (
             <Link key={shipment.id} href={`/driver/shipments/${shipment.id}`}>
-              <Card className="p-4 motion-smooth hover:bg-muted/40 hover:shadow-md">
+              <Card className="panel p-4 motion-smooth hover:bg-muted/40 hover:shadow-md">
                 <div className="space-y-3">
                   <div className="flex items-start justify-between gap-2">
                     <div>

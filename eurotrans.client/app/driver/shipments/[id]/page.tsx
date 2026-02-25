@@ -361,7 +361,7 @@ export default function DriverShipmentDetailPage() {
   const isDelivered = shipment.status === "delivered"
 
   return (
-    <div className="max-w-lg mx-auto space-y-6">
+    <div className="max-w-lg mx-auto space-y-6 animate-fade-in">
       <div className="flex items-center gap-4">
         <Link href="/driver/shipments">
           <Button variant="ghost" size="icon">
@@ -374,7 +374,7 @@ export default function DriverShipmentDetailPage() {
         <Badge className={getStatusColor(shipment.status)}>{shipment.status.replace("-", " ")}</Badge>
       </div>
 
-      <Card className="p-6 space-y-4">
+      <Card className="panel p-6 space-y-4">
         <div className="flex items-center gap-2 text-lg font-semibold">
           <Package className="h-5 w-5" />
           Cargo Details
@@ -397,7 +397,7 @@ export default function DriverShipmentDetailPage() {
         </div>
       </Card>
 
-      <Card className="p-6 space-y-4">
+      <Card className="panel p-6 space-y-4">
         <div className="flex items-center gap-2 text-lg font-semibold">
           <MapPin className="h-5 w-5" />
           Delivery Route
@@ -485,7 +485,7 @@ export default function DriverShipmentDetailPage() {
           )}
 
           {canDeliver && showDeliverPanel && (
-            <Card className="p-4 space-y-3">
+            <Card className="panel p-4 space-y-3">
               <div className="space-y-1">
                 <p className="text-sm font-medium">Delivery Confirmation</p>
                 <p className="text-xs text-muted-foreground">
@@ -525,7 +525,7 @@ export default function DriverShipmentDetailPage() {
       )}
 
       {isDelivered && (
-        <Card className="p-6 flex flex-col items-center text-center">
+        <Card className="panel p-6 flex flex-col items-center text-center">
           <CheckCircle className="h-16 w-16 text-green-500 mb-4" />
           <h3 className="text-lg font-semibold mb-2">Delivery Complete</h3>
           <p className="text-sm text-muted-foreground">This shipment has been successfully delivered.</p>
@@ -533,7 +533,7 @@ export default function DriverShipmentDetailPage() {
       )}
 
       <Dialog open={showLocationDialog} onOpenChange={setShowLocationDialog}>
-        <DialogContent>
+        <DialogContent className="panel">
           <DialogHeader>
             <DialogTitle>Update Location</DialogTitle>
             <DialogDescription>Enter location label plus GPS coordinates.</DialogDescription>
@@ -609,7 +609,7 @@ export default function DriverShipmentDetailPage() {
       </Dialog>
 
       <Dialog open={showMilestoneDialog} onOpenChange={setShowMilestoneDialog}>
-        <DialogContent>
+        <DialogContent className="panel">
           <DialogHeader>
             <DialogTitle>Add Milestone</DialogTitle>
             <DialogDescription>Record an important event with exact coordinates.</DialogDescription>

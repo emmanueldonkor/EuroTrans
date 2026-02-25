@@ -67,13 +67,13 @@ export default function DocumentsPage() {
             placeholder="Search by tracking ID..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="pl-9 bg-background/90"
+            className="h-10 pl-9 bg-background/90"
           />
         </div>
       </PageSurface>
 
       {filteredShipments.length === 0 ? (
-        <PageSurface className="p-12 flex flex-col items-center justify-center min-h-[400px] bg-gradient-to-br from-card to-muted/30">
+        <PageSurface className="panel-muted p-12 flex flex-col items-center justify-center min-h-[400px]">
           <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-primary/10">
             <FileText className="h-8 w-8 text-primary" />
           </div>
@@ -85,9 +85,9 @@ export default function DocumentsPage() {
           </p>
         </PageSurface>
       ) : (
-        <PageSurface className="overflow-hidden">
+        <PageSurface className="table-shell">
           <Table>
-            <TableHeader>
+            <TableHeader className="table-head-sticky">
               <TableRow>
                 <TableHead>Tracking ID</TableHead>
                 <TableHead>Status</TableHead>
@@ -98,7 +98,7 @@ export default function DocumentsPage() {
             </TableHeader>
             <TableBody>
               {filteredShipments.map((shipment) => (
-                <TableRow key={shipment.id} className="motion-smooth hover:bg-muted/40">
+                <TableRow key={shipment.id} className="table-row-interactive">
                   <TableCell>
                     <Link href={`/dashboard/shipments/${shipment.id}`} className="font-medium hover:underline underline-offset-4">
                       {shipment.trackingId}

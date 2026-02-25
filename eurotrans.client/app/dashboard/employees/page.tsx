@@ -32,9 +32,12 @@ export default function EmployeesPage() {
 
   const getStatusColor = (status: string) => {
     const colors = {
-      available: "bg-emerald-50 text-emerald-700 border border-emerald-200",
-      "on-duty": "bg-teal-50 text-teal-700 border border-teal-200",
-      "off-duty": "bg-slate-100 text-slate-500 border border-slate-200",
+      available:
+        "bg-emerald-50 text-emerald-700 border border-emerald-200 dark:bg-emerald-500/10 dark:text-emerald-300 dark:border-emerald-400/30",
+      "on-duty":
+        "bg-teal-50 text-teal-700 border border-teal-200 dark:bg-teal-500/10 dark:text-teal-300 dark:border-teal-400/30",
+      "off-duty":
+        "bg-slate-100 text-slate-500 border border-slate-200 dark:bg-slate-500/10 dark:text-slate-300 dark:border-slate-400/30",
     }
     return colors[status as keyof typeof colors] || colors.available
   }
@@ -90,9 +93,9 @@ export default function EmployeesPage() {
     <PageShell>
       <PageHeading title="Employees" description="Manage your driver workforce" />
 
-      <PageSurface className="overflow-hidden">
+      <PageSurface className="table-shell">
         <Table>
-          <TableHeader>
+          <TableHeader className="table-head-sticky">
             <TableRow>
               <TableHead>Name</TableHead>
               <TableHead>Email</TableHead>
@@ -111,7 +114,7 @@ export default function EmployeesPage() {
               </TableRow>
             ) : (
               drivers.map((driver) => (
-                <TableRow key={driver.id} className="motion-smooth hover:bg-muted/40">
+                <TableRow key={driver.id} className="table-row-interactive">
                   <TableCell className="font-medium">{driver.name}</TableCell>
                   <TableCell>{driver.email}</TableCell>
                   <TableCell>{driver.phone}</TableCell>
@@ -120,7 +123,7 @@ export default function EmployeesPage() {
                     <Badge className={getStatusColor(driver.status)}>{driver.status}</Badge>
                   </TableCell>
                   <TableCell className="text-right">
-                    <Button variant="outline" size="sm" onClick={() => handleUpdateStatus(driver)}>
+                    <Button variant="outline" size="sm" className="bg-background/70" onClick={() => handleUpdateStatus(driver)}>
                       <User className="h-4 w-4 mr-2" />
                       Update Status
                     </Button>
@@ -133,7 +136,7 @@ export default function EmployeesPage() {
       </PageSurface>
 
       <Dialog open={showStatusDialog} onOpenChange={setShowStatusDialog}>
-        <DialogContent>
+        <DialogContent className="panel">
           <DialogHeader>
             <DialogTitle>Update Employee Status</DialogTitle>
             <DialogDescription>
