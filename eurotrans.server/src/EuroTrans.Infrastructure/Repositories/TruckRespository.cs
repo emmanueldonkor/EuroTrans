@@ -37,14 +37,4 @@ public class TruckRepository : ITruckRepository
         db.Trucks.Update(truck);
         return Task.CompletedTask;
     }
-    public Task DeleteAsync(Truck truck, CancellationToken ct = default)
-    {
-        var retireResult = truck.Retire();
-        if (retireResult.IsError)
-            throw new InvalidOperationException(retireResult.FirstError.Description);
-
-        db.Trucks.Update(truck);
-        return Task.CompletedTask;
-    }
-
 }

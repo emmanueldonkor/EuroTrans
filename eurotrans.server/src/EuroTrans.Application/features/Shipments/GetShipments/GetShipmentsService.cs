@@ -18,13 +18,13 @@ public class GetShipmentsService
         this.currentUser = currentUser;
         this.currentEmployeeProvider = currentEmployeeProvider;
     }
+
     public async Task<ErrorOr<GetShipmentsResponse>> GetAsync(
-     GetShipmentsRequest request,
-     CancellationToken ct = default)
+        GetShipmentsRequest request,
+        CancellationToken ct = default)
     {
         Guid? driverFilter = request.DriverId;
 
-        // If the current user is a driver, force filter by their employeeId
         if (currentUser.IsDriver)
         {
             var employeeIdResult = await currentEmployeeProvider.GetEmployeeIdAsync();
@@ -34,8 +34,7 @@ public class GetShipmentsService
             driverFilter = employeeIdResult.Value;
         }
 
-        // Repository now returns DTOs directly
-        var (items, totalCount) = await shipments.GetFilteredAsync(
+        var (queryItems, totalCount) = await shipments.GetFilteredAsync(
             status: request.Status,
             driverId: driverFilter,
             startDate: request.StartDate,
@@ -46,7 +45,18 @@ public class GetShipmentsService
             ct: ct
         );
 
-        // No mapping needed — items are already GetShipmentsItemResponse
+        var items = queryItems
+            .Select(item => new GetShipmentsItemResponse(
+                item.Id,
+                item.TrackingId,
+                item.Status,
+                item.DriverName,
+                FormatLocation(item.OriginCity, item.OriginCountry),
+                FormatLocation(item.DestinationCity, item.DestinationCountry),
+                item.UpdatedAtUtc
+            ))
+            .ToList();
+
         return new GetShipmentsResponse(
             Items: items,
             TotalCount: totalCount,
@@ -55,4 +65,17 @@ public class GetShipmentsService
         );
     }
 
+    private static string FormatLocation(string? city, string? country)
+    {
+        if (string.IsNullOrWhiteSpace(city) && string.IsNullOrWhiteSpace(country))
+            return "Unknown";
+
+        if (string.IsNullOrWhiteSpace(city))
+            return country!;
+
+        if (string.IsNullOrWhiteSpace(country))
+            return city;
+
+        return $"{city}, {country}";
+    }
 }

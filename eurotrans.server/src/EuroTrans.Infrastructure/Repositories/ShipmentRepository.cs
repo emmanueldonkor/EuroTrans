@@ -55,7 +55,7 @@ public class ShipmentRepository : IShipmentRepository
             .AnyAsync(s => s.TruckId == truckId && ActiveStatuses.Contains(s.Status), ct);
     }
 
-    public async Task<(List<GetShipmentsItemResponse> Items, int TotalCount)> GetFilteredAsync(
+    public async Task<(List<GetShipmentsQueryItem> Items, int TotalCount)> GetFilteredAsync(
     ShipmentStatus? status,
     Guid? driverId,
     DateTime? startDate,
@@ -94,17 +94,15 @@ public class ShipmentRepository : IShipmentRepository
             .OrderByDescending(s => s.CreatedAtUtc)
             .Skip((page - 1) * pageSize)
             .Take(pageSize)
-            .Select(s => new GetShipmentsItemResponse(
+            .Select(s => new GetShipmentsQueryItem(
                 s.Id,
                 s.TrackingId,
                 s.Status,
                 s.Driver != null ? s.Driver.Employee.Name : null,
-                s.OriginAddress != null
-                    ? $"{s.OriginAddress.City}, {s.OriginAddress.Country}"
-                    : "Unknown",
-                s.DestinationAddress != null
-                    ? $"{s.DestinationAddress.City}, {s.DestinationAddress.Country}"
-                    : "Unknown",
+                s.OriginAddress != null ? s.OriginAddress.City : null,
+                s.OriginAddress != null ? s.OriginAddress.Country : null,
+                s.DestinationAddress != null ? s.DestinationAddress.City : null,
+                s.DestinationAddress != null ? s.DestinationAddress.Country : null,
                 s.UpdatedAtUtc
             ))
             .ToListAsync(ct);

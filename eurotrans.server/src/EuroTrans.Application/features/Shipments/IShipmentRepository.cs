@@ -10,7 +10,7 @@ public interface IShipmentRepository
     Task AddAsync(Shipment shipment, CancellationToken ct = default);
     Task<bool> HasActiveAssignmentForDriverAsync(Guid driverId, CancellationToken ct = default);
     Task<bool> HasActiveAssignmentForTruckAsync(Guid truckId, CancellationToken ct = default);
-    Task<(List<GetShipmentsItemResponse> Items, int TotalCount)> GetFilteredAsync(
+    Task<(List<GetShipmentsQueryItem> Items, int TotalCount)> GetFilteredAsync(
      ShipmentStatus? status,
      Guid? driverId,
      DateTime? startDate,
