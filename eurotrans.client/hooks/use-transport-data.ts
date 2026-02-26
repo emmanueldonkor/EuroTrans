@@ -184,7 +184,7 @@ export function useLiveMap() {
     return useQuery({
         queryKey: ["live-map"],
         queryFn: () => api.getLiveMapPins(),
-        refetchInterval: 30000, // Refresh every 30s
+        refetchInterval: 15000,
     })
 }
 

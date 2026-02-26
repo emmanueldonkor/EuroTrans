@@ -130,7 +130,8 @@ public class Shipment : AggregateRoot
         string note,
         string? locationLabel,
         MilestoneType type,
-        DateTime timestampUtc)
+        DateTime timestampUtc,
+        bool addActivity = true)
     {
         if (Status != ShipmentStatus.InTransit)
             return Error.Conflict("Shipment.InvalidStatus", "Milestones can only be added while in transit.");
@@ -140,12 +141,17 @@ public class Shipment : AggregateRoot
 
         var milestone = new Milestone(Guid.NewGuid(), Id, driverId, type, note, locationLabel, lat, lon, timestampUtc);
         milestones.Add(milestone);
+        UpdatedAtUtc = timestampUtc;
 
         var description = type == MilestoneType.LocationUpdate
             ? "Location updated"
             : $"Milestone: {note}";
 
-        AddActivity(driverId, ActivityType.MilestoneAdded, description, timestampUtc);
+        if (addActivity)
+        {
+            AddActivity(driverId, ActivityType.MilestoneAdded, description, timestampUtc);
+        }
+
         return Result.Success;
     }
 

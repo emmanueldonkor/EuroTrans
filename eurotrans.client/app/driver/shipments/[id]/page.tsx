@@ -25,12 +25,14 @@ import type { Shipment, Location, Milestone } from "@/lib/types"
 import { getStatusColor } from "@/lib/utils/format"
 import { useToast } from "@/hooks/use-toast"
 import { SectionLoader } from "@/components/ui/page-state"
+import { useShipmentTracking } from "@/hooks/use-shipment-tracking"
 
 export default function DriverShipmentDetailPage() {
   const params = useParams()
   const router = useRouter()
   const { toast } = useToast()
   const fileInputRef = useRef<HTMLInputElement>(null)
+  const lastTrackingErrorRef = useRef<string | null>(null)
 
   const [shipment, setShipment] = useState<Shipment | null>(null)
   const [loading, setLoading] = useState(true)
@@ -65,6 +67,29 @@ export default function DriverShipmentDetailPage() {
     if (error instanceof Error && error.message.trim().length > 0) return error.message
     return fallback
   }
+
+  const isAutoTrackingEnabled = shipment?.status === "in-transit" && !!shipment?.startedAt
+
+  const tracking = useShipmentTracking({
+    shipmentId: shipment?.id,
+    enabled: isAutoTrackingEnabled,
+    locationLabel: shipment?.trackingId,
+    onError: (trackingError) => {
+      if (lastTrackingErrorRef.current === trackingError.message) return
+      lastTrackingErrorRef.current = trackingError.message
+      toast({
+        title: "Live Tracking Notice",
+        description: trackingError.message,
+        variant: "destructive",
+      })
+    },
+  })
+
+  useEffect(() => {
+    if (!tracking.error) {
+      lastTrackingErrorRef.current = null
+    }
+  }, [tracking.error])
 
   useEffect(() => {
     loadData()
@@ -431,6 +456,20 @@ export default function DriverShipmentDetailPage() {
           </div>
         </div>
       </Card>
+
+      {canUpdateLocation && (
+        <Card className="panel p-4 space-y-2">
+          <p className="text-sm font-medium">Automatic Live Tracking</p>
+          <p className="text-xs text-muted-foreground">
+            {tracking.isTracking
+              ? "Enabled. Location heartbeats are sent while this screen is open."
+              : "Disabled. Keep this screen open and allow location permission for live updates."}
+          </p>
+          {tracking.lastSentAt && (
+            <p className="text-xs text-muted-foreground">Last heartbeat: {new Date(tracking.lastSentAt).toLocaleString()}</p>
+          )}
+        </Card>
+      )}
 
       {!isDelivered && (
         <div className="space-y-3">

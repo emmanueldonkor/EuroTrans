@@ -53,7 +53,8 @@ public class TrackingHeartbeatService
             note: "Automatic location heartbeat",
             locationLabel: locationLabel,
             type: MilestoneType.LocationUpdate,
-            timestampUtc: clock.UtcNow);
+            timestampUtc: clock.UtcNow,
+            addActivity: false);
 
         if (result.IsError)
             return result.Errors;

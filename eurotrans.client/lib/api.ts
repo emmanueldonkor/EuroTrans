@@ -121,6 +121,18 @@ type ShipmentDetailApi = {
   truckId?: string | null
 }
 
+type LivePinApi = {
+  shipmentId: string
+  trackingId: string
+  driverName: string
+  cargo: string
+  status: ShipmentApiStatus
+  latitude: number
+  longitude: number
+  lastUpdateUtc: string
+  isStale: boolean
+}
+
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
   const isFormData = init?.body instanceof FormData
   const headers = new Headers(init?.headers)
@@ -409,6 +421,23 @@ function mapShipmentDetail(data: ShipmentDetailApi): Shipment {
   }
 }
 
+function mapLivePin(item: LivePinApi): LiveMapPin {
+  return {
+    id: item.shipmentId,
+    shipmentId: item.shipmentId,
+    trackingId: item.trackingId,
+    driverName: item.driverName,
+    cargo: item.cargo,
+    status: mapShipmentStatus(item.status),
+    position: {
+      lat: item.latitude,
+      lng: item.longitude,
+    },
+    lastUpdate: item.lastUpdateUtc,
+    isStale: item.isStale,
+  }
+}
+
 export const api = {
   async getCurrentUserContext(): Promise<CurrentUserContext> {
     const data = await request<CurrentUserContextApi>("/api/auth/me")
@@ -588,6 +617,20 @@ export const api = {
     return shipment
   },
 
+  async sendTrackingHeartbeat(
+    id: string,
+    data: { latitude: number; longitude: number; locationLabel?: string },
+  ): Promise<void> {
+    await request<void>(`/api/shipments/${id}/tracking/heartbeat`, {
+      method: "POST",
+      body: JSON.stringify({
+        latitude: data.latitude,
+        longitude: data.longitude,
+        locationLabel: data.locationLabel?.trim() || null,
+      }),
+    })
+  },
+
   async addShipmentMilestone(id: string, milestone: Omit<Milestone, "id" | "timestamp">): Promise<Shipment> {
     const locationLabel =
       milestone.locationLabel?.trim() ||
@@ -753,24 +796,8 @@ export const api = {
   },
 
   async getLiveMapPins(): Promise<LiveMapPin[]> {
-    const shipments = await api.getShipments({ status: "in-transit" })
-
-    return shipments.map((shipment) => {
-      const position = shipment.currentLocation ?? shipment.origin
-      return {
-        id: shipment.id,
-        shipmentId: shipment.id,
-        trackingId: shipment.trackingId,
-        driverName: shipment.driverName ?? "Unknown",
-        cargo: shipment.cargo.description || "Shipment cargo",
-        status: shipment.status,
-        position: {
-          lat: position.lat ?? 0,
-          lng: position.lng ?? 0,
-        },
-        lastUpdate: shipment.updatedAt,
-      }
-    })
+    const pins = await request<LivePinApi[]>("/api/shipments/live-pins")
+    return pins.map(mapLivePin)
   },
 
   async getAnalytics() {

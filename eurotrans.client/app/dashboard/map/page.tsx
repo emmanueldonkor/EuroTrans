@@ -71,7 +71,14 @@ export default function LiveMapPage() {
                   <div className="space-y-2">
                     <div className="flex items-start justify-between gap-2">
                       <p className="font-medium text-sm">{pin.trackingId}</p>
-                      <Badge className={`${getStatusColor(pin.status)} text-xs`}>{pin.status.replace("-", " ")}</Badge>
+                      <div className="flex items-center gap-2">
+                        {pin.isStale && (
+                          <Badge variant="outline" className="text-[10px] uppercase tracking-wide">
+                            Stale
+                          </Badge>
+                        )}
+                        <Badge className={`${getStatusColor(pin.status)} text-xs`}>{pin.status.replace("-", " ")}</Badge>
+                      </div>
                     </div>
                     <div className="space-y-1 text-xs text-muted-foreground">
                       <p className="flex items-center gap-1">

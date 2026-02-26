@@ -106,4 +106,5 @@ export interface LiveMapPin {
     lng: number
   }
   lastUpdate: string
+  isStale: boolean
 }
