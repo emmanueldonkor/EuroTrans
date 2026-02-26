@@ -7,6 +7,7 @@ using EuroTrans.Application.features.Employees.Drivers.UpdateDriverProfile;
 using EuroTrans.Application.features.Employees.Drivers.UpdateDriverStatus;
 using EuroTrans.Application.features.Employees.User;
 using EuroTrans.Application.features.Employees.User.GetCurrentUser;
+using EuroTrans.Application.features.Employees.User.UpdatePreferredLanguage;
 using EuroTrans.Application.features.Shipments.AssignShipment;
 using EuroTrans.Application.features.Shipments.CreateShipment;
 using EuroTrans.Application.features.Shipments.DeleteShipment;
@@ -48,6 +49,7 @@ public static class DependencyInjection
         services.AddScoped<UpdateDriverProfileService>();
         services.AddScoped<UpdateDriverStatusService>();
         services.AddScoped<GetCurrentUserService>();
+        services.AddScoped<UpdatePreferredLanguageService>();
         services.AddScoped<EnsureCurrentUserService>();
         services.AddScoped<SyncUserService>();
         services.AddScoped<CreateTruckService>();

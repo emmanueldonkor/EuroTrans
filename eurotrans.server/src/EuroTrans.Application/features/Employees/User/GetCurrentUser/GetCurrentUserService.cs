@@ -40,6 +40,7 @@ public class GetCurrentUserService
             Name: employee.Name,
             Email: employee.Email,
             Role: employee.Role.ToString().ToLowerInvariant(),
+            PreferredLanguage: employee.PreferredLanguage,
             DriverProfileComplete: driverProfileComplete,
             Phone: phone,
             LicenseNumber: license

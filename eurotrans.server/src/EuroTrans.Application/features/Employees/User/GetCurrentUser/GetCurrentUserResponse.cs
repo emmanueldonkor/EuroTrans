@@ -5,6 +5,7 @@ public record GetCurrentUserResponse(
     string Name,
     string Email,
     string Role,
+    string PreferredLanguage,
     bool DriverProfileComplete,
     string? Phone,
     string? LicenseNumber

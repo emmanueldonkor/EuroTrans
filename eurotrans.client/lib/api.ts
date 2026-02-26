@@ -47,6 +47,7 @@ type CurrentUserContextApi = {
   name: string
   email: string
   role: string
+  preferredLanguage: string
   driverProfileComplete: boolean
   phone?: string | null
   licenseNumber?: string | null
@@ -300,6 +301,13 @@ function mapUserRole(role: string): UserRole {
   return "guest"
 }
 
+function mapLocale(value: string): "en" | "de" | "fr" {
+  const normalized = String(value).toLowerCase()
+  if (normalized === "de") return "de"
+  if (normalized === "fr") return "fr"
+  return "en"
+}
+
 function parseRouteLabel(label?: string): Pick<Location, "city" | "country"> {
   if (!label) return { city: "", country: "" }
   const [city = "", country = ""] = label.split(",").map((x) => x.trim())
@@ -447,10 +455,18 @@ export const api = {
       name: data.name,
       email: data.email,
       role: mapUserRole(data.role),
+      preferredLanguage: mapLocale(data.preferredLanguage),
       driverProfileComplete: data.driverProfileComplete,
       phone: data.phone ?? undefined,
       licenseNumber: data.licenseNumber ?? undefined,
     }
+  },
+
+  async updatePreferredLanguage(preferredLanguage: "en" | "de" | "fr"): Promise<void> {
+    await request<void>("/api/auth/me/language", {
+      method: "PUT",
+      body: JSON.stringify({ preferredLanguage }),
+    })
   },
 
   async updateMyDriverProfile(data: { phone: string; licenseNumber: string }): Promise<void> {

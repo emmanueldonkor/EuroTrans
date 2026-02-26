@@ -41,6 +41,12 @@ public class EmployeeConfiguration : IEntityTypeConfiguration<Employee>
             .HasColumnName("avatar_url")
             .HasMaxLength(500);
 
+        builder.Property(e => e.PreferredLanguage)
+            .HasColumnName("preferred_language")
+            .IsRequired()
+            .HasMaxLength(10)
+            .HasDefaultValue("en");
+
         builder.Property(e => e.IsActive)
             .HasColumnName("is_active")
             .IsRequired();

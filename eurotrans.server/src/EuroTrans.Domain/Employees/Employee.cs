@@ -6,11 +6,19 @@ namespace EuroTrans.Domain.Employees;
 
 public class Employee : AggregateRoot
 {
+    private static readonly HashSet<string> SupportedLanguages = new(StringComparer.OrdinalIgnoreCase)
+    {
+        "en",
+        "de",
+        "fr"
+    };
+
     public string Auth0UserId { get; private set; }
     public string Name { get; private set; }
     public string Email { get; private set; }
     public EmployeeRole Role { get; private set; }
     public string? AvatarUrl { get; private set; }
+    public string PreferredLanguage { get; private set; }
     public bool IsActive { get; private set; }
     public DateTime CreatedAtUtc { get; private set; }
 
@@ -26,7 +34,8 @@ public class Employee : AggregateRoot
         string email,
         EmployeeRole role,
         string? avatarUrl,
-        DateTime createdAtUtc)
+        DateTime createdAtUtc,
+        string preferredLanguage = "en")
         : base(id)
     {
         Auth0UserId = auth0UserId;
@@ -34,6 +43,10 @@ public class Employee : AggregateRoot
         Email = email;
         Role = role;
         AvatarUrl = avatarUrl;
+        var normalizedLanguage = NormalizeLanguage(preferredLanguage);
+        PreferredLanguage = SupportedLanguages.Contains(normalizedLanguage)
+            ? normalizedLanguage
+            : "en";
         IsActive = true;
         CreatedAtUtc = createdAtUtc;
     }
@@ -55,6 +68,22 @@ public class Employee : AggregateRoot
         Email = email;
     }
 
+    public ErrorOr<Success> SetPreferredLanguage(string preferredLanguage)
+    {
+        if (string.IsNullOrWhiteSpace(preferredLanguage))
+            return Error.Validation("Employee.PreferredLanguage",
+                "Preferred language cannot be empty.");
+
+        var normalized = NormalizeLanguage(preferredLanguage);
+        if (!SupportedLanguages.Contains(normalized))
+            return Error.Validation(
+                "Employee.PreferredLanguage",
+                "Unsupported preferred language.");
+
+        PreferredLanguage = normalized;
+        return Result.Success;
+    }
+
     public ErrorOr<Success> UpdateRole(EmployeeRole role)
     {
         Role = role;
@@ -70,5 +99,10 @@ public class Employee : AggregateRoot
         }
 
         return Result.Success;
+    }
+
+    private static string NormalizeLanguage(string languageCode)
+    {
+        return languageCode.Trim().ToLowerInvariant();
     }
 }

@@ -17,6 +17,7 @@ export interface CurrentUserContext {
   name: string
   email: string
   role: UserRole
+  preferredLanguage: "en" | "de" | "fr"
   driverProfileComplete: boolean
   phone?: string
   licenseNumber?: string

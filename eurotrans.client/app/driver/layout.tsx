@@ -33,7 +33,7 @@ export default function DriverLayout({ children }: { children: React.ReactNode }
   const [hasScrolled, setHasScrolled] = useState(false)
   const pathname = usePathname()
   const router = useRouter()
-  const { t } = useI18n()
+  const { t, locale, setLocale } = useI18n()
   const { data: currentUser, isLoading, error, refetch } = useCurrentUser()
   const isAuthError = error instanceof ApiRequestError && (error.status === 401 || error.status === 403)
   const isDriver = currentUser?.role === "driver"
@@ -67,6 +67,13 @@ export default function DriverLayout({ children }: { children: React.ReactNode }
     window.addEventListener("scroll", onScroll, { passive: true })
     return () => window.removeEventListener("scroll", onScroll)
   }, [])
+
+  useEffect(() => {
+    if (!currentUser?.preferredLanguage) return
+    if (currentUser.preferredLanguage !== locale) {
+      setLocale(currentUser.preferredLanguage)
+    }
+  }, [currentUser?.preferredLanguage, locale, setLocale])
 
   const handleLogout = async () => {
     await logout()
