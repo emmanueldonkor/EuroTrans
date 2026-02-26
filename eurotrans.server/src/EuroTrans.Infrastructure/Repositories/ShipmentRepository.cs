@@ -67,22 +67,22 @@ public class ShipmentRepository : IShipmentRepository
             .AsNoTracking()
             .Where(s => s.Status == ShipmentStatus.InTransit)
             .Select(s => new ShipmentLivePinQueryItem(
-                ShipmentId: s.Id,
-                TrackingId: s.TrackingId,
-                DriverName: s.Driver != null ? s.Driver.Employee.Name : null,
-                CargoDescription: s.Cargo.Description,
-                Status: s.Status,
-                Latitude: s.Milestones
+                s.Id,
+                s.TrackingId,
+                s.Driver != null ? s.Driver.Employee.Name : null,
+                s.Cargo.Description,
+                s.Status,
+                s.Milestones
                     .Where(m => m.Type == MilestoneType.LocationUpdate)
                     .OrderByDescending(m => m.TimestampUtc)
                     .Select(m => (double?)m.LocationLat)
                     .FirstOrDefault(),
-                Longitude: s.Milestones
+                s.Milestones
                     .Where(m => m.Type == MilestoneType.LocationUpdate)
                     .OrderByDescending(m => m.TimestampUtc)
                     .Select(m => (double?)m.LocationLng)
                     .FirstOrDefault(),
-                LastLocationUpdatedAtUtc: s.Milestones
+                s.Milestones
                     .Where(m => m.Type == MilestoneType.LocationUpdate)
                     .OrderByDescending(m => m.TimestampUtc)
                     .Select(m => (DateTime?)m.TimestampUtc)
