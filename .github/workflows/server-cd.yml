@@ -30,8 +30,8 @@ jobs:
 
       - name: Install dotnet-ef
         run: |
-          dotnet tool install --global dotnet-ef --version "8.*"
-          echo "$HOME/.dotnet/tools" >> $GITHUB_PATH
+          dotnet new tool-manifest --force
+          dotnet tool install dotnet-ef --version "8.*"
 
       - name: Ensure production DB connection string
         run: |
@@ -44,7 +44,7 @@ jobs:
 
       - name: Apply EF Core migrations
         run: >
-          dotnet ef database update
+          dotnet tool run dotnet-ef database update
           --project eurotrans.server/src/EuroTrans.Infrastructure/EuroTrans.Infrastructure.csproj
           --startup-project eurotrans.server/src/EuroTrans.Api/EuroTrans.Api.csproj
           --configuration Release
