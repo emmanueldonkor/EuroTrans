@@ -16,6 +16,7 @@ using EuroTrans.Application.features.Shipments.GetShipmentActivities;
 using EuroTrans.Application.features.Shipments.GetShipments;
 using EuroTrans.Application.features.Shipments.Milestone;
 using EuroTrans.Application.features.Shipments.StartShipment;
+using EuroTrans.Application.features.Shipments.Tracking;
 using EuroTrans.Application.features.Trucks.CreateTruck;
 using EuroTrans.Application.features.Trucks.DeleteTruck;
 using EuroTrans.Application.features.Trucks.GetTruck;
@@ -37,6 +38,8 @@ public static class DependencyInjection
         services.AddScoped<DeliverShipmentService>();
         services.AddScoped<DeleteShipmentService>();
         services.AddScoped<MilestoneService>();
+        services.AddScoped<TrackingHeartbeatService>();
+        services.AddScoped<GetLivePinsService>();
         services.AddScoped<GetShipmentsService>();
         services.AddScoped<GetShipmentService>();
         services.AddScoped<GetShipmentActivitiesService>();

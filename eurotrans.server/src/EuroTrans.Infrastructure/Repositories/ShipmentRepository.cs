@@ -1,5 +1,6 @@
 using EuroTrans.Application.features.Shipments;
 using EuroTrans.Application.features.Shipments.GetShipments;
+using EuroTrans.Application.features.Shipments.Tracking;
 using EuroTrans.Domain.Shipments;
 using EuroTrans.Domain.Shipments.Enums;
 using EuroTrans.Infrastructure.Persistence;
@@ -41,6 +42,11 @@ public class ShipmentRepository : IShipmentRepository
         await db.Shipments.AddAsync(shipment, ct);
     }
 
+    public Task<Shipment?> GetForTrackingAsync(Guid id, CancellationToken ct = default)
+    {
+        return db.Shipments.FirstOrDefaultAsync(s => s.Id == id, ct);
+    }
+
     public Task<bool> HasActiveAssignmentForDriverAsync(Guid driverId, CancellationToken ct = default)
     {
         return db.Shipments
@@ -53,6 +59,35 @@ public class ShipmentRepository : IShipmentRepository
         return db.Shipments
             .AsNoTracking()
             .AnyAsync(s => s.TruckId == truckId && ActiveStatuses.Contains(s.Status), ct);
+    }
+
+    public async Task<List<ShipmentLivePinQueryItem>> GetLivePinItemsAsync(CancellationToken ct = default)
+    {
+        return await db.Shipments
+            .AsNoTracking()
+            .Where(s => s.Status == ShipmentStatus.InTransit)
+            .Select(s => new ShipmentLivePinQueryItem(
+                ShipmentId: s.Id,
+                TrackingId: s.TrackingId,
+                DriverName: s.Driver != null ? s.Driver.Employee.Name : null,
+                CargoDescription: s.Cargo.Description,
+                Status: s.Status,
+                Latitude: s.Milestones
+                    .Where(m => m.Type == MilestoneType.LocationUpdate)
+                    .OrderByDescending(m => m.TimestampUtc)
+                    .Select(m => (double?)m.LocationLat)
+                    .FirstOrDefault(),
+                Longitude: s.Milestones
+                    .Where(m => m.Type == MilestoneType.LocationUpdate)
+                    .OrderByDescending(m => m.TimestampUtc)
+                    .Select(m => (double?)m.LocationLng)
+                    .FirstOrDefault(),
+                LastLocationUpdatedAtUtc: s.Milestones
+                    .Where(m => m.Type == MilestoneType.LocationUpdate)
+                    .OrderByDescending(m => m.TimestampUtc)
+                    .Select(m => (DateTime?)m.TimestampUtc)
+                    .FirstOrDefault()))
+            .ToListAsync(ct);
     }
 
     public async Task<(List<GetShipmentsQueryItem> Items, int TotalCount)> GetFilteredAsync(
