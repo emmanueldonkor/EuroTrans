@@ -5,6 +5,7 @@ import { IBM_Plex_Mono, Manrope, Space_Grotesk } from "next/font/google"
 import { Toaster } from "@/components/toaster"
 import { Auth0Provider } from "@auth0/nextjs-auth0/client"
 import "./globals.css"
+import "leaflet/dist/leaflet.css"
 import { ReactQueryProvider } from "@/lib/react-query"
 import { I18nProvider } from "@/components/providers/i18n-provider"
 
