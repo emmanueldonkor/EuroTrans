@@ -32,11 +32,13 @@ import { useToast } from "@/hooks/use-toast"
 import { PageErrorState, SectionLoader } from "@/components/ui/page-state"
 import { PageHeader, PageHeading, PageShell, PageSurface } from "@/components/ui/page-shell"
 import { toActionErrorMessage } from "@/lib/utils/error"
+import { useI18n } from "@/components/providers/i18n-provider"
 
 export default function FleetPage() {
   const { data: trucks = [], isLoading, error: queryError, refetch } = useTrucks()
   const { createTruck, updateTruck, deleteTruck } = useTruckMutations()
   const { toast } = useToast()
+  const { t } = useI18n()
   const [showCreateDialog, setShowCreateDialog] = useState(false)
   const [showEditDialog, setShowEditDialog] = useState(false)
   const [showDeleteDialog, setShowDeleteDialog] = useState(false)
@@ -61,13 +63,13 @@ export default function FleetPage() {
       setFormData({ plateNumber: "", model: "", capacity: "", status: "available" })
       await refetch()
       toast({
-        title: "Truck created",
-        description: "The fleet has been updated.",
+        title: t("fleet.toast.createTitle"),
+        description: t("fleet.toast.createDescription"),
       })
     } catch (err) {
-      const message = toActionErrorMessage(err, "Failed to create truck.")
+      const message = toActionErrorMessage(err, t("fleet.toast.createErrorFallback"))
       toast({
-        title: "Create failed",
+        title: t("fleet.toast.createErrorTitle"),
         description: message,
         variant: "destructive",
       })
@@ -90,8 +92,8 @@ export default function FleetPage() {
 
       if (!result.success) {
         toast({
-          title: "Update failed",
-          description: result.error || "Failed to update truck.",
+          title: t("fleet.toast.updateErrorTitle"),
+          description: result.error || t("fleet.toast.updateResultFallback"),
           variant: "destructive",
         })
         return
@@ -102,13 +104,13 @@ export default function FleetPage() {
       setFormData({ plateNumber: "", model: "", capacity: "", status: "available" })
       await refetch()
       toast({
-        title: "Truck updated",
-        description: `${selectedTruck.plateNumber} was updated successfully.`,
+        title: t("fleet.toast.updateTitle"),
+        description: t("fleet.toast.updateDescription").replace("{plateNumber}", selectedTruck.plateNumber),
       })
     } catch (err) {
-      const message = toActionErrorMessage(err, "Failed to update truck.")
+      const message = toActionErrorMessage(err, t("fleet.toast.updateErrorFallback"))
       toast({
-        title: "Update failed",
+        title: t("fleet.toast.updateErrorTitle"),
         description: message,
         variant: "destructive",
       })
@@ -123,8 +125,8 @@ export default function FleetPage() {
 
       if (!result.success) {
         toast({
-          title: "Delete failed",
-          description: result.error || "Failed to delete truck.",
+          title: t("fleet.toast.deleteErrorTitle"),
+          description: result.error || t("fleet.toast.deleteResultFallback"),
           variant: "destructive",
         })
         setShowDeleteDialog(false)
@@ -135,13 +137,13 @@ export default function FleetPage() {
       setSelectedTruck(null)
       await refetch()
       toast({
-        title: "Truck deleted",
-        description: "Truck removed from fleet.",
+        title: t("fleet.toast.deleteTitle"),
+        description: t("fleet.toast.deleteDescription"),
       })
     } catch (err) {
-      const message = toActionErrorMessage(err, "Failed to delete truck.")
+      const message = toActionErrorMessage(err, t("fleet.toast.deleteErrorFallback"))
       toast({
-        title: "Delete failed",
+        title: t("fleet.toast.deleteErrorTitle"),
         description: message,
         variant: "destructive",
       })
@@ -176,15 +178,21 @@ export default function FleetPage() {
     return colors[status as keyof typeof colors] || colors.available
   }
 
+  const getTruckStatusLabel = (status: TruckType["status"]) => {
+    if (status === "available") return t("fleet.status.available")
+    if (status === "in-use") return t("fleet.status.inUse")
+    return t("fleet.status.maintenance")
+  }
+
   if (isLoading) {
-    return <SectionLoader label="Loading trucks..." />
+    return <SectionLoader label={t("fleet.loading")} />
   }
 
   if (queryError) {
     return (
       <PageErrorState
-        title="Could not load fleet"
-        message={queryError instanceof Error ? queryError.message : "Unexpected error while loading fleet."}
+        title={t("fleet.errorTitle")}
+        message={queryError instanceof Error ? queryError.message : t("fleet.errorMessage")}
         onRetry={() => {
           void refetch()
         }}
@@ -195,10 +203,10 @@ export default function FleetPage() {
   return (
     <PageShell>
       <PageHeader>
-        <PageHeading title="Fleet" description="Manage your truck fleet" />
+        <PageHeading title={t("fleet.title")} description={t("fleet.description")} />
         <Button onClick={() => setShowCreateDialog(true)}>
           <Plus className="mr-2 h-4 w-4" />
-          Add Truck
+          {t("fleet.addTruck")}
         </Button>
       </PageHeader>
 
@@ -206,18 +214,18 @@ export default function FleetPage() {
         <Table>
           <TableHeader className="table-head-sticky">
             <TableRow>
-              <TableHead>Plate Number</TableHead>
-              <TableHead>Model</TableHead>
-              <TableHead>Capacity</TableHead>
-              <TableHead>Status</TableHead>
-              <TableHead className="text-right">Actions</TableHead>
+              <TableHead>{t("fleet.table.plateNumber")}</TableHead>
+              <TableHead>{t("fleet.table.model")}</TableHead>
+              <TableHead>{t("fleet.table.capacity")}</TableHead>
+              <TableHead>{t("fleet.table.status")}</TableHead>
+              <TableHead className="text-right">{t("fleet.table.actions")}</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {trucks.length === 0 ? (
               <TableRow>
                 <TableCell colSpan={5} className="text-center py-8 text-muted-foreground">
-                  No trucks found
+                  {t("fleet.table.empty")}
                 </TableCell>
               </TableRow>
             ) : (
@@ -227,7 +235,7 @@ export default function FleetPage() {
                   <TableCell>{truck.model}</TableCell>
                   <TableCell>{truck.capacity.toLocaleString()} kg</TableCell>
                   <TableCell>
-                    <Badge className={getStatusColor(truck.status)}>{truck.status}</Badge>
+                    <Badge className={getStatusColor(truck.status)}>{getTruckStatusLabel(truck.status)}</Badge>
                   </TableCell>
                   <TableCell className="text-right space-x-2">
                     <Button variant="outline" size="sm" className="bg-background/70" onClick={() => openEditDialog(truck)}>
@@ -247,40 +255,40 @@ export default function FleetPage() {
       <Dialog open={showCreateDialog} onOpenChange={setShowCreateDialog}>
         <DialogContent className="panel">
           <DialogHeader>
-            <DialogTitle>Add New Truck</DialogTitle>
-            <DialogDescription>Create a new truck in your fleet</DialogDescription>
+            <DialogTitle>{t("fleet.dialog.createTitle")}</DialogTitle>
+            <DialogDescription>{t("fleet.dialog.createDescription")}</DialogDescription>
           </DialogHeader>
           <div className="space-y-4">
             <div>
-              <Label htmlFor="plateNumber">Plate Number</Label>
+              <Label htmlFor="plateNumber">{t("fleet.form.plateNumber")}</Label>
               <Input
                 id="plateNumber"
                 value={formData.plateNumber}
                 onChange={(e) => setFormData({ ...formData, plateNumber: e.target.value })}
-                placeholder="e.g. B-TR-1234"
+                placeholder={t("fleet.form.placeholder.plateNumber")}
               />
             </div>
             <div>
-              <Label htmlFor="model">Model</Label>
+              <Label htmlFor="model">{t("fleet.form.model")}</Label>
               <Input
                 id="model"
                 value={formData.model}
                 onChange={(e) => setFormData({ ...formData, model: e.target.value })}
-                placeholder="e.g. Mercedes Actros 2545"
+                placeholder={t("fleet.form.placeholder.model")}
               />
             </div>
             <div>
-              <Label htmlFor="capacity">Capacity (kg)</Label>
+              <Label htmlFor="capacity">{t("fleet.form.capacity")}</Label>
               <Input
                 id="capacity"
                 type="number"
                 value={formData.capacity}
                 onChange={(e) => setFormData({ ...formData, capacity: e.target.value })}
-                placeholder="e.g. 25000"
+                placeholder={t("fleet.form.placeholder.capacity")}
               />
             </div>
             <div>
-              <Label htmlFor="status">Status</Label>
+              <Label htmlFor="status">{t("fleet.form.status")}</Label>
               <Select
                 value={formData.status}
                 onValueChange={(value) => setFormData({ ...formData, status: value as TruckType["status"] })}
@@ -289,20 +297,20 @@ export default function FleetPage() {
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="available">Available</SelectItem>
-                  <SelectItem value="in-use">In Use</SelectItem>
-                  <SelectItem value="maintenance">Maintenance</SelectItem>
+                  <SelectItem value="available">{t("fleet.status.available")}</SelectItem>
+                  <SelectItem value="in-use">{t("fleet.status.inUse")}</SelectItem>
+                  <SelectItem value="maintenance">{t("fleet.status.maintenance")}</SelectItem>
                 </SelectContent>
               </Select>
             </div>
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setShowCreateDialog(false)} disabled={createTruck.isPending}>
-              Cancel
+              {t("common.cancel")}
             </Button>
             <Button onClick={handleCreate} disabled={createTruck.isPending}>
               {createTruck.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-              {createTruck.isPending ? "Creating..." : "Create Truck"}
+              {createTruck.isPending ? t("fleet.action.creating") : t("fleet.action.create")}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -311,12 +319,12 @@ export default function FleetPage() {
       <Dialog open={showEditDialog} onOpenChange={setShowEditDialog}>
         <DialogContent className="panel">
           <DialogHeader>
-            <DialogTitle>Edit Truck</DialogTitle>
-            <DialogDescription>Update truck information (only if not in use)</DialogDescription>
+            <DialogTitle>{t("fleet.dialog.editTitle")}</DialogTitle>
+            <DialogDescription>{t("fleet.dialog.editDescription")}</DialogDescription>
           </DialogHeader>
           <div className="space-y-4">
             <div>
-              <Label htmlFor="edit-plateNumber">Plate Number</Label>
+              <Label htmlFor="edit-plateNumber">{t("fleet.form.plateNumber")}</Label>
               <Input
                 id="edit-plateNumber"
                 value={formData.plateNumber}
@@ -324,7 +332,7 @@ export default function FleetPage() {
               />
             </div>
             <div>
-              <Label htmlFor="edit-model">Model</Label>
+              <Label htmlFor="edit-model">{t("fleet.form.model")}</Label>
               <Input
                 id="edit-model"
                 value={formData.model}
@@ -332,7 +340,7 @@ export default function FleetPage() {
               />
             </div>
             <div>
-              <Label htmlFor="edit-capacity">Capacity (kg)</Label>
+              <Label htmlFor="edit-capacity">{t("fleet.form.capacity")}</Label>
               <Input
                 id="edit-capacity"
                 type="number"
@@ -341,7 +349,7 @@ export default function FleetPage() {
               />
             </div>
             <div>
-              <Label htmlFor="edit-status">Status</Label>
+              <Label htmlFor="edit-status">{t("fleet.form.status")}</Label>
               <Select
                 value={formData.status}
                 onValueChange={(value) => setFormData({ ...formData, status: value as TruckType["status"] })}
@@ -350,20 +358,20 @@ export default function FleetPage() {
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="available">Available</SelectItem>
-                  <SelectItem value="in-use">In Use</SelectItem>
-                  <SelectItem value="maintenance">Maintenance</SelectItem>
+                  <SelectItem value="available">{t("fleet.status.available")}</SelectItem>
+                  <SelectItem value="in-use">{t("fleet.status.inUse")}</SelectItem>
+                  <SelectItem value="maintenance">{t("fleet.status.maintenance")}</SelectItem>
                 </SelectContent>
               </Select>
             </div>
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setShowEditDialog(false)} disabled={updateTruck.isPending}>
-              Cancel
+              {t("common.cancel")}
             </Button>
             <Button onClick={handleEdit} disabled={updateTruck.isPending}>
               {updateTruck.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-              {updateTruck.isPending ? "Updating..." : "Update Truck"}
+              {updateTruck.isPending ? t("fleet.action.updating") : t("fleet.action.update")}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -372,19 +380,18 @@ export default function FleetPage() {
       <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
         <AlertDialogContent className="panel">
           <AlertDialogHeader>
-            <AlertDialogTitle>Delete Truck</AlertDialogTitle>
+            <AlertDialogTitle>{t("fleet.dialog.deleteTitle")}</AlertDialogTitle>
             <AlertDialogDescription>
-              Are you sure you want to delete truck {selectedTruck?.plateNumber}? This action cannot be undone. The
-              truck can only be deleted if it is not assigned to any active shipments.
+              {t("fleet.dialog.deleteDescription").replace("{plateNumber}", selectedTruck?.plateNumber ?? "")}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel onClick={() => setShowDeleteDialog(false)} disabled={deleteTruck.isPending}>
-              Cancel
+              {t("common.cancel")}
             </AlertDialogCancel>
             <AlertDialogAction onClick={handleDelete} disabled={deleteTruck.isPending}>
               {deleteTruck.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-              {deleteTruck.isPending ? "Deleting..." : "Delete"}
+              {deleteTruck.isPending ? t("fleet.action.deleting") : t("common.delete")}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

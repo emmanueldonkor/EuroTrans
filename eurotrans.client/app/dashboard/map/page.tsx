@@ -9,6 +9,7 @@ import { getStatusColor, formatDate } from "@/lib/utils/format"
 import { useLiveMap } from "@/hooks/use-transport-data"
 import { PageErrorState, SectionLoader } from "@/components/ui/page-state"
 import { PageHeading, PageShell, PageSurface } from "@/components/ui/page-shell"
+import { useI18n } from "@/components/providers/i18n-provider"
 
 const LiveMap = dynamic(() => import("@/components/maps/live-map").then((module) => module.LiveMap), {
   ssr: false,
@@ -17,16 +18,30 @@ const LiveMap = dynamic(() => import("@/components/maps/live-map").then((module)
 export default function LiveMapPage() {
   const [selectedPin, setSelectedPin] = useState<LiveMapPin | null>(null)
   const { data: pins = [], isLoading, error, refetch } = useLiveMap()
+  const { t } = useI18n()
+
+  const getShipmentStatusLabel = (status: LiveMapPin["status"]) => {
+    switch (status) {
+      case "unassigned":
+        return t("status.unassigned")
+      case "in-transit":
+        return t("status.inTransit")
+      case "delivered":
+        return t("status.delivered")
+      default:
+        return status.replace("-", " ")
+    }
+  }
 
   if (isLoading) {
-    return <SectionLoader label="Loading map data..." />
+    return <SectionLoader label={t("map.loadingData")} />
   }
 
   if (error) {
     return (
       <PageErrorState
-        title="Could not load live map"
-        message={error instanceof Error ? error.message : "Unexpected error while loading map pins."}
+        title={t("map.errorTitle")}
+        message={error instanceof Error ? error.message : t("map.errorMessage")}
         onRetry={() => {
           void refetch()
         }}
@@ -36,7 +51,7 @@ export default function LiveMapPage() {
 
   return (
     <PageShell>
-      <PageHeading title="Live Map" description="Real-time tracking of in-transit shipments" />
+      <PageHeading title={t("map.title")} description={t("map.description")} />
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <PageSurface className="lg:col-span-2 panel-muted p-6 min-h-[600px]">
@@ -46,10 +61,8 @@ export default function LiveMapPage() {
                 <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-primary/10">
                   <MapPin className="h-7 w-7 text-primary" />
                 </div>
-                <p className="text-lg font-semibold">No live locations yet</p>
-                <p className="text-sm text-muted-foreground">
-                  Start transit and send at least one location update to place a shipment on the map.
-                </p>
+                <p className="text-lg font-semibold">{t("map.emptyTitle")}</p>
+                <p className="text-sm text-muted-foreground">{t("map.emptyDescription")}</p>
               </div>
             </div>
           ) : (
@@ -61,10 +74,10 @@ export default function LiveMapPage() {
 
         {/* Active Shipments List */}
         <PageSurface className="p-6 space-y-4">
-          <h2 className="text-lg font-semibold">Active Shipments</h2>
+          <h2 className="text-lg font-semibold">{t("map.activeShipments")}</h2>
 
           {pins.length === 0 ? (
-            <p className="text-sm text-muted-foreground">No active shipments</p>
+            <p className="text-sm text-muted-foreground">{t("map.noActiveShipments")}</p>
           ) : (
             <div className="space-y-3">
               {pins.map((pin) => (
@@ -81,19 +94,21 @@ export default function LiveMapPage() {
                       <div className="flex items-center gap-2">
                         {pin.isStale && (
                           <Badge variant="outline" className="text-[10px] uppercase tracking-wide">
-                            Stale
+                            {t("map.badge.stale")}
                           </Badge>
                         )}
-                        <Badge className={`${getStatusColor(pin.status)} text-xs`}>{pin.status.replace("-", " ")}</Badge>
+                        <Badge className={`${getStatusColor(pin.status)} text-xs`}>{getShipmentStatusLabel(pin.status)}</Badge>
                       </div>
                     </div>
                     <div className="space-y-1 text-xs text-muted-foreground">
                       <p className="flex items-center gap-1">
                         <MapPin className="h-3 w-3" />
-                        Driver: {pin.driverName}
+                        {t("map.driverLabel")}: {pin.driverName}
                       </p>
                       <p className="truncate">{pin.cargo}</p>
-                      <p>Updated: {formatDate(pin.lastUpdate)}</p>
+                      <p>
+                        {t("map.updatedLabel")}: {formatDate(pin.lastUpdate)}
+                      </p>
                     </div>
                   </div>
                 </button>
