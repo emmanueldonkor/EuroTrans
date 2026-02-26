@@ -5,6 +5,9 @@ on:
   push:
     branches:
       - master
+    paths:
+      - "eurotrans.server/**"
+      - ".github/workflows/server-cd.yml"
 
 jobs:
   build-and-deploy:
@@ -24,6 +27,30 @@ jobs:
 
       - name: Build
         run: dotnet build eurotrans.server/EuroTrans.sln --configuration Release --no-restore
+
+      - name: Install dotnet-ef
+        run: |
+          dotnet tool install --global dotnet-ef --version "8.*"
+          echo "$HOME/.dotnet/tools" >> $GITHUB_PATH
+
+      - name: Ensure production DB connection string
+        run: |
+          if [ -z "$PROD_DB_CONNECTION_STRING" ]; then
+            echo "PROD_DB_CONNECTION_STRING secret is missing."
+            exit 1
+          fi
+        env:
+          PROD_DB_CONNECTION_STRING: ${{ secrets.PROD_DB_CONNECTION_STRING }}
+
+      - name: Apply EF Core migrations
+        run: >
+          dotnet ef database update
+          --project eurotrans.server/src/EuroTrans.Infrastructure/EuroTrans.Infrastructure.csproj
+          --startup-project eurotrans.server/src/EuroTrans.Api/EuroTrans.Api.csproj
+          --configuration Release
+          --connection "$PROD_DB_CONNECTION_STRING"
+        env:
+          PROD_DB_CONNECTION_STRING: ${{ secrets.PROD_DB_CONNECTION_STRING }}
 
       - name: Publish API
         run: dotnet publish eurotrans.server/src/EuroTrans.Api/EuroTrans.Api.csproj --configuration Release --output ./publish/api --no-build
