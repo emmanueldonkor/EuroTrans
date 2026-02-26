@@ -5,6 +5,26 @@ import { Package, TrendingUp, Users, Clock, ArrowUpRight } from "lucide-react"
 import { useAnalytics } from "@/hooks/use-transport-data"
 import { PageErrorState, SectionLoader } from "@/components/ui/page-state"
 import { PageHeading, PageShell, PageSurface } from "@/components/ui/page-shell"
+import { Bar, BarChart, CartesianGrid, Line, LineChart, XAxis, YAxis } from "recharts"
+import { ChartContainer, ChartLegend, ChartLegendContent, ChartTooltip, ChartTooltipContent, type ChartConfig } from "@/components/ui/chart"
+
+const shipmentsOverTimeChartConfig = {
+  count: {
+    label: "Shipments",
+    color: "hsl(var(--primary))",
+  },
+} satisfies ChartConfig
+
+const driverWorkloadChartConfig = {
+  assigned: {
+    label: "Assigned",
+    color: "#f59e0b",
+  },
+  inTransit: {
+    label: "In Transit",
+    color: "#3b82f6",
+  },
+} satisfies ChartConfig
 
 export default function AnalyticsPage() {
   const { data: analytics, isLoading, error, refetch } = useAnalytics()
@@ -100,22 +120,55 @@ export default function AnalyticsPage() {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <PageSurface className="p-6 surface-hover panel-muted">
           <h2 className="text-lg font-semibold mb-4">Shipments Over Time</h2>
-          <div className="h-64 flex items-center justify-center rounded-lg border border-dashed border-border/80 bg-background/60">
-            <div className="text-center">
-              <Clock className="h-12 w-12 mx-auto text-muted-foreground mb-2" />
-              <p className="text-sm text-muted-foreground">Chart visualization coming soon</p>
+          {analytics?.shipmentsOverTime?.length ? (
+            <ChartContainer config={shipmentsOverTimeChartConfig} className="h-64 w-full">
+              <LineChart data={analytics.shipmentsOverTime}>
+                <CartesianGrid vertical={false} />
+                <XAxis dataKey="label" tickLine={false} axisLine={false} tickMargin={8} />
+                <YAxis allowDecimals={false} tickLine={false} axisLine={false} width={28} />
+                <ChartTooltip content={<ChartTooltipContent />} />
+                <Line
+                  type="monotone"
+                  dataKey="count"
+                  stroke="var(--color-count)"
+                  strokeWidth={2.5}
+                  dot={{ r: 3, fill: "var(--color-count)" }}
+                  activeDot={{ r: 5 }}
+                />
+              </LineChart>
+            </ChartContainer>
+          ) : (
+            <div className="h-64 flex items-center justify-center rounded-lg border border-dashed border-border/80 bg-background/60">
+              <div className="text-center">
+                <Clock className="h-12 w-12 mx-auto text-muted-foreground mb-2" />
+                <p className="text-sm text-muted-foreground">No shipment trend data yet</p>
+              </div>
             </div>
-          </div>
+          )}
         </PageSurface>
 
         <PageSurface className="p-6 surface-hover panel-muted">
           <h2 className="text-lg font-semibold mb-4">Driver Workload Distribution</h2>
-          <div className="h-64 flex items-center justify-center rounded-lg border border-dashed border-border/80 bg-background/60">
-            <div className="text-center">
-              <Users className="h-12 w-12 mx-auto text-muted-foreground mb-2" />
-              <p className="text-sm text-muted-foreground">Chart visualization coming soon</p>
+          {analytics?.driverWorkloadDistribution?.length ? (
+            <ChartContainer config={driverWorkloadChartConfig} className="h-64 w-full">
+              <BarChart data={analytics.driverWorkloadDistribution}>
+                <CartesianGrid vertical={false} />
+                <XAxis dataKey="driverName" tickLine={false} axisLine={false} tickMargin={8} interval={0} />
+                <YAxis allowDecimals={false} tickLine={false} axisLine={false} width={28} />
+                <ChartTooltip content={<ChartTooltipContent />} />
+                <ChartLegend content={<ChartLegendContent />} />
+                <Bar dataKey="assigned" fill="var(--color-assigned)" radius={[4, 4, 0, 0]} />
+                <Bar dataKey="inTransit" fill="var(--color-inTransit)" radius={[4, 4, 0, 0]} />
+              </BarChart>
+            </ChartContainer>
+          ) : (
+            <div className="h-64 flex items-center justify-center rounded-lg border border-dashed border-border/80 bg-background/60">
+              <div className="text-center">
+                <Users className="h-12 w-12 mx-auto text-muted-foreground mb-2" />
+                <p className="text-sm text-muted-foreground">No active driver workload yet</p>
+              </div>
             </div>
-          </div>
+          )}
         </PageSurface>
       </div>
 
