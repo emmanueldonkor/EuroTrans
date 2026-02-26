@@ -14,10 +14,12 @@ import type { Location } from "@/lib/types"
 import { validateShipmentData } from "@/lib/shipment-rules"
 import { useToast } from "@/hooks/use-toast"
 import { toActionErrorMessage } from "@/lib/utils/error"
+import { useI18n } from "@/components/providers/i18n-provider"
 
 export default function NewShipmentPage() {
   const router = useRouter()
   const { toast } = useToast()
+  const { t } = useI18n()
   const [loading, setLoading] = useState(false)
   const [step, setStep] = useState(1)
 
@@ -56,8 +58,8 @@ export default function NewShipmentPage() {
 
     if (!validation.valid) {
       toast({
-        title: "Validation failed",
-        description: validation.errors[0] ?? "Please review shipment details.",
+        title: t("shipments.new.validationFailedTitle"),
+        description: validation.errors[0] ?? t("shipments.new.validationFailedDescription"),
         variant: "destructive",
       })
       return
@@ -85,14 +87,14 @@ export default function NewShipmentPage() {
       })
 
       toast({
-        title: "Shipment created",
-        description: "New shipment is ready for assignment.",
+        title: t("shipments.new.createdTitle"),
+        description: t("shipments.new.createdDescription"),
       })
       router.push(`/dashboard/shipments/${newShipment.id}`)
     } catch (error) {
-      const fullMessage = toActionErrorMessage(error, "Failed to create shipment.")
+      const fullMessage = toActionErrorMessage(error, t("shipments.new.createErrorFallback"))
       toast({
-        title: "Create failed",
+        title: t("shipments.new.createErrorTitle"),
         description: fullMessage,
         variant: "destructive",
       })
@@ -110,16 +112,16 @@ export default function NewShipmentPage() {
           </Button>
         </Link>
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">Create Shipment</h1>
-          <p className="text-muted-foreground">Step {step} of 3</p>
+          <h1 className="text-3xl font-bold tracking-tight">{t("shipments.create")}</h1>
+          <p className="text-muted-foreground">{t("shipments.new.stepProgress").replace("{step}", String(step))}</p>
         </div>
       </div>
 
       <div className="grid grid-cols-3 gap-3 panel p-3">
         {[
-          { index: 1, label: "Cargo" },
-          { index: 2, label: "Route" },
-          { index: 3, label: "Review" },
+          { index: 1, label: t("shipments.new.step.cargo") },
+          { index: 2, label: t("shipments.new.step.route") },
+          { index: 3, label: t("shipments.new.step.review") },
         ].map((item) => {
           const isActive = step === item.index
           const isComplete = step > item.index
@@ -141,14 +143,14 @@ export default function NewShipmentPage() {
 
       {step === 1 && (
         <Card className="panel p-6 space-y-6 surface-hover">
-          <h2 className="text-xl font-semibold">Cargo Details</h2>
+          <h2 className="text-xl font-semibold">{t("shipments.new.cargoDetails")}</h2>
 
           <div className="space-y-4">
             <div>
-              <Label htmlFor="description">Description</Label>
+              <Label htmlFor="description">{t("shipments.new.description")}</Label>
               <Textarea
                 id="description"
-                placeholder="Electronics - Laptops and accessories"
+                placeholder={t("shipments.new.descriptionPlaceholder")}
                 value={cargo.description}
                 onChange={(e) => setCargo({ ...cargo, description: e.target.value })}
                 className="mt-1.5"
@@ -157,7 +159,7 @@ export default function NewShipmentPage() {
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
-                <Label htmlFor="weight">Weight (kg)</Label>
+                <Label htmlFor="weight">{t("shipments.new.weight")}</Label>
                 <Input
                   id="weight"
                   type="number"
@@ -168,7 +170,7 @@ export default function NewShipmentPage() {
                 />
               </div>
               <div>
-                <Label htmlFor="volume">Volume (m3)</Label>
+                <Label htmlFor="volume">{t("shipments.new.volume")}</Label>
                 <Input
                   id="volume"
                   type="number"
@@ -183,21 +185,21 @@ export default function NewShipmentPage() {
           </div>
 
           <Button onClick={() => setStep(2)} className="w-full">
-            Next: Origin and Destination
+            {t("shipments.new.nextRoute")}
           </Button>
         </Card>
       )}
 
       {step === 2 && (
         <Card className="panel p-6 space-y-6 surface-hover">
-          <h2 className="text-xl font-semibold">Route Information</h2>
+          <h2 className="text-xl font-semibold">{t("shipments.new.routeInformation")}</h2>
 
           <div className="space-y-6">
             <div className="space-y-4">
-              <h3 className="text-lg font-medium">Origin</h3>
+              <h3 className="text-lg font-medium">{t("shipments.new.origin")}</h3>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="sm:col-span-2">
-                  <Label htmlFor="origin-address">Address</Label>
+                  <Label htmlFor="origin-address">{t("shipments.new.address")}</Label>
                   <Input
                     id="origin-address"
                     placeholder="Logistics Hub 1"
@@ -207,7 +209,7 @@ export default function NewShipmentPage() {
                   />
                 </div>
                 <div>
-                  <Label htmlFor="origin-city">City</Label>
+                  <Label htmlFor="origin-city">{t("shipments.new.city")}</Label>
                   <Input
                     id="origin-city"
                     placeholder="Berlin"
@@ -217,7 +219,7 @@ export default function NewShipmentPage() {
                   />
                 </div>
                 <div>
-                  <Label htmlFor="origin-postal">Postal Code</Label>
+                  <Label htmlFor="origin-postal">{t("shipments.new.postalCode")}</Label>
                   <Input
                     id="origin-postal"
                     placeholder="10115"
@@ -227,7 +229,7 @@ export default function NewShipmentPage() {
                   />
                 </div>
                 <div>
-                  <Label htmlFor="origin-country">Country</Label>
+                  <Label htmlFor="origin-country">{t("shipments.new.country")}</Label>
                   <Input
                     id="origin-country"
                     placeholder="Germany"
@@ -240,10 +242,10 @@ export default function NewShipmentPage() {
             </div>
 
             <div className="space-y-4">
-              <h3 className="text-lg font-medium">Destination</h3>
+              <h3 className="text-lg font-medium">{t("shipments.new.destination")}</h3>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="sm:col-span-2">
-                  <Label htmlFor="dest-address">Address</Label>
+                  <Label htmlFor="dest-address">{t("shipments.new.address")}</Label>
                   <Input
                     id="dest-address"
                     placeholder="Distribution Center"
@@ -253,7 +255,7 @@ export default function NewShipmentPage() {
                   />
                 </div>
                 <div>
-                  <Label htmlFor="dest-city">City</Label>
+                  <Label htmlFor="dest-city">{t("shipments.new.city")}</Label>
                   <Input
                     id="dest-city"
                     placeholder="Paris"
@@ -263,7 +265,7 @@ export default function NewShipmentPage() {
                   />
                 </div>
                 <div>
-                  <Label htmlFor="dest-postal">Postal Code</Label>
+                  <Label htmlFor="dest-postal">{t("shipments.new.postalCode")}</Label>
                   <Input
                     id="dest-postal"
                     placeholder="75001"
@@ -273,7 +275,7 @@ export default function NewShipmentPage() {
                   />
                 </div>
                 <div>
-                  <Label htmlFor="dest-country">Country</Label>
+                  <Label htmlFor="dest-country">{t("shipments.new.country")}</Label>
                   <Input
                     id="dest-country"
                     placeholder="France"
@@ -288,10 +290,10 @@ export default function NewShipmentPage() {
 
           <div className="flex gap-3">
             <Button variant="outline" onClick={() => setStep(1)} className="flex-1">
-              Back
+              {t("shipments.new.back")}
             </Button>
             <Button onClick={() => setStep(3)} className="flex-1">
-              Next: Review
+              {t("shipments.new.nextReview")}
             </Button>
           </div>
         </Card>
@@ -300,13 +302,13 @@ export default function NewShipmentPage() {
       {step === 3 && (
         <Card className="panel p-6 space-y-6 surface-hover">
           <div>
-            <h2 className="text-xl font-semibold mb-4">Review and Create Shipment</h2>
-            <p className="text-sm text-muted-foreground">Review the details and create this shipment.</p>
+            <h2 className="text-xl font-semibold mb-4">{t("shipments.new.reviewTitle")}</h2>
+            <p className="text-sm text-muted-foreground">{t("shipments.new.reviewDescription")}</p>
           </div>
 
           <div className="space-y-6">
             <div>
-              <h3 className="text-sm font-medium text-muted-foreground mb-2">Cargo</h3>
+              <h3 className="text-sm font-medium text-muted-foreground mb-2">{t("shipments.new.step.cargo")}</h3>
               <p className="text-base">{cargo.description}</p>
               <p className="text-sm text-muted-foreground mt-1">
                 {cargo.weight} kg | {cargo.volume} m3
@@ -314,7 +316,7 @@ export default function NewShipmentPage() {
             </div>
 
             <div>
-              <h3 className="text-sm font-medium text-muted-foreground mb-2">Origin</h3>
+              <h3 className="text-sm font-medium text-muted-foreground mb-2">{t("shipments.new.origin")}</h3>
               <p className="text-base">{origin.address}</p>
               <p className="text-sm text-muted-foreground">
                 {origin.city}, {origin.postalCode}, {origin.country}
@@ -322,7 +324,7 @@ export default function NewShipmentPage() {
             </div>
 
             <div>
-              <h3 className="text-sm font-medium text-muted-foreground mb-2">Destination</h3>
+              <h3 className="text-sm font-medium text-muted-foreground mb-2">{t("shipments.new.destination")}</h3>
               <p className="text-base">{destination.address}</p>
               <p className="text-sm text-muted-foreground">
                 {destination.city}, {destination.postalCode}, {destination.country}
@@ -332,11 +334,11 @@ export default function NewShipmentPage() {
 
           <div className="flex gap-3">
             <Button variant="outline" onClick={() => setStep(2)} className="flex-1" disabled={loading}>
-              Back
+              {t("shipments.new.back")}
             </Button>
             <Button onClick={handleSubmit} className="flex-1" disabled={loading}>
               {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-              {loading ? "Creating Shipment..." : "Create Shipment"}
+              {loading ? t("shipments.new.creating") : t("shipments.create")}
             </Button>
           </div>
         </Card>

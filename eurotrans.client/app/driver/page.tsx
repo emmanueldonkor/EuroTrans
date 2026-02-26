@@ -12,10 +12,12 @@ import { useToast } from "@/hooks/use-toast"
 import { useCurrentUser } from "@/hooks/use-current-user"
 import { useShipmentMutations, useShipments } from "@/hooks/use-transport-data"
 import { PageErrorState, SectionLoader } from "@/components/ui/page-state"
+import { useI18n } from "@/components/providers/i18n-provider"
 
 export default function DriverHomePage() {
   const router = useRouter()
   const { toast } = useToast()
+  const { t } = useI18n()
   const { data: currentUser, isLoading: isUserLoading, error: userError } = useCurrentUser()
   const {
     data: shipments = [],
@@ -43,28 +45,28 @@ export default function DriverHomePage() {
     try {
       await startShipment.mutateAsync(activeShipment.id)
       toast({
-        title: "Journey Started",
-        description: "Your shipment journey has begun.",
+        title: t("driver.home.journeyStartedTitle"),
+        description: t("driver.home.journeyStartedDescription"),
       })
       await refetch()
     } catch (err) {
       toast({
-        title: "Error",
-        description: err instanceof Error ? err.message : "Failed to start journey. Please try again.",
+        title: t("common.error"),
+        description: err instanceof Error ? err.message : t("driver.home.startJourneyError"),
         variant: "destructive",
       })
     }
   }
 
   if (isLoading) {
-    return <SectionLoader label="Loading your assignments..." />
+    return <SectionLoader label={t("driver.home.loadingAssignments")} />
   }
 
   if (error) {
     return (
       <PageErrorState
-        title="Could not load driver home"
-        message={error instanceof Error ? error.message : "Unexpected error while loading your dashboard."}
+        title={t("driver.home.errorTitle")}
+        message={error instanceof Error ? error.message : t("driver.home.errorMessage")}
         onRetry={() => {
           void refetch()
         }}
@@ -73,21 +75,21 @@ export default function DriverHomePage() {
   }
 
   if (!currentUser || currentUser.role !== "driver") {
-    return <SectionLoader label="Redirecting..." />
+    return <SectionLoader label={t("driver.home.redirecting")} />
   }
 
   return (
     <div className="max-w-lg mx-auto space-y-6">
       <div>
-        <h1 className="text-3xl font-bold">Hello, {currentUser.name.split(" ")[0]}</h1>
-        <p className="text-muted-foreground">Welcome back to your driver portal</p>
+        <h1 className="text-3xl font-bold">{`${t("driver.greeting")}, ${currentUser.name.split(" ")[0]}`}</h1>
+        <p className="text-muted-foreground">{t("driver.home.welcomeBack")}</p>
       </div>
 
       {activeShipment ? (
         <Card className="panel p-6 space-y-6 surface-hover">
           <div className="flex items-start justify-between">
             <div>
-              <h2 className="text-xl font-semibold mb-1">Current Job</h2>
+              <h2 className="text-xl font-semibold mb-1">{t("nav.currentJob")}</h2>
               <p className="text-sm text-muted-foreground">{activeShipment.trackingId}</p>
             </div>
             <Badge className={getStatusColor(activeShipment.status)}>{activeShipment.status.replace("-", " ")}</Badge>
@@ -97,7 +99,7 @@ export default function DriverHomePage() {
             <div className="flex items-start gap-3">
               <Package className="h-5 w-5 text-muted-foreground mt-0.5" />
               <div className="flex-1">
-                <p className="font-medium">Cargo</p>
+                <p className="font-medium">{t("driver.home.cargo")}</p>
                 <p className="text-sm text-muted-foreground">{activeShipment.cargo.description}</p>
                 <p className="text-xs text-muted-foreground mt-1">
                   {activeShipment.cargo.weight} kg | {activeShipment.cargo.volume} m3
@@ -108,7 +110,7 @@ export default function DriverHomePage() {
             <div className="flex items-start gap-3">
               <MapPin className="h-5 w-5 text-muted-foreground mt-0.5" />
               <div className="flex-1">
-                <p className="font-medium">Route</p>
+                <p className="font-medium">{t("shipments.route")}</p>
                 <p className="text-sm text-muted-foreground">
                   {activeShipment.origin.city} -{">"} {activeShipment.destination.city}
                 </p>
@@ -120,7 +122,7 @@ export default function DriverHomePage() {
           {canStart && (
             <Button className="w-full h-12 text-base" onClick={handleStartJourney} disabled={startShipment.isPending}>
               {startShipment.isPending ? <Loader2 className="mr-2 h-5 w-5 animate-spin" /> : <Play className="mr-2 h-5 w-5" />}
-              {startShipment.isPending ? "Starting Journey..." : "Start Journey"}
+              {startShipment.isPending ? t("driver.home.startingJourney") : t("driver.startJourney")}
             </Button>
           )}
 
@@ -129,27 +131,27 @@ export default function DriverHomePage() {
             className="w-full h-12 text-base"
             onClick={() => router.push(`/driver/shipments/${activeShipment.id}`)}
           >
-            View Details
+            {t("driver.home.viewDetails")}
             <ArrowRight className="ml-2 h-5 w-5" />
           </Button>
         </Card>
       ) : (
         <Card className="panel p-12 flex flex-col items-center justify-center text-center surface-hover">
           <Package className="h-16 w-16 text-muted-foreground mb-4" />
-          <h3 className="text-lg font-medium mb-2">No Active Jobs</h3>
+          <h3 className="text-lg font-medium mb-2">{t("driver.home.noActiveJobsTitle")}</h3>
           <p className="text-sm text-muted-foreground max-w-sm">
-            You currently have no shipments assigned. Check back later or contact dispatch.
+            {t("driver.home.noActiveJobsDescription")}
           </p>
         </Card>
       )}
 
       <div className="grid grid-cols-2 gap-4">
         <Card className="panel p-4 surface-hover">
-          <p className="text-sm text-muted-foreground mb-1">Status</p>
-          <p className="text-lg font-bold">On Duty</p>
+          <p className="text-sm text-muted-foreground mb-1">{t("driver.home.status")}</p>
+          <p className="text-lg font-bold">{t("employees.status.onDuty")}</p>
         </Card>
         <Card className="panel p-4 surface-hover">
-          <p className="text-sm text-muted-foreground mb-1">Active Jobs</p>
+          <p className="text-sm text-muted-foreground mb-1">{t("driver.home.activeJobs")}</p>
           <p className="text-lg font-bold">{activeShipment ? "1" : "0"}</p>
         </Card>
       </div>

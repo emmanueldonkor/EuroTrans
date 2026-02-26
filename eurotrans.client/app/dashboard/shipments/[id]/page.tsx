@@ -27,11 +27,13 @@ import { getStatusBadgeColor, getStatusLabel, canAssignShipment, canDeleteShipme
 import { PageErrorState, SectionLoader } from "@/components/ui/page-state"
 import { useToast } from "@/hooks/use-toast"
 import { toActionErrorMessage } from "@/lib/utils/error"
+import { useI18n } from "@/components/providers/i18n-provider"
 
 export default function ShipmentDetailPage() {
   const params = useParams()
   const router = useRouter()
   const { toast } = useToast()
+  const { t } = useI18n()
   const [shipment, setShipment] = useState<Shipment | null>(null)
   const [drivers, setDrivers] = useState<Driver[]>([])
   const [trucks, setTrucks] = useState<Truck[]>([])
@@ -74,7 +76,7 @@ export default function ShipmentDetailPage() {
       setSelectedDriverId(shipmentData.driverId ?? "")
       setSelectedTruckId(shipmentData.truckId ?? "")
     } catch (err) {
-      const message = toActionErrorMessage(err, "Failed to load shipment.")
+      const message = toActionErrorMessage(err, t("shipments.detail.loadErrorFallback"))
       setLoadError(message)
     } finally {
       setLoading(false)
@@ -89,13 +91,13 @@ export default function ShipmentDetailPage() {
       await api.assignShipment(shipment.id, selectedDriverId, selectedTruckId)
       await loadData()
       toast({
-        title: "Shipment assigned",
-        description: "Driver and truck assignment saved.",
+        title: t("shipments.detail.assignSuccessTitle"),
+        description: t("shipments.detail.assignSuccessDescription"),
       })
     } catch (err) {
-      const message = toActionErrorMessage(err, "Failed to assign shipment.")
+      const message = toActionErrorMessage(err, t("shipments.detail.assignErrorFallback"))
       toast({
-        title: "Assignment failed",
+        title: t("shipments.detail.assignErrorTitle"),
         description: message,
         variant: "destructive",
       })
@@ -111,14 +113,14 @@ export default function ShipmentDetailPage() {
     try {
       await api.deleteShipment(shipment.id)
       toast({
-        title: "Shipment cancelled",
-        description: `${shipment.trackingId} has been cancelled.`,
+        title: t("shipments.detail.cancelSuccessTitle"),
+        description: t("shipments.detail.cancelSuccessDescription").replace("{trackingId}", shipment.trackingId),
       })
       router.push("/dashboard/shipments")
     } catch (err) {
-      const message = toActionErrorMessage(err, "Failed to cancel shipment.")
+      const message = toActionErrorMessage(err, t("shipments.detail.cancelErrorFallback"))
       toast({
-        title: "Cancel failed",
+        title: t("shipments.detail.cancelErrorTitle"),
         description: message,
         variant: "destructive",
       })
@@ -128,14 +130,14 @@ export default function ShipmentDetailPage() {
   }
 
   if (loading) {
-    return <SectionLoader label="Loading shipment..." />
+    return <SectionLoader label={t("shipments.detail.loading")} />
   }
 
   if (!shipment) {
     return (
       <PageErrorState
-        title="Could not load shipment"
-        message={loadError ?? "Shipment is unavailable."}
+        title={t("shipments.detail.loadErrorTitle")}
+        message={loadError ?? t("shipments.detail.loadErrorFallback")}
         onRetry={() => {
           void loadData()
         }}
@@ -146,6 +148,22 @@ export default function ShipmentDetailPage() {
   const assignedDriver = drivers.find((d) => d.id === shipment.driverId)
   const assignedTruck = trucks.find((t) => t.id === shipment.truckId)
   const canCancel = canDeleteShipment(shipment)
+  const getShipmentStatusText = (status: Shipment["status"]) => {
+    switch (status) {
+      case "unassigned":
+        return t("status.unassigned")
+      case "assigned":
+        return t("shipments.status.assigned")
+      case "in-transit":
+        return t("status.inTransit")
+      case "delivered":
+        return t("status.delivered")
+      case "cancelled":
+        return t("shipments.status.cancelled")
+      default:
+        return getStatusLabel(status)
+    }
+  }
 
   return (
     <div className="max-w-5xl space-y-6 animate-fade-in">
@@ -157,14 +175,14 @@ export default function ShipmentDetailPage() {
         </Link>
         <div className="flex-1">
           <h1 className="text-3xl font-bold tracking-tight">{shipment.trackingId}</h1>
-          <p className="text-muted-foreground">Shipment details and management</p>
+          <p className="text-muted-foreground">{t("shipments.detail.subtitle")}</p>
         </div>
-        <Badge className={getStatusBadgeColor(shipment.status)}>{getStatusLabel(shipment.status)}</Badge>
+        <Badge className={getStatusBadgeColor(shipment.status)}>{getShipmentStatusText(shipment.status)}</Badge>
       </div>
 
       {shipment.status === "unassigned" && (
         <Alert>
-          <AlertDescription>This shipment is ready for assignment.</AlertDescription>
+          <AlertDescription>{t("shipments.detail.readyForAssignment")}</AlertDescription>
         </Alert>
       )}
 
@@ -173,22 +191,22 @@ export default function ShipmentDetailPage() {
           <Card className="panel p-6 space-y-4 surface-hover">
             <h2 className="text-xl font-semibold flex items-center gap-2">
               <Package className="h-5 w-5" />
-              Shipment Information
+              {t("shipments.detail.infoTitle")}
             </h2>
 
             <div className="space-y-4">
               <div>
-                <Label className="text-muted-foreground">Cargo Description</Label>
+                <Label className="text-muted-foreground">{t("shipments.detail.cargoDescription")}</Label>
                 <p className="mt-1">{shipment.cargo.description}</p>
               </div>
 
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <Label className="text-muted-foreground">Weight</Label>
+                  <Label className="text-muted-foreground">{t("shipments.detail.weight")}</Label>
                   <p className="mt-1">{shipment.cargo.weight} kg</p>
                 </div>
                 <div>
-                  <Label className="text-muted-foreground">Volume</Label>
+                  <Label className="text-muted-foreground">{t("shipments.detail.volume")}</Label>
                   <p className="mt-1">{shipment.cargo.volume} m3</p>
                 </div>
               </div>
@@ -198,12 +216,12 @@ export default function ShipmentDetailPage() {
           <Card className="panel p-6 space-y-4 surface-hover">
             <h2 className="text-xl font-semibold flex items-center gap-2">
               <MapPin className="h-5 w-5" />
-              Route
+              {t("shipments.detail.routeTitle")}
             </h2>
 
             <div className="space-y-4">
               <div>
-                <Label className="text-muted-foreground">Origin</Label>
+                <Label className="text-muted-foreground">{t("shipments.detail.origin")}</Label>
                 <p className="mt-1">{shipment.origin.address}</p>
                 <p className="text-sm text-muted-foreground">
                   {shipment.origin.city}, {shipment.origin.postalCode}, {shipment.origin.country}
@@ -211,7 +229,7 @@ export default function ShipmentDetailPage() {
               </div>
 
               <div>
-                <Label className="text-muted-foreground">Destination</Label>
+                <Label className="text-muted-foreground">{t("shipments.detail.destination")}</Label>
                 <p className="mt-1">{shipment.destination.address}</p>
                 <p className="text-sm text-muted-foreground">
                   {shipment.destination.city}, {shipment.destination.postalCode}, {shipment.destination.country}
@@ -222,13 +240,13 @@ export default function ShipmentDetailPage() {
 
           {canAssignShipment(shipment) && (
             <Card className="panel p-6 space-y-4 surface-hover">
-              <h2 className="text-xl font-semibold">Assign Shipment</h2>
+              <h2 className="text-xl font-semibold">{t("shipments.detail.assignTitle")}</h2>
               <div className="space-y-4">
                 <div>
-                  <Label htmlFor="driver">Driver</Label>
+                  <Label htmlFor="driver">{t("shipments.detail.driver")}</Label>
                   <Select value={selectedDriverId} onValueChange={setSelectedDriverId}>
                     <SelectTrigger id="driver" className="mt-1.5">
-                      <SelectValue placeholder="Select driver" />
+                      <SelectValue placeholder={t("shipments.detail.selectDriver")} />
                     </SelectTrigger>
                     <SelectContent>
                       {drivers
@@ -243,10 +261,10 @@ export default function ShipmentDetailPage() {
                 </div>
 
                 <div>
-                  <Label htmlFor="truck">Truck</Label>
+                  <Label htmlFor="truck">{t("shipments.detail.truck")}</Label>
                   <Select value={selectedTruckId} onValueChange={setSelectedTruckId}>
                     <SelectTrigger id="truck" className="mt-1.5">
-                      <SelectValue placeholder="Select truck" />
+                      <SelectValue placeholder={t("shipments.detail.selectTruck")} />
                     </SelectTrigger>
                     <SelectContent>
                       {trucks
@@ -266,7 +284,7 @@ export default function ShipmentDetailPage() {
                   disabled={!selectedDriverId || !selectedTruckId || assigning}
                 >
                   {assigning && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                  {assigning ? "Assigning..." : "Assign Shipment"}
+                  {assigning ? t("shipments.detail.assigning") : t("shipments.detail.assignAction")}
                 </Button>
               </div>
             </Card>
@@ -274,24 +292,24 @@ export default function ShipmentDetailPage() {
 
           {(shipment.status === "assigned" || shipment.status === "in-transit" || shipment.status === "delivered") && (
             <Card className="panel p-6 space-y-4 surface-hover">
-              <h2 className="text-xl font-semibold">Assignment Details</h2>
+              <h2 className="text-xl font-semibold">{t("shipments.detail.assignmentTitle")}</h2>
 
               <div className="space-y-4">
                 <div className="flex items-start gap-3">
                   <User className="h-5 w-5 text-muted-foreground mt-0.5" />
                   <div>
-                    <Label className="text-muted-foreground">Driver</Label>
-                    <p className="mt-1">{shipment.driverName ?? assignedDriver?.name ?? "Unknown"}</p>
-                    <p className="text-sm text-muted-foreground">{assignedDriver?.phone ?? "N/A"}</p>
+                    <Label className="text-muted-foreground">{t("shipments.detail.driver")}</Label>
+                    <p className="mt-1">{shipment.driverName ?? assignedDriver?.name ?? t("shipments.detail.unknown")}</p>
+                    <p className="text-sm text-muted-foreground">{assignedDriver?.phone ?? t("shipments.detail.na")}</p>
                   </div>
                 </div>
 
                 <div className="flex items-start gap-3">
                   <TruckIcon className="h-5 w-5 text-muted-foreground mt-0.5" />
                   <div>
-                    <Label className="text-muted-foreground">Truck</Label>
-                    <p className="mt-1">{shipment.truckPlateNumber ?? assignedTruck?.plateNumber ?? "Unknown"}</p>
-                    <p className="text-sm text-muted-foreground">{shipment.truckModel ?? assignedTruck?.model ?? "N/A"}</p>
+                    <Label className="text-muted-foreground">{t("shipments.detail.truck")}</Label>
+                    <p className="mt-1">{shipment.truckPlateNumber ?? assignedTruck?.plateNumber ?? t("shipments.detail.unknown")}</p>
+                    <p className="text-sm text-muted-foreground">{shipment.truckModel ?? assignedTruck?.model ?? t("shipments.detail.na")}</p>
                   </div>
                 </div>
               </div>
@@ -302,12 +320,12 @@ export default function ShipmentDetailPage() {
             <Card className="panel p-6 space-y-4 border-destructive/40">
               <div className="flex items-center justify-between">
                 <div>
-                  <h3 className="font-semibold text-destructive">Cancel Shipment</h3>
-                  <p className="text-sm text-muted-foreground">This shipment will be marked as cancelled.</p>
+                  <h3 className="font-semibold text-destructive">{t("shipments.detail.cancelTitle")}</h3>
+                  <p className="text-sm text-muted-foreground">{t("shipments.detail.cancelDescription")}</p>
                 </div>
                 <Button variant="destructive" onClick={() => setShowCancelDialog(true)} disabled={cancelling}>
                   {cancelling ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Trash2 className="mr-2 h-4 w-4" />}
-                  Cancel
+                  {t("shipments.detail.cancelAction")}
                 </Button>
               </div>
             </Card>
@@ -318,14 +336,14 @@ export default function ShipmentDetailPage() {
           <Card className="panel p-6 space-y-4 surface-hover">
             <h2 className="text-lg font-semibold flex items-center gap-2">
               <Clock className="h-4 w-4" />
-              Timeline
+              {t("shipments.detail.timelineTitle")}
             </h2>
 
             <div className="space-y-4 text-sm rounded-xl border border-border/60 bg-muted/20 p-4">
               {[
-                { label: "Created", value: shipment.createdAt },
-                { label: "Started", value: shipment.startedAt },
-                { label: "Delivered", value: shipment.deliveredAt },
+                { label: t("shipments.detail.timeline.created"), value: shipment.createdAt },
+                { label: t("shipments.detail.timeline.started"), value: shipment.startedAt },
+                { label: t("shipments.detail.timeline.delivered"), value: shipment.deliveredAt },
               ]
                 .filter((item) => Boolean(item.value))
                 .map((item, index, source) => (
@@ -344,11 +362,11 @@ export default function ShipmentDetailPage() {
           </Card>
 
           <Card className="panel p-6 space-y-4 surface-hover">
-            <h2 className="text-lg font-semibold">Activity</h2>
+            <h2 className="text-lg font-semibold">{t("shipments.detail.activityTitle")}</h2>
 
             <div className="space-y-3">
               {activities.length === 0 ? (
-                <p className="text-sm text-muted-foreground">No activities yet</p>
+                <p className="text-sm text-muted-foreground">{t("shipments.detail.noActivities")}</p>
               ) : (
                 activities
                   .slice()
@@ -357,7 +375,7 @@ export default function ShipmentDetailPage() {
                     <div key={activity.id} className="rounded-lg border border-border/60 bg-muted/20 p-3 text-sm space-y-1">
                       <p className="font-medium">{activity.description}</p>
                       <p className="text-muted-foreground text-xs">
-                        {activity.userName || "Unknown"} - {formatDate(activity.timestamp)}
+                        {activity.userName || t("shipments.detail.unknown")} - {formatDate(activity.timestamp)}
                       </p>
                     </div>
                   ))
@@ -370,20 +388,20 @@ export default function ShipmentDetailPage() {
       <AlertDialog open={showCancelDialog} onOpenChange={setShowCancelDialog}>
         <AlertDialogContent className="panel">
           <AlertDialogHeader>
-            <AlertDialogTitle>Cancel Shipment</AlertDialogTitle>
+            <AlertDialogTitle>{t("shipments.detail.cancelDialogTitle")}</AlertDialogTitle>
             <AlertDialogDescription>
-              Are you sure you want to cancel shipment {shipment.trackingId}? This action cannot be undone.
+              {t("shipments.detail.cancelDialogDescription").replace("{trackingId}", shipment.trackingId)}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel disabled={cancelling}>Back</AlertDialogCancel>
+            <AlertDialogCancel disabled={cancelling}>{t("shipments.detail.cancelDialogBack")}</AlertDialogCancel>
             <AlertDialogAction
               onClick={handleCancelShipment}
               disabled={cancelling}
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
             >
               {cancelling && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-              {cancelling ? "Cancelling..." : "Cancel Shipment"}
+              {cancelling ? t("shipments.detail.cancelling") : t("shipments.detail.cancelAction")}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

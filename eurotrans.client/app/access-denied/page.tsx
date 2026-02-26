@@ -4,9 +4,11 @@ import { useRouter } from "next/navigation"
 import { Card } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { ShieldAlert } from "lucide-react"
+import { useI18n } from "@/components/providers/i18n-provider"
 
 export default function AccessDeniedPage() {
   const router = useRouter()
+  const { t } = useI18n()
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-background p-4">
@@ -18,18 +20,15 @@ export default function AccessDeniedPage() {
         </div>
 
         <div className="space-y-2">
-          <h1 className="text-2xl font-bold">Access Denied</h1>
-          <p className="text-muted-foreground">
-            You do not have permission to access this page. Please contact your administrator if you believe this is an
-            error.
-          </p>
+          <h1 className="text-2xl font-bold">{t("accessDenied.title")}</h1>
+          <p className="text-muted-foreground">{t("accessDenied.description")}</p>
         </div>
 
         <div className="flex flex-col gap-3">
           <Button onClick={() => router.back()} variant="outline" className="bg-transparent">
-            Go Back
+            {t("accessDenied.goBack")}
           </Button>
-          <Button onClick={() => router.push("/auth/logout")}>Return to Home</Button>
+          <Button onClick={() => router.push("/auth/logout")}>{t("accessDenied.returnHome")}</Button>
         </div>
       </Card>
     </div>

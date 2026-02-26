@@ -1,6 +1,8 @@
+import { en } from "./en"
 import type { TranslationDictionary } from "./types"
 
-export const fr = {
+export const fr: TranslationDictionary = {
+  ...en,
   // Common
   "common.save": "Enregistrer",
   "common.cancel": "Annuler",
@@ -122,4 +124,4 @@ export const fr = {
   "notFound.title": "Page introuvable",
   "notFound.description": "La page que vous recherchez n'existe pas ou a \u00e9t\u00e9 d\u00e9plac\u00e9e.",
   "notFound.returnHome": "Retour \u00e0 l'accueil",
-} satisfies TranslationDictionary
+}

@@ -7,37 +7,39 @@ import { PageErrorState, SectionLoader } from "@/components/ui/page-state"
 import { PageHeading, PageShell, PageSurface } from "@/components/ui/page-shell"
 import { Bar, BarChart, CartesianGrid, Line, LineChart, XAxis, YAxis } from "recharts"
 import { ChartContainer, ChartLegend, ChartLegendContent, ChartTooltip, ChartTooltipContent, type ChartConfig } from "@/components/ui/chart"
-
-const shipmentsOverTimeChartConfig = {
-  count: {
-    label: "Shipments",
-    color: "hsl(var(--primary))",
-  },
-} satisfies ChartConfig
-
-const driverWorkloadChartConfig = {
-  assigned: {
-    label: "Assigned",
-    color: "#f59e0b",
-  },
-  inTransit: {
-    label: "In Transit",
-    color: "#3b82f6",
-  },
-} satisfies ChartConfig
+import { useI18n } from "@/components/providers/i18n-provider"
 
 export default function AnalyticsPage() {
   const { data: analytics, isLoading, error, refetch } = useAnalytics()
+  const { t } = useI18n()
+
+  const shipmentsOverTimeChartConfig = {
+    count: {
+      label: t("analytics.chart.shipments"),
+      color: "hsl(var(--primary))",
+    },
+  } satisfies ChartConfig
+
+  const driverWorkloadChartConfig = {
+    assigned: {
+      label: t("analytics.chart.assigned"),
+      color: "#f59e0b",
+    },
+    inTransit: {
+      label: t("analytics.chart.inTransit"),
+      color: "#3b82f6",
+    },
+  } satisfies ChartConfig
 
   if (isLoading) {
-    return <SectionLoader label="Loading analytics..." />
+    return <SectionLoader label={t("analytics.loading")} />
   }
 
   if (error) {
     return (
       <PageErrorState
-        title="Could not load analytics"
-        message={error instanceof Error ? error.message : "Unexpected error while loading analytics."}
+        title={t("analytics.errorTitle")}
+        message={error instanceof Error ? error.message : t("analytics.errorMessage")}
         onRetry={() => {
           void refetch()
         }}
@@ -47,7 +49,7 @@ export default function AnalyticsPage() {
 
   return (
     <PageShell>
-      <PageHeading title="Analytics" description="Performance metrics and insights" />
+      <PageHeading title={t("analytics.title")} description={t("analytics.description")} />
 
       {/* KPI Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
@@ -57,11 +59,11 @@ export default function AnalyticsPage() {
               <Package className="h-6 w-6 text-primary" />
             </div>
             <div>
-              <p className="text-sm text-muted-foreground">Total Shipments</p>
+              <p className="text-sm text-muted-foreground">{t("analytics.kpi.totalShipments")}</p>
               <p className="text-2xl font-bold">{analytics?.totalShipments || 0}</p>
               <p className="mt-1 inline-flex items-center gap-1 text-xs text-emerald-600 dark:text-emerald-400">
                 <ArrowUpRight className="h-3.5 w-3.5" />
-                Live portfolio volume
+                {t("analytics.kpi.totalShipmentsHint")}
               </p>
             </div>
           </div>
@@ -73,11 +75,11 @@ export default function AnalyticsPage() {
               <TrendingUp className="h-6 w-6 text-orange-500" />
             </div>
             <div>
-              <p className="text-sm text-muted-foreground">Active Shipments</p>
+              <p className="text-sm text-muted-foreground">{t("analytics.kpi.activeShipments")}</p>
               <p className="text-2xl font-bold">{analytics?.activeShipments || 0}</p>
               <p className="mt-1 inline-flex items-center gap-1 text-xs text-orange-600 dark:text-orange-400">
                 <ArrowUpRight className="h-3.5 w-3.5" />
-                In execution now
+                {t("analytics.kpi.activeShipmentsHint")}
               </p>
             </div>
           </div>
@@ -89,11 +91,11 @@ export default function AnalyticsPage() {
               <Package className="h-6 w-6 text-green-500" />
             </div>
             <div>
-              <p className="text-sm text-muted-foreground">Delivered</p>
+              <p className="text-sm text-muted-foreground">{t("analytics.kpi.delivered")}</p>
               <p className="text-2xl font-bold">{analytics?.deliveredShipments || 0}</p>
               <p className="mt-1 inline-flex items-center gap-1 text-xs text-emerald-600 dark:text-emerald-400">
                 <ArrowUpRight className="h-3.5 w-3.5" />
-                Completed shipments
+                {t("analytics.kpi.deliveredHint")}
               </p>
             </div>
           </div>
@@ -105,11 +107,11 @@ export default function AnalyticsPage() {
               <Users className="h-6 w-6 text-blue-500" />
             </div>
             <div>
-              <p className="text-sm text-muted-foreground">Active Drivers</p>
+              <p className="text-sm text-muted-foreground">{t("analytics.kpi.activeDrivers")}</p>
               <p className="text-2xl font-bold">{analytics?.activeDrivers || 0}</p>
               <p className="mt-1 inline-flex items-center gap-1 text-xs text-blue-600 dark:text-blue-400">
                 <ArrowUpRight className="h-3.5 w-3.5" />
-                Capacity online
+                {t("analytics.kpi.activeDriversHint")}
               </p>
             </div>
           </div>
@@ -119,7 +121,7 @@ export default function AnalyticsPage() {
       {/* Charts Placeholder */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <PageSurface className="p-6 surface-hover panel-muted">
-          <h2 className="text-lg font-semibold mb-4">Shipments Over Time</h2>
+          <h2 className="text-lg font-semibold mb-4">{t("analytics.shipmentsOverTimeTitle")}</h2>
           {analytics?.shipmentsOverTime?.length ? (
             <ChartContainer config={shipmentsOverTimeChartConfig} className="h-64 w-full">
               <LineChart data={analytics.shipmentsOverTime}>
@@ -141,14 +143,14 @@ export default function AnalyticsPage() {
             <div className="h-64 flex items-center justify-center rounded-lg border border-dashed border-border/80 bg-background/60">
               <div className="text-center">
                 <Clock className="h-12 w-12 mx-auto text-muted-foreground mb-2" />
-                <p className="text-sm text-muted-foreground">No shipment trend data yet</p>
+                <p className="text-sm text-muted-foreground">{t("analytics.noShipmentTrendData")}</p>
               </div>
             </div>
           )}
         </PageSurface>
 
         <PageSurface className="p-6 surface-hover panel-muted">
-          <h2 className="text-lg font-semibold mb-4">Driver Workload Distribution</h2>
+          <h2 className="text-lg font-semibold mb-4">{t("analytics.driverWorkloadTitle")}</h2>
           {analytics?.driverWorkloadDistribution?.length ? (
             <ChartContainer config={driverWorkloadChartConfig} className="h-64 w-full">
               <BarChart data={analytics.driverWorkloadDistribution}>
@@ -165,7 +167,7 @@ export default function AnalyticsPage() {
             <div className="h-64 flex items-center justify-center rounded-lg border border-dashed border-border/80 bg-background/60">
               <div className="text-center">
                 <Users className="h-12 w-12 mx-auto text-muted-foreground mb-2" />
-                <p className="text-sm text-muted-foreground">No active driver workload yet</p>
+                <p className="text-sm text-muted-foreground">{t("analytics.noDriverWorkloadData")}</p>
               </div>
             </div>
           )}
@@ -174,18 +176,18 @@ export default function AnalyticsPage() {
 
       {/* Additional Stats */}
       <PageSurface className="p-6 surface-hover">
-        <h2 className="text-lg font-semibold mb-4">Performance Metrics</h2>
+        <h2 className="text-lg font-semibold mb-4">{t("analytics.performanceMetricsTitle")}</h2>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           <div>
-            <p className="text-sm text-muted-foreground mb-1">Avg Delivery Time</p>
+            <p className="text-sm text-muted-foreground mb-1">{t("analytics.avgDeliveryTime")}</p>
             <p className="text-xl font-bold">{analytics?.avgDeliveryTime || "N/A"}</p>
           </div>
           <div>
-            <p className="text-sm text-muted-foreground mb-1">Available Drivers</p>
+            <p className="text-sm text-muted-foreground mb-1">{t("analytics.availableDrivers")}</p>
             <p className="text-xl font-bold">{analytics?.availableDrivers || 0}</p>
           </div>
           <div>
-            <p className="text-sm text-muted-foreground mb-1">Fleet Utilization</p>
+            <p className="text-sm text-muted-foreground mb-1">{t("analytics.fleetUtilization")}</p>
             <p className="text-xl font-bold">
               {analytics?.activeShipments && analytics?.totalShipments
                 ? `${Math.round((analytics.activeShipments / analytics.totalShipments) * 100)}%`

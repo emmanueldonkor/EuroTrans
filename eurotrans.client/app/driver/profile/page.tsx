@@ -13,12 +13,14 @@ import type { CurrentUserContext } from "@/lib/types"
 import { SectionLoader } from "@/components/ui/page-state"
 import { useToast } from "@/hooks/use-toast"
 import { toActionErrorMessage } from "@/lib/utils/error"
+import { useI18n } from "@/components/providers/i18n-provider"
 
 export default function DriverProfilePage() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const isForcedCompletion = searchParams.get("complete") === "1"
   const { toast } = useToast()
+  const { t } = useI18n()
 
   const [profile, setProfile] = useState<CurrentUserContext | null>(null)
   const [phone, setPhone] = useState("")
@@ -36,20 +38,20 @@ export default function DriverProfilePage() {
         setPhone(me.phone ?? "")
         setLicenseNumber(me.licenseNumber ?? "")
       } catch (err) {
-        setLoadError(toActionErrorMessage(err, "Failed to load driver profile."))
+        setLoadError(toActionErrorMessage(err, t("driver.profile.loadError")))
       } finally {
         setLoading(false)
       }
     }
 
     void load()
-  }, [])
+  }, [t])
 
   const handleSave = async () => {
     if (!phone.trim() || !licenseNumber.trim()) {
-      const message = "Phone and license number are required."
+      const message = t("driver.profile.validationRequired")
       toast({
-        title: "Validation failed",
+        title: t("driver.profile.validationFailedTitle"),
         description: message,
         variant: "destructive",
       })
@@ -66,17 +68,17 @@ export default function DriverProfilePage() {
       const me = await api.getCurrentUserContext()
       setProfile(me)
       toast({
-        title: "Profile saved",
-        description: "Your driver profile was updated.",
+        title: t("driver.profile.savedTitle"),
+        description: t("driver.profile.savedDescription"),
       })
 
       if (me.driverProfileComplete) {
         router.push("/driver")
       }
     } catch (err) {
-      const message = toActionErrorMessage(err, "Failed to update profile.")
+      const message = toActionErrorMessage(err, t("driver.profile.saveError"))
       toast({
-        title: "Save failed",
+        title: t("driver.profile.saveFailedTitle"),
         description: message,
         variant: "destructive",
       })
@@ -90,30 +92,28 @@ export default function DriverProfilePage() {
       return (
         <div className="max-w-lg mx-auto">
           <Alert variant="destructive">
-            <AlertDescription>{loadError ?? "Failed to load driver profile."}</AlertDescription>
+            <AlertDescription>{loadError ?? t("driver.profile.loadError")}</AlertDescription>
           </Alert>
         </div>
       )
     }
 
     return (
-      <SectionLoader label="Loading profile..." />
+      <SectionLoader label={t("driver.profile.loading")} />
     )
   }
 
   return (
     <div className="max-w-lg mx-auto space-y-6">
       <div>
-        <h1 className="text-3xl font-bold">{profile.driverProfileComplete ? "Profile" : "Complete Profile"}</h1>
-        <p className="text-muted-foreground">Your driver information</p>
+        <h1 className="text-3xl font-bold">{profile.driverProfileComplete ? t("driver.profile.title") : t("driver.profile.completeTitle")}</h1>
+        <p className="text-muted-foreground">{t("driver.profile.subtitle")}</p>
       </div>
 
       {isForcedCompletion && !profile.driverProfileComplete && (
         <Alert>
           <BadgeAlert className="h-4 w-4" />
-          <AlertDescription>
-            Complete your driver profile to access shipments and the rest of the driver app.
-          </AlertDescription>
+          <AlertDescription>{t("driver.profile.forceCompleteMessage")}</AlertDescription>
         </Alert>
       )}
 
@@ -124,7 +124,7 @@ export default function DriverProfilePage() {
           </div>
           <div>
             <p className="text-xl font-bold">{profile.name}</p>
-            <p className="text-sm text-muted-foreground">Driver</p>
+            <p className="text-sm text-muted-foreground">{t("shipments.driver")}</p>
           </div>
         </div>
 
@@ -132,13 +132,13 @@ export default function DriverProfilePage() {
           <div className="flex items-start gap-3">
             <Mail className="h-5 w-5 text-muted-foreground mt-0.5" />
             <div className="flex-1">
-              <Label className="text-muted-foreground">Email</Label>
+              <Label className="text-muted-foreground">{t("employees.table.email")}</Label>
               <p className="mt-1">{profile.email}</p>
             </div>
           </div>
 
           <div>
-            <Label htmlFor="driver-phone">Phone</Label>
+            <Label htmlFor="driver-phone">{t("employees.table.phone")}</Label>
             <div className="relative mt-1.5">
               <Phone className="h-4 w-4 absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
               <Input
@@ -152,7 +152,7 @@ export default function DriverProfilePage() {
           </div>
 
           <div>
-            <Label htmlFor="driver-license">License Number</Label>
+            <Label htmlFor="driver-license">{t("driver.profile.licenseNumber")}</Label>
             <Input
               id="driver-license"
               value={licenseNumber}
@@ -165,7 +165,7 @@ export default function DriverProfilePage() {
 
         <Button onClick={handleSave} disabled={saving} className="w-full">
           {saving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-          {saving ? "Saving..." : profile.driverProfileComplete ? "Update Profile" : "Complete Profile"}
+          {saving ? t("driver.profile.saving") : profile.driverProfileComplete ? t("driver.profile.updateAction") : t("driver.profile.completeAction")}
         </Button>
       </Card>
     </div>

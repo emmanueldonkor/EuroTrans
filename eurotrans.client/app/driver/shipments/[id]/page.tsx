@@ -26,11 +26,13 @@ import { getStatusColor } from "@/lib/utils/format"
 import { useToast } from "@/hooks/use-toast"
 import { SectionLoader } from "@/components/ui/page-state"
 import { useShipmentTracking } from "@/hooks/use-shipment-tracking"
+import { useI18n } from "@/components/providers/i18n-provider"
 
 export default function DriverShipmentDetailPage() {
   const params = useParams()
   const router = useRouter()
   const { toast } = useToast()
+  const { t } = useI18n()
   const fileInputRef = useRef<HTMLInputElement>(null)
   const lastTrackingErrorRef = useRef<string | null>(null)
 
@@ -68,6 +70,21 @@ export default function DriverShipmentDetailPage() {
     return fallback
   }
 
+  const getShipmentStatusText = (status: Shipment["status"]) => {
+    switch (status) {
+      case "unassigned":
+        return t("status.unassigned")
+      case "assigned":
+        return t("shipments.status.assigned")
+      case "in-transit":
+        return t("status.inTransit")
+      case "delivered":
+        return t("status.delivered")
+      case "cancelled":
+        return t("shipments.status.cancelled")
+    }
+  }
+
   const isAutoTrackingEnabled = shipment?.status === "in-transit" && !!shipment?.startedAt
 
   const tracking = useShipmentTracking({
@@ -78,7 +95,7 @@ export default function DriverShipmentDetailPage() {
       if (lastTrackingErrorRef.current === trackingError.message) return
       lastTrackingErrorRef.current = trackingError.message
       toast({
-        title: "Live Tracking Notice",
+        title: t("driver.shipmentDetail.liveTrackingNoticeTitle"),
         description: trackingError.message,
         variant: "destructive",
       })
@@ -112,8 +129,8 @@ export default function DriverShipmentDetailPage() {
     } catch (error) {
       console.error("Failed to load shipment:", error)
       toast({
-        title: "Error",
-        description: toErrorMessage(error, "Failed to load shipment."),
+        title: t("driver.shipmentDetail.loadErrorTitle"),
+        description: toErrorMessage(error, t("driver.shipmentDetail.loadErrorFallback")),
         variant: "destructive",
       })
     } finally {
@@ -128,15 +145,15 @@ export default function DriverShipmentDetailPage() {
     try {
       await api.startShipment(shipment.id)
       toast({
-        title: "Journey Started",
-        description: "Your shipment journey has begun.",
+        title: t("driver.shipmentDetail.startSuccessTitle"),
+        description: t("driver.shipmentDetail.startSuccessDescription"),
       })
       await loadData()
     } catch (error) {
       console.error("Failed to start journey:", error)
       toast({
-        title: "Error",
-        description: toErrorMessage(error, "Failed to start journey. Please try again."),
+        title: t("driver.shipmentDetail.loadErrorTitle"),
+        description: toErrorMessage(error, t("driver.shipmentDetail.startErrorFallback")),
         variant: "destructive",
       })
     } finally {
@@ -147,8 +164,8 @@ export default function DriverShipmentDetailPage() {
   const updateLocationWithGps = () => {
     if (!navigator.geolocation) {
       toast({
-        title: "Not Supported",
-        description: "Geolocation is not supported by your browser.",
+        title: t("driver.shipmentDetail.geoNotSupportedTitle"),
+        description: t("driver.shipmentDetail.geoNotSupportedDescription"),
         variant: "destructive",
       })
       return
@@ -162,7 +179,7 @@ export default function DriverShipmentDetailPage() {
           const location: Location = {
             lat: position.coords.latitude,
             lng: position.coords.longitude,
-            city: "GPS Location",
+            city: t("driver.shipmentDetail.gpsLocationLabel"),
             address: `${position.coords.latitude.toFixed(6)}, ${position.coords.longitude.toFixed(6)}`,
             country: "",
             postalCode: "",
@@ -171,16 +188,16 @@ export default function DriverShipmentDetailPage() {
           if (shipment) {
             await api.updateShipmentLocation(shipment.id, location)
             toast({
-              title: "Location Updated",
-              description: "Current GPS location has been recorded.",
+              title: t("driver.shipmentDetail.locationUpdatedTitle"),
+              description: t("driver.shipmentDetail.locationUpdatedDescription"),
             })
             await loadData()
           }
         } catch (error) {
           console.error("Failed to update location:", error)
           toast({
-            title: "Error",
-            description: toErrorMessage(error, "Failed to update location."),
+            title: t("driver.shipmentDetail.loadErrorTitle"),
+            description: toErrorMessage(error, t("driver.shipmentDetail.locationUpdateErrorFallback")),
             variant: "destructive",
           })
         } finally {
@@ -190,8 +207,8 @@ export default function DriverShipmentDetailPage() {
       () => {
         setGettingLocation(false)
         toast({
-          title: "Location Error",
-          description: "Unable to get your current location. Please enable location services.",
+          title: t("driver.shipmentDetail.locationErrorTitle"),
+          description: t("driver.shipmentDetail.locationErrorDescription"),
           variant: "destructive",
         })
       },
@@ -210,8 +227,8 @@ export default function DriverShipmentDetailPage() {
     const lng = Number(locationData.lng)
     if (Number.isNaN(lat) || Number.isNaN(lng)) {
       toast({
-        title: "Invalid Coordinates",
-        description: "Latitude and longitude are required for manual updates.",
+        title: t("driver.shipmentDetail.invalidCoordinatesTitle"),
+        description: t("driver.shipmentDetail.invalidCoordinatesManualDescription"),
         variant: "destructive",
       })
       return
@@ -230,8 +247,10 @@ export default function DriverShipmentDetailPage() {
 
       await api.updateShipmentLocation(shipment.id, location)
       toast({
-        title: "Location Updated",
-        description: locationData.city ? `Current location: ${locationData.city}` : "Manual location saved.",
+        title: t("driver.shipmentDetail.locationUpdatedTitle"),
+        description: locationData.city
+          ? t("driver.shipmentDetail.locationUpdatedManualWithCity").replace("{city}", locationData.city)
+          : t("driver.shipmentDetail.locationUpdatedManualDescription"),
       })
 
       setShowLocationDialog(false)
@@ -240,8 +259,8 @@ export default function DriverShipmentDetailPage() {
     } catch (error) {
       console.error("Failed to update location:", error)
       toast({
-        title: "Error",
-        description: toErrorMessage(error, "Failed to update location."),
+        title: t("driver.shipmentDetail.loadErrorTitle"),
+        description: toErrorMessage(error, t("driver.shipmentDetail.locationUpdateErrorFallback")),
         variant: "destructive",
       })
     } finally {
@@ -252,8 +271,8 @@ export default function DriverShipmentDetailPage() {
   const handleFillMilestoneWithGps = () => {
     if (!navigator.geolocation) {
       toast({
-        title: "Not Supported",
-        description: "Geolocation is not supported by your browser.",
+        title: t("driver.shipmentDetail.geoNotSupportedTitle"),
+        description: t("driver.shipmentDetail.geoNotSupportedDescription"),
         variant: "destructive",
       })
       return
@@ -266,15 +285,15 @@ export default function DriverShipmentDetailPage() {
           ...prev,
           lat: String(position.coords.latitude),
           lng: String(position.coords.longitude),
-          locationLabel: prev.locationLabel || "GPS Location",
+          locationLabel: prev.locationLabel || t("driver.shipmentDetail.gpsLocationLabel"),
         }))
         setGettingMilestoneGps(false)
       },
       () => {
         setGettingMilestoneGps(false)
         toast({
-          title: "Location Error",
-          description: "Unable to get GPS coordinates for milestone.",
+          title: t("driver.shipmentDetail.locationErrorTitle"),
+          description: t("driver.shipmentDetail.milestoneGpsErrorDescription"),
           variant: "destructive",
         })
       },
@@ -293,8 +312,8 @@ export default function DriverShipmentDetailPage() {
     const lng = Number(milestoneData.lng)
     if (Number.isNaN(lat) || Number.isNaN(lng)) {
       toast({
-        title: "Invalid Coordinates",
-        description: "Latitude and longitude are required for a milestone.",
+        title: t("driver.shipmentDetail.invalidCoordinatesTitle"),
+        description: t("driver.shipmentDetail.invalidCoordinatesMilestoneDescription"),
         variant: "destructive",
       })
       return
@@ -320,7 +339,7 @@ export default function DriverShipmentDetailPage() {
       })
 
       toast({
-        title: "Milestone Added",
+        title: t("driver.shipmentDetail.milestoneAddedTitle"),
         description: milestoneData.note,
       })
 
@@ -330,8 +349,8 @@ export default function DriverShipmentDetailPage() {
     } catch (error) {
       console.error("Failed to add milestone:", error)
       toast({
-        title: "Error",
-        description: toErrorMessage(error, "Failed to add milestone."),
+        title: t("driver.shipmentDetail.loadErrorTitle"),
+        description: toErrorMessage(error, t("driver.shipmentDetail.milestoneAddErrorFallback")),
         variant: "destructive",
       })
     } finally {
@@ -347,8 +366,8 @@ export default function DriverShipmentDetailPage() {
   const handleDeliverShipment = async () => {
     if (!shipment || !selectedFile) {
       toast({
-        title: "Confirmation File Required",
-        description: "Choose a confirmation file before delivering.",
+        title: t("driver.shipmentDetail.confirmationFileRequiredTitle"),
+        description: t("driver.shipmentDetail.confirmationFileRequiredDescription"),
         variant: "destructive",
       })
       return
@@ -358,8 +377,8 @@ export default function DriverShipmentDetailPage() {
     try {
       await api.deliverShipment(shipment.id, selectedFile)
       toast({
-        title: "Shipment Delivered",
-        description: "Proof of delivery uploaded and shipment marked delivered.",
+        title: t("driver.shipmentDetail.deliveredTitle"),
+        description: t("driver.shipmentDetail.deliveredDescription"),
       })
       setSelectedFile(null)
       setShowDeliverPanel(false)
@@ -367,8 +386,8 @@ export default function DriverShipmentDetailPage() {
     } catch (error) {
       console.error("Failed to deliver shipment:", error)
       toast({
-        title: "Error",
-        description: toErrorMessage(error, "Failed to deliver shipment. Please try again."),
+        title: t("driver.shipmentDetail.loadErrorTitle"),
+        description: toErrorMessage(error, t("driver.shipmentDetail.deliverErrorFallback")),
         variant: "destructive",
       })
     } finally {
@@ -377,7 +396,7 @@ export default function DriverShipmentDetailPage() {
   }
 
   if (loading || !shipment) {
-    return <SectionLoader label="Loading shipment..." />
+    return <SectionLoader label={t("driver.shipmentDetail.loading")} />
   }
 
   const canStart = shipment.status === "assigned" && !shipment.startedAt
@@ -396,26 +415,26 @@ export default function DriverShipmentDetailPage() {
         <div className="flex-1">
           <h1 className="text-2xl font-bold">{shipment.trackingId}</h1>
         </div>
-        <Badge className={getStatusColor(shipment.status)}>{shipment.status.replace("-", " ")}</Badge>
+        <Badge className={getStatusColor(shipment.status)}>{getShipmentStatusText(shipment.status)}</Badge>
       </div>
 
       <Card className="panel p-6 space-y-4">
         <div className="flex items-center gap-2 text-lg font-semibold">
           <Package className="h-5 w-5" />
-          Cargo Details
+          {t("driver.shipmentDetail.cargoTitle")}
         </div>
         <div className="space-y-3">
           <div>
-            <Label className="text-muted-foreground">Description</Label>
+            <Label className="text-muted-foreground">{t("driver.shipmentDetail.description")}</Label>
             <p className="mt-1">{shipment.cargo.description}</p>
           </div>
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <Label className="text-muted-foreground">Weight</Label>
+              <Label className="text-muted-foreground">{t("driver.shipmentDetail.weight")}</Label>
               <p className="mt-1">{shipment.cargo.weight} kg</p>
             </div>
             <div>
-              <Label className="text-muted-foreground">Volume</Label>
+              <Label className="text-muted-foreground">{t("driver.shipmentDetail.volume")}</Label>
               <p className="mt-1">{shipment.cargo.volume} m3</p>
             </div>
           </div>
@@ -425,12 +444,12 @@ export default function DriverShipmentDetailPage() {
       <Card className="panel p-6 space-y-4">
         <div className="flex items-center gap-2 text-lg font-semibold">
           <MapPin className="h-5 w-5" />
-          Delivery Route
+          {t("driver.shipmentDetail.routeTitle")}
         </div>
 
         <div className="space-y-4">
           <div>
-            <Label className="text-muted-foreground">Origin</Label>
+            <Label className="text-muted-foreground">{t("driver.shipmentDetail.origin")}</Label>
             <p className="mt-1 font-medium">{shipment.origin.address}</p>
             <p className="text-sm text-muted-foreground">
               {shipment.origin.city}, {shipment.origin.postalCode}
@@ -439,8 +458,8 @@ export default function DriverShipmentDetailPage() {
 
           {shipment.currentLocation && (
             <div className="bg-muted/50 p-3 rounded-lg">
-              <Label className="text-muted-foreground">Current Location</Label>
-              <p className="mt-1 font-medium">{shipment.currentLocation.city || "Coordinate update"}</p>
+              <Label className="text-muted-foreground">{t("driver.shipmentDetail.currentLocation")}</Label>
+              <p className="mt-1 font-medium">{shipment.currentLocation.city || t("driver.shipmentDetail.currentLocationFallback")}</p>
               <p className="text-xs text-muted-foreground">
                 {shipment.currentLocation.address || `${shipment.currentLocation.lat.toFixed(6)}, ${shipment.currentLocation.lng.toFixed(6)}`}
               </p>
@@ -448,7 +467,7 @@ export default function DriverShipmentDetailPage() {
           )}
 
           <div>
-            <Label className="text-muted-foreground">Destination</Label>
+            <Label className="text-muted-foreground">{t("driver.shipmentDetail.destination")}</Label>
             <p className="mt-1 font-medium">{shipment.destination.address}</p>
             <p className="text-sm text-muted-foreground">
               {shipment.destination.city}, {shipment.destination.postalCode}
@@ -459,14 +478,16 @@ export default function DriverShipmentDetailPage() {
 
       {canUpdateLocation && (
         <Card className="panel p-4 space-y-2">
-          <p className="text-sm font-medium">Automatic Live Tracking</p>
+          <p className="text-sm font-medium">{t("driver.shipmentDetail.autoTrackingTitle")}</p>
           <p className="text-xs text-muted-foreground">
             {tracking.isTracking
-              ? "Enabled. Location heartbeats are sent while this screen is open."
-              : "Disabled. Keep this screen open and allow location permission for live updates."}
+              ? t("driver.shipmentDetail.autoTrackingEnabled")
+              : t("driver.shipmentDetail.autoTrackingDisabled")}
           </p>
           {tracking.lastSentAt && (
-            <p className="text-xs text-muted-foreground">Last heartbeat: {new Date(tracking.lastSentAt).toLocaleString()}</p>
+            <p className="text-xs text-muted-foreground">
+              {t("driver.shipmentDetail.autoTrackingLastHeartbeat")} {new Date(tracking.lastSentAt).toLocaleString()}
+            </p>
           )}
         </Card>
       )}
@@ -476,7 +497,7 @@ export default function DriverShipmentDetailPage() {
           {canStart && (
             <Button className="w-full h-14 text-lg" onClick={handleStartJourney} disabled={actionLoading}>
               {actionLoading ? <Loader2 className="mr-2 h-5 w-5 animate-spin" /> : <Play className="mr-2 h-5 w-5" />}
-              {actionLoading ? "Starting..." : "Start Transit"}
+              {actionLoading ? t("driver.shipmentDetail.action.starting") : t("driver.shipmentDetail.action.startTransit")}
             </Button>
           )}
 
@@ -486,12 +507,12 @@ export default function DriverShipmentDetailPage() {
                 {gettingLocation ? (
                   <>
                     <Loader2 className="mr-2 h-5 w-5 animate-spin" />
-                    Getting Location...
+                    {t("driver.shipmentDetail.action.gettingLocation")}
                   </>
                 ) : (
                   <>
                     <Navigation className="mr-2 h-5 w-5" />
-                    Update Location (GPS)
+                    {t("driver.shipmentDetail.action.updateLocationGps")}
                   </>
                 )}
               </Button>
@@ -502,7 +523,7 @@ export default function DriverShipmentDetailPage() {
                 onClick={() => setShowLocationDialog(true)}
               >
                 <MapPin className="mr-2 h-5 w-5" />
-                Update Location (Manual GPS)
+                {t("driver.shipmentDetail.action.updateLocationManual")}
               </Button>
 
               <Button
@@ -511,13 +532,13 @@ export default function DriverShipmentDetailPage() {
                 onClick={() => setShowMilestoneDialog(true)}
               >
                 <Flag className="mr-2 h-5 w-5" />
-                Add Milestone
+                {t("driver.shipmentDetail.action.addMilestone")}
               </Button>
 
               {!showDeliverPanel && (
                 <Button className="w-full h-14 text-lg" onClick={() => setShowDeliverPanel(true)}>
                   <Truck className="mr-2 h-5 w-5" />
-                  Deliver Shipment
+                  {t("driver.shipmentDetail.action.deliverShipment")}
                 </Button>
               )}
             </>
@@ -526,36 +547,34 @@ export default function DriverShipmentDetailPage() {
           {canDeliver && showDeliverPanel && (
             <Card className="panel p-4 space-y-3">
               <div className="space-y-1">
-                <p className="text-sm font-medium">Delivery Confirmation</p>
-                <p className="text-xs text-muted-foreground">
-                  Upload proof of delivery and confirm completion.
-                </p>
+                <p className="text-sm font-medium">{t("driver.shipmentDetail.deliverPanelTitle")}</p>
+                <p className="text-xs text-muted-foreground">{t("driver.shipmentDetail.deliverPanelDescription")}</p>
               </div>
 
               <input ref={fileInputRef} type="file" accept="image/*,.pdf" className="hidden" onChange={handleFileSelect} />
 
               <Button variant="outline" className="w-full bg-transparent" onClick={() => fileInputRef.current?.click()}>
-                Choose Confirmation File
+                {t("driver.shipmentDetail.chooseConfirmationFile")}
               </Button>
 
               {selectedFile ? (
                 <div className="flex items-center justify-between rounded border p-2">
                   <span className="text-sm truncate max-w-[220px]">{selectedFile.name}</span>
                   <Button variant="ghost" size="sm" onClick={() => setSelectedFile(null)}>
-                    Remove
+                    {t("driver.shipmentDetail.removeFile")}
                   </Button>
                 </div>
               ) : (
-                <p className="text-xs text-muted-foreground">No file selected</p>
+                <p className="text-xs text-muted-foreground">{t("driver.shipmentDetail.noFileSelected")}</p>
               )}
 
               <div className="flex gap-2">
                 <Button variant="outline" className="flex-1 bg-transparent" onClick={() => setShowDeliverPanel(false)}>
-                  Cancel
+                  {t("common.cancel")}
                 </Button>
                 <Button className="flex-1" onClick={handleDeliverShipment} disabled={uploadingProof || !selectedFile}>
                   {uploadingProof && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                  {uploadingProof ? "Delivering..." : "Confirm Delivery"}
+                  {uploadingProof ? t("driver.shipmentDetail.action.delivering") : t("driver.shipmentDetail.action.confirmDelivery")}
                 </Button>
               </div>
             </Card>
@@ -566,82 +585,82 @@ export default function DriverShipmentDetailPage() {
       {isDelivered && (
         <Card className="panel p-6 flex flex-col items-center text-center">
           <CheckCircle className="h-16 w-16 text-green-500 mb-4" />
-          <h3 className="text-lg font-semibold mb-2">Delivery Complete</h3>
-          <p className="text-sm text-muted-foreground">This shipment has been successfully delivered.</p>
+          <h3 className="text-lg font-semibold mb-2">{t("driver.shipmentDetail.deliveryCompleteTitle")}</h3>
+          <p className="text-sm text-muted-foreground">{t("driver.shipmentDetail.deliveryCompleteDescription")}</p>
         </Card>
       )}
 
       <Dialog open={showLocationDialog} onOpenChange={setShowLocationDialog}>
         <DialogContent className="panel">
           <DialogHeader>
-            <DialogTitle>Update Location</DialogTitle>
-            <DialogDescription>Enter location label plus GPS coordinates.</DialogDescription>
+            <DialogTitle>{t("driver.shipmentDetail.updateLocationDialogTitle")}</DialogTitle>
+            <DialogDescription>{t("driver.shipmentDetail.updateLocationDialogDescription")}</DialogDescription>
           </DialogHeader>
           <div className="space-y-4">
             <div>
-              <Label>City or Place Name</Label>
+              <Label>{t("driver.shipmentDetail.cityOrPlace")}</Label>
               <Input
                 value={locationData.city}
                 onChange={(e) => setLocationData({ ...locationData, city: e.target.value })}
-                placeholder="e.g. Munich"
+                placeholder={t("driver.shipmentDetail.placeholder.city")}
               />
             </div>
             <div>
-              <Label>Address / Landmark</Label>
+              <Label>{t("driver.shipmentDetail.addressLandmark")}</Label>
               <Input
                 value={locationData.address}
                 onChange={(e) => setLocationData({ ...locationData, address: e.target.value })}
-                placeholder="e.g. Highway A8 Rest Area"
+                placeholder={t("driver.shipmentDetail.placeholder.address")}
               />
             </div>
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <Label>Country</Label>
+                <Label>{t("driver.shipmentDetail.country")}</Label>
                 <Input
                   value={locationData.country}
                   onChange={(e) => setLocationData({ ...locationData, country: e.target.value })}
-                  placeholder="Germany"
+                  placeholder={t("driver.shipmentDetail.placeholder.country")}
                 />
               </div>
               <div>
-                <Label>Postal Code</Label>
+                <Label>{t("driver.shipmentDetail.postalCode")}</Label>
                 <Input
                   value={locationData.postalCode}
                   onChange={(e) => setLocationData({ ...locationData, postalCode: e.target.value })}
-                  placeholder="80331"
+                  placeholder={t("driver.shipmentDetail.placeholder.postalCode")}
                 />
               </div>
             </div>
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <Label>Latitude</Label>
+                <Label>{t("driver.shipmentDetail.latitude")}</Label>
                 <Input
                   type="number"
                   step="any"
                   value={locationData.lat}
                   onChange={(e) => setLocationData({ ...locationData, lat: e.target.value })}
-                  placeholder="48.1351"
+                  placeholder={t("driver.shipmentDetail.placeholder.latitude")}
                 />
               </div>
               <div>
-                <Label>Longitude</Label>
+                <Label>{t("driver.shipmentDetail.longitude")}</Label>
                 <Input
                   type="number"
                   step="any"
                   value={locationData.lng}
                   onChange={(e) => setLocationData({ ...locationData, lng: e.target.value })}
-                  placeholder="11.5820"
+                  placeholder={t("driver.shipmentDetail.placeholder.longitude")}
                 />
               </div>
             </div>
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setShowLocationDialog(false)}>
-              Cancel
+              {t("common.cancel")}
             </Button>
             <Button onClick={handleUpdateLocationManual} disabled={actionLoading || !locationData.lat || !locationData.lng}>
               {actionLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-              Update Location
+              {t("driver.shipmentDetail.action.updateLocation")}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -650,60 +669,60 @@ export default function DriverShipmentDetailPage() {
       <Dialog open={showMilestoneDialog} onOpenChange={setShowMilestoneDialog}>
         <DialogContent className="panel">
           <DialogHeader>
-            <DialogTitle>Add Milestone</DialogTitle>
-            <DialogDescription>Record an important event with exact coordinates.</DialogDescription>
+            <DialogTitle>{t("driver.shipmentDetail.milestoneDialogTitle")}</DialogTitle>
+            <DialogDescription>{t("driver.shipmentDetail.milestoneDialogDescription")}</DialogDescription>
           </DialogHeader>
           <div className="space-y-4">
             <div>
-              <Label>Milestone Type</Label>
+              <Label>{t("driver.shipmentDetail.milestoneType")}</Label>
               <select
                 className="w-full h-10 rounded-md border border-input bg-background px-3 text-sm"
                 value={milestoneData.type}
                 onChange={(e) => setMilestoneData({ ...milestoneData, type: e.target.value as Milestone["type"] })}
               >
-                <option value="checkpoint">Checkpoint</option>
-                <option value="delay">Delay</option>
-                <option value="rest">Rest</option>
-                <option value="refuel">Refuel</option>
-                <option value="custom">Custom</option>
+                <option value="checkpoint">{t("driver.shipmentDetail.milestoneType.checkpoint")}</option>
+                <option value="delay">{t("driver.shipmentDetail.milestoneType.delay")}</option>
+                <option value="rest">{t("driver.shipmentDetail.milestoneType.rest")}</option>
+                <option value="refuel">{t("driver.shipmentDetail.milestoneType.refuel")}</option>
+                <option value="custom">{t("driver.shipmentDetail.milestoneType.custom")}</option>
               </select>
             </div>
             <div>
-              <Label>Milestone Note</Label>
+              <Label>{t("driver.shipmentDetail.milestoneNote")}</Label>
               <Textarea
                 value={milestoneData.note}
                 onChange={(e) => setMilestoneData({ ...milestoneData, note: e.target.value })}
-                placeholder="Describe what happened..."
+                placeholder={t("driver.shipmentDetail.milestoneNotePlaceholder")}
                 rows={3}
               />
             </div>
             <div>
-              <Label>Location Label (optional)</Label>
+              <Label>{t("driver.shipmentDetail.locationLabelOptional")}</Label>
               <Input
                 value={milestoneData.locationLabel}
                 onChange={(e) => setMilestoneData({ ...milestoneData, locationLabel: e.target.value })}
-                placeholder="e.g. Border Checkpoint A3"
+                placeholder={t("driver.shipmentDetail.locationLabelPlaceholder")}
               />
             </div>
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <Label>Latitude</Label>
+                <Label>{t("driver.shipmentDetail.latitude")}</Label>
                 <Input
                   type="number"
                   step="any"
                   value={milestoneData.lat}
                   onChange={(e) => setMilestoneData({ ...milestoneData, lat: e.target.value })}
-                  placeholder="48.1351"
+                  placeholder={t("driver.shipmentDetail.placeholder.latitude")}
                 />
               </div>
               <div>
-                <Label>Longitude</Label>
+                <Label>{t("driver.shipmentDetail.longitude")}</Label>
                 <Input
                   type="number"
                   step="any"
                   value={milestoneData.lng}
                   onChange={(e) => setMilestoneData({ ...milestoneData, lng: e.target.value })}
-                  placeholder="11.5820"
+                  placeholder={t("driver.shipmentDetail.placeholder.longitude")}
                 />
               </div>
             </div>
@@ -711,20 +730,20 @@ export default function DriverShipmentDetailPage() {
               {gettingMilestoneGps ? (
                 <>
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Getting GPS...
+                  {t("driver.shipmentDetail.action.gettingGps")}
                 </>
               ) : (
-                "Use Current GPS"
+                t("driver.shipmentDetail.action.useCurrentGps")
               )}
             </Button>
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setShowMilestoneDialog(false)}>
-              Cancel
+              {t("common.cancel")}
             </Button>
             <Button onClick={handleAddMilestone} disabled={actionLoading || !milestoneData.note.trim() || !milestoneData.lat || !milestoneData.lng}>
               {actionLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-              Add Milestone
+              {t("driver.shipmentDetail.action.addMilestone")}
             </Button>
           </DialogFooter>
         </DialogContent>

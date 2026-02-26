@@ -15,12 +15,14 @@ import type { ShipmentStatus } from "@/lib/types"
 import { useDebouncedValue } from "@/hooks/use-debounced-value"
 import { SectionLoader } from "@/components/ui/page-state"
 import { PageHeader, PageHeading, PageShell, PageSurface } from "@/components/ui/page-shell"
+import { useI18n } from "@/components/providers/i18n-provider"
 
 export default function ShipmentsPage() {
   const [searchTerm, setSearchTerm] = useState("")
   const [statusFilter, setStatusFilter] = useState<string>("all")
   const [driverFilter, setDriverFilter] = useState<string>("all")
   const debouncedSearchTerm = useDebouncedValue(searchTerm, 300)
+  const { t } = useI18n()
 
   const {
     data: shipments = [],
@@ -38,38 +40,38 @@ export default function ShipmentsPage() {
 
   const getDriverName = (driverId?: string, driverName?: string) => {
     if (driverName) return driverName
-    if (!driverId) return "N/A"
+    if (!driverId) return t("shipments.driverNotAssigned")
     const driver = drivers.find((d) => d.id === driverId)
-    return driver?.name || "Unknown"
+    return driver?.name || t("shipments.driverUnknown")
   }
 
   if (isLoading && shipments.length === 0) {
-    return <SectionLoader label="Loading shipments..." />
+    return <SectionLoader label={t("shipments.loading")} />
   }
 
   return (
     <PageShell>
       <PageHeader>
         <PageHeading
-          title="Shipments"
+          title={t("shipments.title")}
           description={
             <>
-              Manage and track all shipments
-              {shipmentsFetching && <span className="ml-2 text-xs">Refreshing...</span>}
+              {t("shipments.description")}
+              {shipmentsFetching && <span className="ml-2 text-xs">{t("shipments.refreshing")}</span>}
             </>
           }
         />
         <Link href="/dashboard/shipments/new">
           <Button>
             <Plus className="mr-2 h-4 w-4" />
-            Create Shipment
+            {t("shipments.create")}
           </Button>
         </Link>
       </PageHeader>
 
       {shipmentsError && (
         <Alert variant="destructive">
-          <AlertDescription>{shipmentsError instanceof Error ? shipmentsError.message : "Error loading shipments."}</AlertDescription>
+          <AlertDescription>{shipmentsError instanceof Error ? shipmentsError.message : t("shipments.errorLoad")}</AlertDescription>
         </Alert>
       )}
 
@@ -78,7 +80,7 @@ export default function ShipmentsPage() {
           <div className="relative flex-1">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <Input
-              placeholder="Search by tracking ID..."
+              placeholder={t("shipments.searchPlaceholder")}
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               className="h-10 pl-9 bg-background/90"
@@ -86,23 +88,23 @@ export default function ShipmentsPage() {
           </div>
           <Select value={statusFilter} onValueChange={setStatusFilter}>
             <SelectTrigger className="h-10 w-full sm:w-44 bg-background/90">
-              <SelectValue placeholder="Status" />
+              <SelectValue placeholder={t("shipments.status")} />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="all">All Status</SelectItem>
-              <SelectItem value="unassigned">Unassigned</SelectItem>
-              <SelectItem value="assigned">Assigned</SelectItem>
-              <SelectItem value="in-transit">In Transit</SelectItem>
-              <SelectItem value="delivered">Delivered</SelectItem>
-              <SelectItem value="cancelled">Cancelled</SelectItem>
+              <SelectItem value="all">{t("shipments.allStatus")}</SelectItem>
+              <SelectItem value="unassigned">{t("status.unassigned")}</SelectItem>
+              <SelectItem value="assigned">{t("shipments.status.assigned")}</SelectItem>
+              <SelectItem value="in-transit">{t("status.inTransit")}</SelectItem>
+              <SelectItem value="delivered">{t("status.delivered")}</SelectItem>
+              <SelectItem value="cancelled">{t("shipments.status.cancelled")}</SelectItem>
             </SelectContent>
           </Select>
           <Select value={driverFilter} onValueChange={setDriverFilter}>
             <SelectTrigger className="h-10 w-full sm:w-44 bg-background/90">
-              <SelectValue placeholder="Driver" />
+              <SelectValue placeholder={t("shipments.driver")} />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="all">All Drivers</SelectItem>
+              <SelectItem value="all">{t("shipments.allDrivers")}</SelectItem>
               {drivers.map((driver) => (
                 <SelectItem key={driver.id} value={driver.id}>
                   {driver.name}
@@ -117,18 +119,18 @@ export default function ShipmentsPage() {
         <Table>
           <TableHeader className="table-head-sticky">
             <TableRow>
-              <TableHead>Tracking ID</TableHead>
-              <TableHead>Status</TableHead>
-              <TableHead>Driver</TableHead>
-              <TableHead>Route</TableHead>
-              <TableHead>Last Update</TableHead>
+              <TableHead>{t("shipments.trackingId")}</TableHead>
+              <TableHead>{t("shipments.status")}</TableHead>
+              <TableHead>{t("shipments.driver")}</TableHead>
+              <TableHead>{t("shipments.route")}</TableHead>
+              <TableHead>{t("shipments.lastUpdate")}</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {shipments.length === 0 ? (
               <TableRow>
                 <TableCell colSpan={5} className="text-center text-muted-foreground py-8">
-                  {shipmentsError ? "Could not load shipments." : "No shipments found"}
+                  {shipmentsError ? t("shipments.errorLoad") : t("shipments.noResults")}
                 </TableCell>
               </TableRow>
             ) : (
@@ -140,7 +142,17 @@ export default function ShipmentsPage() {
                     </Link>
                   </TableCell>
                   <TableCell>
-                    <Badge className={getStatusColor(shipment.status)}>{shipment.status.replace("-", " ")}</Badge>
+                    <Badge className={getStatusColor(shipment.status)}>
+                      {shipment.status === "unassigned"
+                        ? t("status.unassigned")
+                        : shipment.status === "assigned"
+                          ? t("shipments.status.assigned")
+                          : shipment.status === "in-transit"
+                            ? t("status.inTransit")
+                            : shipment.status === "delivered"
+                              ? t("status.delivered")
+                              : t("shipments.status.cancelled")}
+                    </Badge>
                   </TableCell>
                   <TableCell>{getDriverName(shipment.driverId, shipment.driverName)}</TableCell>
                   <TableCell className="max-w-xs truncate">

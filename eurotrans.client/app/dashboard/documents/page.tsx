@@ -15,10 +15,12 @@ import { useQuery } from "@tanstack/react-query"
 import { useDebouncedValue } from "@/hooks/use-debounced-value"
 import { PageErrorState, SectionLoader } from "@/components/ui/page-state"
 import { PageHeading, PageShell, PageSurface } from "@/components/ui/page-shell"
+import { useI18n } from "@/components/providers/i18n-provider"
 
 export default function DocumentsPage() {
   const [searchTerm, setSearchTerm] = useState("")
   const debouncedSearchTerm = useDebouncedValue(searchTerm, 250)
+  const { t } = useI18n()
 
   const {
     data: shipments = [],
@@ -41,14 +43,14 @@ export default function DocumentsPage() {
   )
 
   if (isLoading) {
-    return <SectionLoader label="Loading documents..." />
+    return <SectionLoader label={t("documents.loading")} />
   }
 
   if (error) {
     return (
       <PageErrorState
-        title="Could not load documents"
-        message={error instanceof Error ? error.message : "Unexpected error while loading documents."}
+        title={t("documents.errorTitle")}
+        message={error instanceof Error ? error.message : t("documents.errorMessage")}
         onRetry={() => {
           void refetch()
         }}
@@ -58,13 +60,13 @@ export default function DocumentsPage() {
 
   return (
     <PageShell>
-      <PageHeading title="Documents" description="Access shipment documents and proof of delivery files" />
+      <PageHeading title={t("documents.title")} description={t("documents.description")} />
 
       <PageSurface className="p-4 bg-gradient-to-r from-card to-muted/30">
         <div className="relative">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <Input
-            placeholder="Search by tracking ID..."
+            placeholder={t("documents.searchPlaceholder")}
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             className="h-10 pl-9 bg-background/90"
@@ -77,11 +79,11 @@ export default function DocumentsPage() {
           <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-primary/10">
             <FileText className="h-8 w-8 text-primary" />
           </div>
-          <h3 className="text-lg font-medium mb-2">No Documents Found</h3>
+          <h3 className="text-lg font-medium mb-2">{t("documents.emptyTitle")}</h3>
           <p className="text-sm text-muted-foreground text-center max-w-md">
             {searchTerm
-              ? "No documents match your search criteria."
-              : "Documents will appear here once shipments are delivered with proof of delivery."}
+              ? t("documents.emptySearch")
+              : t("documents.emptyDefault")}
           </p>
         </PageSurface>
       ) : (
@@ -89,11 +91,11 @@ export default function DocumentsPage() {
           <Table>
             <TableHeader className="table-head-sticky">
               <TableRow>
-                <TableHead>Tracking ID</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead>Route</TableHead>
-                <TableHead>Delivered</TableHead>
-                <TableHead>Document</TableHead>
+                <TableHead>{t("documents.table.trackingId")}</TableHead>
+                <TableHead>{t("documents.table.status")}</TableHead>
+                <TableHead>{t("documents.table.route")}</TableHead>
+                <TableHead>{t("documents.table.delivered")}</TableHead>
+                <TableHead>{t("documents.table.document")}</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -137,7 +139,7 @@ export default function DocumentsPage() {
           <div className="flex items-center gap-4">
             <Package className="h-8 w-8 text-primary" />
             <div>
-              <p className="text-sm text-muted-foreground">Total Documents</p>
+              <p className="text-sm text-muted-foreground">{t("documents.totalDocuments")}</p>
               <p className="text-2xl font-bold">{filteredShipments.length}</p>
             </div>
           </div>

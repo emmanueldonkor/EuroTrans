@@ -21,11 +21,13 @@ import { useToast } from "@/hooks/use-toast"
 import { PageErrorState, SectionLoader } from "@/components/ui/page-state"
 import { PageHeading, PageShell, PageSurface } from "@/components/ui/page-shell"
 import { toActionErrorMessage } from "@/lib/utils/error"
+import { useI18n } from "@/components/providers/i18n-provider"
 
 export default function EmployeesPage() {
   const { data: drivers = [], isLoading, error: queryError, refetch } = useDrivers()
   const { updateStatus } = useDriverMutations()
   const { toast } = useToast()
+  const { t } = useI18n()
   const [selectedDriver, setSelectedDriver] = useState<Driver | null>(null)
   const [showStatusDialog, setShowStatusDialog] = useState(false)
   const [newStatus, setNewStatus] = useState<"available" | "on-duty" | "off-duty">("available")
@@ -63,21 +65,23 @@ export default function EmployeesPage() {
         setShowStatusDialog(false)
         setSelectedDriver(null)
         toast({
-          title: "Status updated",
-          description: `${selectedDriver.name} is now ${newStatus.replace("-", " ")}.`,
+          title: t("employees.toast.statusUpdatedTitle"),
+          description: t("employees.toast.statusUpdatedDescription")
+            .replace("{name}", selectedDriver.name)
+            .replace("{status}", newStatus.replace("-", " ")),
         })
       } else {
-        const message = result.error || "Failed to update status."
+        const message = result.error || t("employees.toast.updateFailedFallback")
         toast({
-          title: "Update failed",
+          title: t("employees.toast.updateFailedTitle"),
           description: message,
           variant: "destructive",
         })
       }
     } catch (err) {
-      const message = toActionErrorMessage(err, "An error occurred while updating status.")
+      const message = toActionErrorMessage(err, t("employees.toast.updateErrorFallback"))
       toast({
-        title: "Update failed",
+        title: t("employees.toast.updateFailedTitle"),
         description: message,
         variant: "destructive",
       })
@@ -85,14 +89,14 @@ export default function EmployeesPage() {
   }
 
   if (isLoading) {
-    return <SectionLoader label="Loading drivers..." />
+    return <SectionLoader label={t("employees.loading")} />
   }
 
   if (queryError) {
     return (
       <PageErrorState
-        title="Could not load employees"
-        message={queryError instanceof Error ? queryError.message : "Unexpected error while loading employees."}
+        title={t("employees.errorTitle")}
+        message={queryError instanceof Error ? queryError.message : t("employees.errorMessage")}
         onRetry={() => {
           void refetch()
         }}
@@ -102,25 +106,25 @@ export default function EmployeesPage() {
 
   return (
     <PageShell>
-      <PageHeading title="Employees" description="Manage your driver workforce" />
+      <PageHeading title={t("employees.title")} description={t("employees.description")} />
 
       <PageSurface className="table-shell">
         <Table>
           <TableHeader className="table-head-sticky">
             <TableRow>
-              <TableHead>Name</TableHead>
-              <TableHead>Email</TableHead>
-              <TableHead>Phone</TableHead>
-              <TableHead>License</TableHead>
-              <TableHead>Status</TableHead>
-              <TableHead className="text-right">Actions</TableHead>
+              <TableHead>{t("employees.table.name")}</TableHead>
+              <TableHead>{t("employees.table.email")}</TableHead>
+              <TableHead>{t("employees.table.phone")}</TableHead>
+              <TableHead>{t("employees.table.license")}</TableHead>
+              <TableHead>{t("employees.table.status")}</TableHead>
+              <TableHead className="text-right">{t("employees.table.actions")}</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {drivers.length === 0 ? (
               <TableRow>
                 <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
-                  No drivers found
+                  {t("employees.table.empty")}
                 </TableCell>
               </TableRow>
             ) : (
@@ -131,12 +135,18 @@ export default function EmployeesPage() {
                   <TableCell>{driver.phone}</TableCell>
                   <TableCell className="font-mono text-sm">{driver.licenseNumber}</TableCell>
                   <TableCell>
-                    <Badge className={getStatusColor(driver.status)}>{driver.status}</Badge>
+                    <Badge className={getStatusColor(driver.status)}>
+                      {driver.status === "available"
+                        ? t("employees.status.available")
+                        : driver.status === "on-duty"
+                          ? t("employees.status.onDuty")
+                          : t("employees.status.offDuty")}
+                    </Badge>
                   </TableCell>
                   <TableCell className="text-right">
                     <Button variant="outline" size="sm" className="bg-background/70" onClick={() => handleUpdateStatus(driver)}>
                       <User className="h-4 w-4 mr-2" />
-                      Update Status
+                      {t("employees.updateStatus")}
                     </Button>
                   </TableCell>
                 </TableRow>
@@ -149,16 +159,13 @@ export default function EmployeesPage() {
       <Dialog open={showStatusDialog} onOpenChange={setShowStatusDialog}>
         <DialogContent className="panel">
           <DialogHeader>
-            <DialogTitle>Update Employee Status</DialogTitle>
-            <DialogDescription>
-              Change the status for {selectedDriver?.name}. Status can only be updated when the employee is not on duty
-              or assigned to an active shipment.
-            </DialogDescription>
+            <DialogTitle>{t("employees.dialog.title")}</DialogTitle>
+            <DialogDescription>{t("employees.dialog.description").replace("{name}", selectedDriver?.name ?? "")}</DialogDescription>
           </DialogHeader>
 
           <div className="space-y-4 py-4">
             <div className="space-y-2">
-              <Label>New Status</Label>
+              <Label>{t("employees.dialog.newStatus")}</Label>
               <RadioGroup
                 value={newStatus}
                 onValueChange={(v) => {
@@ -170,19 +177,19 @@ export default function EmployeesPage() {
                 <div className="flex items-center space-x-2">
                   <RadioGroupItem value="available" id="available" />
                   <Label htmlFor="available" className="font-normal cursor-pointer">
-                    Available
+                    {t("employees.status.available")}
                   </Label>
                 </div>
                 <div className="flex items-center space-x-2">
                   <RadioGroupItem value="on-duty" id="on-duty" />
                   <Label htmlFor="on-duty" className="font-normal cursor-pointer">
-                    On Duty
+                    {t("employees.status.onDuty")}
                   </Label>
                 </div>
                 <div className="flex items-center space-x-2">
                   <RadioGroupItem value="off-duty" id="off-duty" />
                   <Label htmlFor="off-duty" className="font-normal cursor-pointer">
-                    Off Duty
+                    {t("employees.status.offDuty")}
                   </Label>
                 </div>
               </RadioGroup>
@@ -191,11 +198,11 @@ export default function EmployeesPage() {
 
           <DialogFooter>
             <Button variant="outline" onClick={() => setShowStatusDialog(false)} disabled={updating}>
-              Cancel
+              {t("common.cancel")}
             </Button>
             <Button onClick={confirmUpdateStatus} disabled={updating || newStatus === selectedDriver?.status}>
               {updating && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-              {updating ? "Updating..." : "Update Status"}
+              {updating ? t("employees.action.updating") : t("employees.updateStatus")}
             </Button>
           </DialogFooter>
         </DialogContent>

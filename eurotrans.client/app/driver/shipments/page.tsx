@@ -8,8 +8,10 @@ import { getStatusColor, formatDate } from "@/lib/utils/format"
 import { useCurrentUser } from "@/hooks/use-current-user"
 import { useShipments } from "@/hooks/use-transport-data"
 import { PageErrorState, SectionLoader } from "@/components/ui/page-state"
+import { useI18n } from "@/components/providers/i18n-provider"
 
 export default function DriverShipmentsPage() {
+  const { t } = useI18n()
   const { data: currentUser, isLoading: isUserLoading } = useCurrentUser()
   const {
     data: shipments = [],
@@ -22,14 +24,14 @@ export default function DriverShipmentsPage() {
   )
 
   if (isUserLoading || isLoading) {
-    return <SectionLoader label="Loading shipments..." />
+    return <SectionLoader label={t("shipments.loading")} />
   }
 
   if (error) {
     return (
       <PageErrorState
-        title="Could not load shipments"
-        message={error instanceof Error ? error.message : "Unexpected error while loading shipments."}
+        title={t("driver.shipments.errorTitle")}
+        message={error instanceof Error ? error.message : t("driver.shipments.errorMessage")}
         onRetry={() => {
           void refetch()
         }}
@@ -38,21 +40,21 @@ export default function DriverShipmentsPage() {
   }
 
   if (!currentUser || currentUser.role !== "driver") {
-    return <SectionLoader label="Redirecting..." />
+    return <SectionLoader label={t("driver.home.redirecting")} />
   }
 
   return (
     <div className="max-w-lg mx-auto space-y-6">
       <div>
-        <h1 className="text-3xl font-bold">My Shipments</h1>
-        <p className="text-muted-foreground">View all your assigned shipments</p>
+        <h1 className="text-3xl font-bold">{t("driver.shipments.title")}</h1>
+        <p className="text-muted-foreground">{t("driver.shipments.description")}</p>
       </div>
 
       {shipments.length === 0 ? (
         <Card className="panel p-12 flex flex-col items-center justify-center text-center surface-hover">
           <Package className="h-16 w-16 text-muted-foreground mb-4" />
-          <h3 className="text-lg font-medium mb-2">No Shipments</h3>
-          <p className="text-sm text-muted-foreground">You have no shipments assigned yet.</p>
+          <h3 className="text-lg font-medium mb-2">{t("driver.shipments.emptyTitle")}</h3>
+          <p className="text-sm text-muted-foreground">{t("driver.shipments.emptyDescription")}</p>
         </Card>
       ) : (
         <div className="space-y-3">
@@ -72,7 +74,9 @@ export default function DriverShipmentsPage() {
                     <p>
                       {shipment.origin.city} -{">"} {shipment.destination.city}
                     </p>
-                    <p className="text-xs mt-1">Updated: {formatDate(shipment.updatedAt)}</p>
+                    <p className="text-xs mt-1">
+                      {t("map.updatedLabel")}: {formatDate(shipment.updatedAt)}
+                    </p>
                   </div>
                 </div>
               </Card>
