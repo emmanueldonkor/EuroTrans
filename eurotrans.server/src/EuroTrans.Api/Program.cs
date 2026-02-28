@@ -3,12 +3,14 @@ using EuroTrans.Api.Endpoints;
 using EuroTrans.Api.Extensions;
 using EuroTrans.Api.Middlewares;
 using EuroTrans.Infrastructure.Persistence;
+using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 using Microsoft.EntityFrameworkCore;
 
 var builder = WebApplication.CreateBuilder(args);
 
 builder.Services
     .AddApiCoreServices(builder.Configuration)
+    .AddApiHealthChecks()
     .AddApiLogging(builder.Configuration)
     .AddEurotransCors(builder.Configuration, builder.Environment)
     .AddApiAuthentication(builder.Configuration)
@@ -40,6 +42,16 @@ app.UseMiddleware<RequestLoggingMiddleware>();
 app.UseAuthorization();
 app.UseMiddleware<EnsureCurrentUserMiddleware>();
 app.UseAntiforgery();
+
+app.MapHealthChecks("/health/live", new HealthCheckOptions
+{
+    Predicate = check => check.Tags.Contains("live"),
+}).AllowAnonymous();
+
+app.MapHealthChecks("/health/ready", new HealthCheckOptions
+{
+    Predicate = check => check.Tags.Contains("ready"),
+}).AllowAnonymous();
 
 app.MapAllEndpoints();
 app.Run();
