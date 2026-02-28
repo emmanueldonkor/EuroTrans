@@ -1,4 +1,5 @@
 using ErrorOr;
+using EuroTrans.Application.Common.Caching;
 using EuroTrans.Application.Common.Interfaces;
 using EuroTrans.Domain.Shipments.Enums;
 
@@ -10,17 +11,20 @@ public class TrackingHeartbeatService
     private readonly IUnitOfWork uow;
     private readonly ICurrentEmployeeProvider currentEmployeeProvider;
     private readonly IDateTimeProvider clock;
+    private readonly IQueryCache cache;
 
     public TrackingHeartbeatService(
         IShipmentRepository shipments,
         IUnitOfWork uow,
         ICurrentEmployeeProvider currentEmployeeProvider,
-        IDateTimeProvider clock)
+        IDateTimeProvider clock,
+        IQueryCache cache)
     {
         this.shipments = shipments;
         this.uow = uow;
         this.currentEmployeeProvider = currentEmployeeProvider;
         this.clock = clock;
+        this.cache = cache;
     }
 
     public async Task<ErrorOr<Success>> AddAsync(
@@ -60,6 +64,7 @@ public class TrackingHeartbeatService
             return result.Errors;
 
         await uow.SaveChangesAsync(ct);
+        cache.BumpVersion(QueryCacheScopes.Shipments);
         return Result.Success;
     }
 }

@@ -1,4 +1,5 @@
 using ErrorOr;
+using EuroTrans.Application.Common.Caching;
 using EuroTrans.Application.Common.Interfaces;
 
 namespace EuroTrans.Application.features.Shipments.Milestone;
@@ -9,17 +10,20 @@ public class MilestoneService
     private readonly IUnitOfWork uow;
     private readonly ICurrentEmployeeProvider currentEmployeeProvider;
     private readonly IDateTimeProvider clock;
+    private readonly IQueryCache cache;
 
     public MilestoneService(
        IShipmentRepository shipments,
        IUnitOfWork uow,
        ICurrentEmployeeProvider currentEmployeeProvider,
-       IDateTimeProvider clock)
+       IDateTimeProvider clock,
+       IQueryCache cache)
     {
         this.shipments = shipments;
         this.uow = uow;
         this.currentEmployeeProvider = currentEmployeeProvider;
         this.clock = clock;
+        this.cache = cache;
     }
 
     public async Task<ErrorOr<Success>> AddAsync(Guid shipmentId, MilestoneRequest request, CancellationToken ct = default)
@@ -46,6 +50,7 @@ public class MilestoneService
             return result.Errors;
 
         await uow.SaveChangesAsync(ct);
+        cache.BumpVersion(QueryCacheScopes.Shipments);
 
         return Result.Success;
     }

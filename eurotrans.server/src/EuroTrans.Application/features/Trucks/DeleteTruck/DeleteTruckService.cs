@@ -1,4 +1,6 @@
 using ErrorOr;
+using EuroTrans.Application.Common.Caching;
+using EuroTrans.Application.Common.Interfaces;
 using EuroTrans.Application.features.Shipments;
 using EuroTrans.Domain.Trucks;
 
@@ -9,12 +11,14 @@ public class DeleteTruckService
     private readonly ITruckRepository trucks;
     private readonly IShipmentRepository shipments;
     private readonly IUnitOfWork uow;
+    private readonly IQueryCache cache;
 
-    public DeleteTruckService(ITruckRepository trucks, IShipmentRepository shipments, IUnitOfWork uow)
+    public DeleteTruckService(ITruckRepository trucks, IShipmentRepository shipments, IUnitOfWork uow, IQueryCache cache)
     {
         this.trucks = trucks;
         this.shipments = shipments;
         this.uow = uow;
+        this.cache = cache;
     }
 
     public async Task<ErrorOr<Deleted>> DeleteAsync(Guid id, CancellationToken ct = default)
@@ -39,6 +43,8 @@ public class DeleteTruckService
         var saveResult = await uow.SaveChangesWithConcurrencyCheckAsync(ct);
         if (saveResult.IsError)
             return saveResult.Errors;
+
+        cache.BumpVersion(QueryCacheScopes.Trucks);
 
         return Result.Deleted;
     }

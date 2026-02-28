@@ -1,4 +1,5 @@
 using ErrorOr;
+using EuroTrans.Application.Common.Caching;
 using EuroTrans.Application.Common.Interfaces;
 using EuroTrans.Application.features.Employees;
 
@@ -9,15 +10,18 @@ public class UpdateDriverProfileService
     private readonly ICurrentEmployeeProvider currentEmployeeProvider;
     private readonly IEmployeeRepository employees;
     private readonly IUnitOfWork uow;
+    private readonly IQueryCache cache;
 
     public UpdateDriverProfileService(
         ICurrentEmployeeProvider currentEmployeeProvider,
         IEmployeeRepository employees,
-        IUnitOfWork uow)
+        IUnitOfWork uow,
+        IQueryCache cache)
     {
         this.currentEmployeeProvider = currentEmployeeProvider;
         this.employees = employees;
         this.uow = uow;
+        this.cache = cache;
     }
 
     public async Task<ErrorOr<Success>> UpdateAsync(UpdateDriverProfileRequest request, CancellationToken ct = default)
@@ -42,6 +46,9 @@ public class UpdateDriverProfileService
         var saveResult = await uow.SaveChangesWithConcurrencyCheckAsync(ct);
         if (saveResult.IsError)
             return saveResult.Errors;
+
+        cache.BumpVersion(QueryCacheScopes.Drivers);
+        cache.BumpVersion(QueryCacheScopes.Shipments);
 
         return Result.Success;
     }

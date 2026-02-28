@@ -1,4 +1,5 @@
 using ErrorOr;
+using EuroTrans.Application.Common.Caching;
 using EuroTrans.Application.Common.Interfaces;
 using EuroTrans.Domain.Shipments;
 using EuroTrans.Domain.Shipments.ValueObjects;
@@ -12,19 +13,22 @@ public class CreateShipmentService
     private readonly ICurrentEmployeeProvider currentEmployeeProvider;
     private readonly IDateTimeProvider clock;
     private readonly ITrackingIdGenerator trackingIdGenerator;
+    private readonly IQueryCache cache;
 
     public CreateShipmentService(
         IShipmentRepository shipments,
         IUnitOfWork uow,
         ICurrentEmployeeProvider currentEmployeeProvider,
         IDateTimeProvider clock,
-        ITrackingIdGenerator trackingIdGenerator)
+        ITrackingIdGenerator trackingIdGenerator,
+        IQueryCache cache)
     {
         this.shipments = shipments;
         this.uow = uow;
         this.currentEmployeeProvider = currentEmployeeProvider;
         this.clock = clock;
         this.trackingIdGenerator = trackingIdGenerator;
+        this.cache = cache;
     }
 
     public async Task<ErrorOr<Guid>> CreateAsync(CreateShipmentRequest request, CancellationToken ct = default)
@@ -51,6 +55,7 @@ public class CreateShipmentService
 
         await shipments.AddAsync(shipment, ct);
         await uow.SaveChangesAsync(ct);
+        cache.BumpVersion(QueryCacheScopes.Shipments);
 
         return shipment.Id;
     }

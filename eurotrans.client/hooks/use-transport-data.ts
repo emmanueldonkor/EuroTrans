@@ -15,6 +15,8 @@ export function useShipments(filters?: {
         queryKey: ["shipments", filters],
         queryFn: () => api.getShipments(filters),
         enabled: options?.enabled ?? true,
+        staleTime: 30_000,
+        gcTime: 5 * 60_000,
         placeholderData: (previousData) => previousData,
     })
 }
@@ -24,6 +26,8 @@ export function useShipment(id: string) {
         queryKey: ["shipment", id],
         queryFn: () => api.getShipment(id),
         enabled: !!id,
+        staleTime: 15_000,
+        gcTime: 5 * 60_000,
     })
 }
 
@@ -32,6 +36,8 @@ export function useShipmentActivities(id: string) {
         queryKey: ["shipment-activities", id],
         queryFn: () => api.getShipmentActivities(id),
         enabled: !!id,
+        staleTime: 15_000,
+        gcTime: 5 * 60_000,
     })
 }
 
@@ -106,6 +112,8 @@ export function useDrivers() {
     return useQuery({
         queryKey: ["drivers"],
         queryFn: () => api.getDrivers(),
+        staleTime: 45_000,
+        gcTime: 10 * 60_000,
     })
 }
 
@@ -114,6 +122,8 @@ export function useDriver(id: string) {
         queryKey: ["driver", id],
         queryFn: () => api.getDriver(id),
         enabled: !!id,
+        staleTime: 30_000,
+        gcTime: 10 * 60_000,
     })
 }
 
@@ -137,7 +147,9 @@ export function useDriverMutations() {
 export function useTrucks() {
     return useQuery({
         queryKey: ["trucks"],
-        queryFn: () => api.getTrucks()
+        queryFn: () => api.getTrucks(),
+        staleTime: 45_000,
+        gcTime: 10 * 60_000,
     })
 }
 
@@ -146,6 +158,8 @@ export function useTruck(id: string) {
         queryKey: ["truck", id],
         queryFn: () => api.getTruck(id),
         enabled: !!id,
+        staleTime: 30_000,
+        gcTime: 10 * 60_000,
     })
 }
 
@@ -184,6 +198,7 @@ export function useLiveMap() {
     return useQuery({
         queryKey: ["live-map"],
         queryFn: () => api.getLiveMapPins(),
+        staleTime: 5_000,
         refetchInterval: 15000,
     })
 }
@@ -192,6 +207,8 @@ export function useAnalytics() {
     return useQuery({
         queryKey: ["analytics"],
         queryFn: () => api.getAnalytics(),
+        staleTime: 60_000,
+        gcTime: 10 * 60_000,
     })
 }
 

@@ -1,4 +1,5 @@
 using ErrorOr;
+using EuroTrans.Application.Common.Caching;
 using EuroTrans.Application.Common.Interfaces;
 
 namespace EuroTrans.Application.features.Shipments.StartShipment;
@@ -9,17 +10,20 @@ public class StartShipmentService
     private readonly IUnitOfWork uow;
     private readonly ICurrentEmployeeProvider currentEmployeeProvider;
     private readonly IDateTimeProvider clock;
+    private readonly IQueryCache cache;
 
     public StartShipmentService(
         IShipmentRepository shipments,
         IUnitOfWork uow,
         ICurrentEmployeeProvider currentEmployeeProvider,
-        IDateTimeProvider clock)
+        IDateTimeProvider clock,
+        IQueryCache cache)
     {
         this.shipments = shipments;
         this.uow = uow;
         this.currentEmployeeProvider = currentEmployeeProvider;
         this.clock = clock;
+        this.cache = cache;
     }
 
     public async Task<ErrorOr<Success>> StartAsync(Guid shipmentId, CancellationToken ct = default)
@@ -46,6 +50,8 @@ public class StartShipmentService
         var saveResult = await uow.SaveChangesWithConcurrencyCheckAsync(ct);
         if (saveResult.IsError)
             return saveResult.Errors;
+
+        cache.BumpVersion(QueryCacheScopes.Shipments);
 
         return Result.Success;
     }

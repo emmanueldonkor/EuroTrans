@@ -1,4 +1,6 @@
 using ErrorOr;
+using EuroTrans.Application.Common.Caching;
+using EuroTrans.Application.Common.Interfaces;
 using EuroTrans.Application.features.Employees;
 using EuroTrans.Application.features.Shipments;
 using EuroTrans.Domain.Employees.Enums;
@@ -10,12 +12,14 @@ public class UpdateDriverStatusService
     private readonly IEmployeeRepository employees;
     private readonly IShipmentRepository shipments;
     private readonly IUnitOfWork uow;
+    private readonly IQueryCache cache;
 
-    public UpdateDriverStatusService(IEmployeeRepository employees, IShipmentRepository shipments, IUnitOfWork uow)
+    public UpdateDriverStatusService(IEmployeeRepository employees, IShipmentRepository shipments, IUnitOfWork uow, IQueryCache cache)
     {
         this.employees = employees;
         this.shipments = shipments;
         this.uow = uow;
+        this.cache = cache;
     }
 
     public async Task<ErrorOr<Success>> UpdateAsync(Guid employeeId, DriverStatus status, CancellationToken ct = default)
@@ -36,6 +40,9 @@ public class UpdateDriverStatusService
         var saveResult = await uow.SaveChangesWithConcurrencyCheckAsync(ct);
         if (saveResult.IsError)
             return saveResult.Errors;
+
+        cache.BumpVersion(QueryCacheScopes.Drivers);
+        cache.BumpVersion(QueryCacheScopes.Shipments);
 
         return Result.Success;
     }

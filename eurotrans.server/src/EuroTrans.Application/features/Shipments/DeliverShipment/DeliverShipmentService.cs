@@ -1,4 +1,5 @@
 using ErrorOr;
+using EuroTrans.Application.Common.Caching;
 using EuroTrans.Application.Common.Interfaces;
 using EuroTrans.Application.features.Employees;
 using EuroTrans.Application.features.Trucks;
@@ -15,6 +16,7 @@ public class DeliverShipmentService
     private readonly ICurrentEmployeeProvider currentEmployeeProvider;
     private readonly IDateTimeProvider clock;
     private readonly IPodService podService;
+    private readonly IQueryCache cache;
 
     public DeliverShipmentService(
         IShipmentRepository shipments,
@@ -23,7 +25,8 @@ public class DeliverShipmentService
         IUnitOfWork uow,
         ICurrentEmployeeProvider currentEmployeeProvider,
         IDateTimeProvider clock,
-        IPodService podService)
+        IPodService podService,
+        IQueryCache cache)
     {
         this.shipments = shipments;
         this.drivers = drivers;
@@ -32,6 +35,7 @@ public class DeliverShipmentService
         this.currentEmployeeProvider = currentEmployeeProvider;
         this.clock = clock;
         this.podService = podService;
+        this.cache = cache;
     }
 
     public async Task<ErrorOr<Success>> DeliverAsync(
@@ -85,6 +89,10 @@ public class DeliverShipmentService
                 await CleanupProofAsync(proofUrl, ct);
                 return saveResult.Errors;
             }
+
+            cache.BumpVersion(QueryCacheScopes.Shipments);
+            cache.BumpVersion(QueryCacheScopes.Drivers);
+            cache.BumpVersion(QueryCacheScopes.Trucks);
 
             return Result.Success;
         }

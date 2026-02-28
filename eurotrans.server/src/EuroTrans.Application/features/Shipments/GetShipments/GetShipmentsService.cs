@@ -1,4 +1,5 @@
 using ErrorOr;
+using EuroTrans.Application.Common.Caching;
 using EuroTrans.Application.Common.Interfaces;
 
 namespace EuroTrans.Application.features.Shipments.GetShipments;
@@ -8,15 +9,18 @@ public class GetShipmentsService
     private readonly IShipmentRepository shipments;
     private readonly ICurrentUser currentUser;
     private readonly ICurrentEmployeeProvider currentEmployeeProvider;
+    private readonly IQueryCache cache;
 
     public GetShipmentsService(
         IShipmentRepository shipments,
         ICurrentUser currentUser,
-        ICurrentEmployeeProvider currentEmployeeProvider)
+        ICurrentEmployeeProvider currentEmployeeProvider,
+        IQueryCache cache)
     {
         this.shipments = shipments;
         this.currentUser = currentUser;
         this.currentEmployeeProvider = currentEmployeeProvider;
+        this.cache = cache;
     }
 
     public async Task<ErrorOr<GetShipmentsResponse>> GetAsync(
@@ -34,35 +38,53 @@ public class GetShipmentsService
             driverFilter = employeeIdResult.Value;
         }
 
-        var (queryItems, totalCount) = await shipments.GetFilteredAsync(
-            status: request.Status,
-            driverId: driverFilter,
-            startDate: request.StartDate,
-            endDate: request.EndDate,
-            search: request.Search,
-            page: request.Page,
-            pageSize: request.PageSize,
-            ct: ct
-        );
+        var version = cache.GetVersion(QueryCacheScopes.Shipments);
+        var key = string.Join(":",
+            $"shipments:list:v{version}",
+            $"status={request.Status?.ToString().ToLowerInvariant() ?? "_"}",
+            $"driver={driverFilter?.ToString() ?? "_"}",
+            $"start={request.StartDate?.ToUniversalTime().ToString("O") ?? "_"}",
+            $"end={request.EndDate?.ToUniversalTime().ToString("O") ?? "_"}",
+            $"search={QueryCacheKey.Segment(request.Search)}",
+            $"page={request.Page}",
+            $"size={request.PageSize}");
 
-        var items = queryItems
-            .Select(item => new GetShipmentsItemResponse(
-                item.Id,
-                item.TrackingId,
-                item.Status,
-                item.DriverName,
-                FormatLocation(item.OriginCity, item.OriginCountry),
-                FormatLocation(item.DestinationCity, item.DestinationCountry),
-                item.UpdatedAtUtc
-            ))
-            .ToList();
+        return await cache.GetOrCreateAsync(
+            key,
+            QueryCacheTtls.Shipments,
+            async token =>
+            {
+                var (queryItems, totalCount) = await shipments.GetFilteredAsync(
+                    status: request.Status,
+                    driverId: driverFilter,
+                    startDate: request.StartDate,
+                    endDate: request.EndDate,
+                    search: request.Search,
+                    page: request.Page,
+                    pageSize: request.PageSize,
+                    ct: token
+                );
 
-        return new GetShipmentsResponse(
-            Items: items,
-            TotalCount: totalCount,
-            Page: request.Page,
-            PageSize: request.PageSize
-        );
+                var items = queryItems
+                    .Select(item => new GetShipmentsItemResponse(
+                        item.Id,
+                        item.TrackingId,
+                        item.Status,
+                        item.DriverName,
+                        FormatLocation(item.OriginCity, item.OriginCountry),
+                        FormatLocation(item.DestinationCity, item.DestinationCountry),
+                        item.UpdatedAtUtc
+                    ))
+                    .ToList();
+
+                return (ErrorOr<GetShipmentsResponse>)new GetShipmentsResponse(
+                    Items: items,
+                    TotalCount: totalCount,
+                    Page: request.Page,
+                    PageSize: request.PageSize
+                );
+            },
+            ct);
     }
 
     private static string FormatLocation(string? city, string? country)

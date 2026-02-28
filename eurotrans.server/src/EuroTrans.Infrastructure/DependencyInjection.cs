@@ -24,6 +24,7 @@ public static class DependencyInjection
         services.AddScoped<IEmployeeRepository, EmployeeRepository>();
         services.AddScoped<ITruckRepository, TruckRepository>();
         services.AddScoped<IDateTimeProvider, DateTimeProvider>();
+        services.AddSingleton<IQueryCache, MemoryQueryCache>();
         services.AddSingleton(sp =>
         {
             var config = sp.GetRequiredService<IConfiguration>();
