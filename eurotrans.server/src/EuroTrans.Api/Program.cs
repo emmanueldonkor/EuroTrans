@@ -9,6 +9,7 @@ var builder = WebApplication.CreateBuilder(args);
 
 builder.Services
     .AddApiCoreServices(builder.Configuration)
+    .AddApiLogging(builder.Configuration)
     .AddEurotransCors(builder.Configuration, builder.Environment)
     .AddApiAuthentication(builder.Configuration)
     .AddApiAuthorization(builder.Configuration)
@@ -35,6 +36,7 @@ if (app.Environment.IsDevelopment())
 app.UseHttpsRedirection();
 app.UseExceptionHandler();
 app.UseAuthentication();
+app.UseMiddleware<RequestLoggingMiddleware>();
 app.UseAuthorization();
 app.UseMiddleware<EnsureCurrentUserMiddleware>();
 app.UseAntiforgery();

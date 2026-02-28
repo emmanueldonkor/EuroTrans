@@ -8,6 +8,7 @@ namespace EuroTrans.Application.features.Shipments.CreateShipment;
 
 public class CreateShipmentService
 {
+    private readonly ILogger<CreateShipmentService> logger;
     private readonly IShipmentRepository shipments;
     private readonly IUnitOfWork uow;
     private readonly ICurrentEmployeeProvider currentEmployeeProvider;
@@ -16,6 +17,7 @@ public class CreateShipmentService
     private readonly IQueryCache cache;
 
     public CreateShipmentService(
+        ILogger<CreateShipmentService> logger,
         IShipmentRepository shipments,
         IUnitOfWork uow,
         ICurrentEmployeeProvider currentEmployeeProvider,
@@ -23,6 +25,7 @@ public class CreateShipmentService
         ITrackingIdGenerator trackingIdGenerator,
         IQueryCache cache)
     {
+        this.logger = logger;
         this.shipments = shipments;
         this.uow = uow;
         this.currentEmployeeProvider = currentEmployeeProvider;
@@ -33,9 +36,18 @@ public class CreateShipmentService
 
     public async Task<ErrorOr<Guid>> CreateAsync(CreateShipmentRequest request, CancellationToken ct = default)
     {
+        logger.LogInformation(
+            "Create shipment requested. CargoDescription: {CargoDescription}, OriginCity: {OriginCity}, DestinationCity: {DestinationCity}",
+            request.Cargo.Description,
+            request.Origin.City,
+            request.Destination.City);
+
         var employeeIdResult = await currentEmployeeProvider.GetEmployeeIdAsync();
         if (employeeIdResult.IsError)
+        {
+            logger.LogWarning("Create shipment denied due to missing current employee context.");
             return employeeIdResult.Errors;
+        }
 
         var trackingId = trackingIdGenerator.Generate();
 
@@ -56,6 +68,12 @@ public class CreateShipmentService
         await shipments.AddAsync(shipment, ct);
         await uow.SaveChangesAsync(ct);
         cache.BumpVersion(QueryCacheScopes.Shipments);
+
+        logger.LogInformation(
+            "Shipment created successfully. ShipmentId: {ShipmentId}, TrackingId: {TrackingId}, ManagerId: {ManagerId}",
+            shipment.Id,
+            trackingId,
+            employeeIdResult.Value);
 
         return shipment.Id;
     }

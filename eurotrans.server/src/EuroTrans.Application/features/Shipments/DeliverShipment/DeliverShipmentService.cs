@@ -9,6 +9,7 @@ namespace EuroTrans.Application.features.Shipments.DeliverShipment;
 
 public class DeliverShipmentService
 {
+    private readonly ILogger<DeliverShipmentService> logger;
     private readonly IShipmentRepository shipments;
     private readonly IEmployeeRepository drivers;
     private readonly ITruckRepository trucks;
@@ -19,6 +20,7 @@ public class DeliverShipmentService
     private readonly IQueryCache cache;
 
     public DeliverShipmentService(
+        ILogger<DeliverShipmentService> logger,
         IShipmentRepository shipments,
         IEmployeeRepository drivers,
         ITruckRepository trucks,
@@ -28,6 +30,7 @@ public class DeliverShipmentService
         IPodService podService,
         IQueryCache cache)
     {
+        this.logger = logger;
         this.shipments = shipments;
         this.drivers = drivers;
         this.trucks = trucks;
@@ -45,19 +48,44 @@ public class DeliverShipmentService
         string contentType,
         CancellationToken ct = default)
     {
+        logger.LogInformation(
+            "Deliver shipment requested. ShipmentId: {ShipmentId}, FileName: {FileName}, ContentType: {ContentType}",
+            shipmentId,
+            fileName,
+            contentType);
+
         var employeeIdResult = await currentEmployeeProvider.GetEmployeeIdAsync();
         if (employeeIdResult.IsError)
+        {
+            logger.LogWarning("Deliver shipment denied due to missing current driver context. ShipmentId: {ShipmentId}", shipmentId);
             return employeeIdResult.Errors;
+        }
 
         var shipment = await shipments.GetByIdAsync(shipmentId, ct);
         if (shipment is null)
+        {
+            logger.LogWarning("Deliver shipment failed. Shipment not found. ShipmentId: {ShipmentId}", shipmentId);
             return Error.NotFound("Shipment not found.");
+        }
 
         if (shipment.Status != ShipmentStatus.InTransit)
+        {
+            logger.LogWarning(
+                "Deliver shipment rejected due to invalid status. ShipmentId: {ShipmentId}, Status: {Status}",
+                shipmentId,
+                shipment.Status);
             return Error.Validation("Shipment.InvalidStatus", "Shipment must be in-transit to deliver.");
+        }
 
         if (shipment.DriverId != employeeIdResult.Value)
+        {
+            logger.LogWarning(
+                "Deliver shipment forbidden. ShipmentId: {ShipmentId}, ExpectedDriverId: {ExpectedDriverId}, RequestedByDriverId: {DriverId}",
+                shipmentId,
+                shipment.DriverId,
+                employeeIdResult.Value);
             return Error.Forbidden("Shipment.Unauthorized", "Only assigned driver can deliver.");
+        }
 
         string? proofUrl = null;
         try
@@ -67,6 +95,10 @@ public class DeliverShipmentService
             var result = shipment.Deliver(employeeIdResult.Value, proofUrl, clock.UtcNow);
             if (result.IsError)
             {
+                logger.LogWarning(
+                    "Deliver shipment rejected by domain rules. ShipmentId: {ShipmentId}, DriverId: {DriverId}",
+                    shipmentId,
+                    employeeIdResult.Value);
                 await CleanupProofAsync(proofUrl, ct);
                 return result.Errors;
             }
@@ -86,6 +118,10 @@ public class DeliverShipmentService
             var saveResult = await uow.SaveChangesWithConcurrencyCheckAsync(ct);
             if (saveResult.IsError)
             {
+                logger.LogWarning(
+                    "Deliver shipment failed during persistence. ShipmentId: {ShipmentId}, DriverId: {DriverId}",
+                    shipmentId,
+                    employeeIdResult.Value);
                 await CleanupProofAsync(proofUrl, ct);
                 return saveResult.Errors;
             }
@@ -94,10 +130,20 @@ public class DeliverShipmentService
             cache.BumpVersion(QueryCacheScopes.Drivers);
             cache.BumpVersion(QueryCacheScopes.Trucks);
 
+            logger.LogInformation(
+                "Shipment delivered successfully. ShipmentId: {ShipmentId}, DriverId: {DriverId}",
+                shipmentId,
+                employeeIdResult.Value);
+
             return Result.Success;
         }
-        catch
+        catch (Exception ex)
         {
+            logger.LogError(
+                ex,
+                "Deliver shipment failed unexpectedly. ShipmentId: {ShipmentId}, DriverId: {DriverId}",
+                shipmentId,
+                employeeIdResult.Value);
             await CleanupProofAsync(proofUrl, ct);
             throw;
         }
