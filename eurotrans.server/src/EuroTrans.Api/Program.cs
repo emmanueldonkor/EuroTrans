@@ -12,6 +12,7 @@ builder.Services
     .AddApiCoreServices(builder.Configuration)
     .AddApiHealthChecks()
     .AddApiLogging(builder.Configuration)
+    .AddApiRateLimiting(builder.Configuration)
     .AddEurotransCors(builder.Configuration, builder.Environment)
     .AddApiAuthentication(builder.Configuration)
     .AddApiAuthorization(builder.Configuration)
@@ -39,6 +40,7 @@ app.UseHttpsRedirection();
 app.UseExceptionHandler();
 app.UseAuthentication();
 app.UseMiddleware<RequestLoggingMiddleware>();
+app.UseRateLimiter();
 app.UseAuthorization();
 app.UseMiddleware<EnsureCurrentUserMiddleware>();
 app.UseAntiforgery();
