@@ -132,6 +132,7 @@ Required GitHub secrets:
 - `500` on `/api/auth/me`: usually DB connectivity/migration or app setting mismatch.
 - CORS issues: verify `Cors__AllowedOrigins__*` in server environment.
 - Frontend deploy `404 NOT_FOUND`: verify Vercel project link + production env values.
+- Auth0 logout `invalid_request` (`returnTo URL is malformed`): trim spaces/newlines in `APP_BASE_URL` and ensure the exact URL is listed in Auth0 **Allowed Logout URLs**.
 
 ## Current Tradeoffs
 - Query cache uses in-memory implementation (`MemoryQueryCache`), so it is not shared across multiple API instances.
