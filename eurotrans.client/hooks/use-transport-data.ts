@@ -15,7 +15,7 @@ export function useShipments(filters?: {
         queryKey: ["shipments", filters],
         queryFn: () => api.getShipments(filters),
         enabled: options?.enabled ?? true,
-        staleTime: 30_000,
+        staleTime: 60_000,
         gcTime: 5 * 60_000,
         placeholderData: (previousData) => previousData,
     })

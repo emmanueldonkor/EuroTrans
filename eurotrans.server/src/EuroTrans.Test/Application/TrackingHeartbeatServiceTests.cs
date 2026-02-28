@@ -1,5 +1,4 @@
 using ErrorOr;
-using EuroTrans.Application.Common.Caching;
 using EuroTrans.Application.Common.Interfaces;
 using EuroTrans.Application.features;
 using EuroTrans.Application.features.Shipments;
@@ -37,15 +36,13 @@ public class TrackingHeartbeatServiceTests
             .ReturnsAsync(anotherDriverId);
 
         var uow = new Mock<IUnitOfWork>();
-        var cache = new Mock<IQueryCache>();
 
         var service = new TrackingHeartbeatService(
             logger: Mock.Of<ILogger<TrackingHeartbeatService>>(),
             shipments: shipments.Object,
             uow: uow.Object,
             currentEmployeeProvider: currentEmployeeProvider.Object,
-            clock: Mock.Of<IDateTimeProvider>(x => x.UtcNow == now.AddMinutes(10)),
-            cache: cache.Object);
+            clock: Mock.Of<IDateTimeProvider>(x => x.UtcNow == now.AddMinutes(10)));
 
         // Act
         var result = await service.AddAsync(shipment.Id, new TrackingHeartbeatRequest(52.5, 13.4, "Berlin"));
@@ -56,7 +53,6 @@ public class TrackingHeartbeatServiceTests
         shipment.Milestones.Should().BeEmpty();
 
         uow.Verify(x => x.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Never);
-        cache.Verify(x => x.BumpVersion(It.IsAny<string>()), Times.Never);
     }
 
     [Fact]
@@ -85,15 +81,12 @@ public class TrackingHeartbeatServiceTests
         uow.Setup(x => x.SaveChangesAsync(It.IsAny<CancellationToken>()))
             .ReturnsAsync(1);
 
-        var cache = new Mock<IQueryCache>();
-
         var service = new TrackingHeartbeatService(
             logger: Mock.Of<ILogger<TrackingHeartbeatService>>(),
             shipments: shipments.Object,
             uow: uow.Object,
             currentEmployeeProvider: currentEmployeeProvider.Object,
-            clock: Mock.Of<IDateTimeProvider>(x => x.UtcNow == now.AddMinutes(10)),
-            cache: cache.Object);
+            clock: Mock.Of<IDateTimeProvider>(x => x.UtcNow == now.AddMinutes(10)));
 
         // Act
         var result = await service.AddAsync(
@@ -109,6 +102,5 @@ public class TrackingHeartbeatServiceTests
         shipment.Activities.Count.Should().Be(activityCountBefore);
 
         uow.Verify(x => x.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Once);
-        cache.Verify(x => x.BumpVersion(QueryCacheScopes.Shipments), Times.Once);
     }
 }

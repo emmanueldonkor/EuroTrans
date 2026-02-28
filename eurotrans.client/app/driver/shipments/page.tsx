@@ -18,10 +18,7 @@ export default function DriverShipmentsPage() {
     isLoading,
     error,
     refetch,
-  } = useShipments(
-    currentUser?.role === "driver" ? { driverId: currentUser.employeeId } : undefined,
-    { enabled: currentUser?.role === "driver" },
-  )
+  } = useShipments()
 
   if (isUserLoading || isLoading) {
     return <SectionLoader label={t("shipments.loading")} />

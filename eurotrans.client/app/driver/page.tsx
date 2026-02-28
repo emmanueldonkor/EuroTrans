@@ -24,10 +24,7 @@ export default function DriverHomePage() {
     isLoading: isShipmentsLoading,
     error: shipmentsError,
     refetch,
-  } = useShipments(
-    currentUser?.role === "driver" ? { driverId: currentUser.employeeId } : undefined,
-    { enabled: currentUser?.role === "driver" },
-  )
+  } = useShipments()
   const { startShipment } = useShipmentMutations()
 
   const activeShipment = useMemo(
