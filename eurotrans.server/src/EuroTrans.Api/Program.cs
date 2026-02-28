@@ -24,7 +24,8 @@ var app = builder.Build();
 
 app.UseCors("Eurotrans");
 
-if (app.Environment.IsDevelopment())
+var disableAutoMigrate = app.Configuration.GetValue<bool>("Database:DisableAutoMigrate");
+if (app.Environment.IsDevelopment() && !disableAutoMigrate)
 {
     using var scope = app.Services.CreateScope();
     var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
@@ -68,4 +69,6 @@ app.MapGroup(string.Empty)
     .MapAllEndpoints();
 
 app.Run();
+
+public partial class Program;
 
