@@ -4,7 +4,7 @@ namespace EuroTrans.Api.Endpoints;
 
 public static class AllEndpoints
 {
-    public static void MapAllEndpoints(this WebApplication app)
+    public static void MapAllEndpoints(this IEndpointRouteBuilder app)
     {
         var endpointMapMethods = typeof(AllEndpoints).Assembly
             .GetTypes()

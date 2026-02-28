@@ -1,3 +1,4 @@
+using Asp.Versioning;
 using EuroTrans.Api;
 using EuroTrans.Api.Endpoints;
 using EuroTrans.Api.Extensions;
@@ -11,6 +12,7 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services
     .AddApiCoreServices(builder.Configuration)
     .AddApiHealthChecks()
+    .AddApiVersioningSupport()
     .AddApiLogging(builder.Configuration)
     .AddApiRateLimiting(builder.Configuration)
     .AddEurotransCors(builder.Configuration, builder.Environment)
@@ -55,6 +57,15 @@ app.MapHealthChecks("/health/ready", new HealthCheckOptions
     Predicate = check => check.Tags.Contains("ready"),
 }).AllowAnonymous();
 
-app.MapAllEndpoints();
+var v1 = app.NewApiVersionSet()
+    .HasApiVersion(new ApiVersion(1, 0))
+    .ReportApiVersions()
+    .Build();
+
+app.MapGroup(string.Empty)
+    .WithApiVersionSet(v1)
+    .MapToApiVersion(new ApiVersion(1, 0))
+    .MapAllEndpoints();
+
 app.Run();
 
