@@ -14,10 +14,6 @@ jobs:
   deploy:
     runs-on: ubuntu-latest
 
-    defaults:
-      run:
-        working-directory: eurotrans.client
-
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -35,15 +31,20 @@ jobs:
           cache-dependency-path: "eurotrans.client/pnpm-lock.yaml"
 
       - name: Install dependencies
+        working-directory: eurotrans.client
         run: pnpm install --frozen-lockfile
 
-      - name: Install Vercel CLI
-        run: npm install -g vercel
+      - name: Install Vercel CLI (pnpm)
+        run: |
+          pnpm add -g vercel
+          echo "$(pnpm bin -g)" >> $GITHUB_PATH
 
       - name: Lint
+        working-directory: eurotrans.client
         run: pnpm lint
 
       - name: Build
+        working-directory: eurotrans.client
         run: pnpm build
 
       - name: Ensure Vercel token
@@ -56,9 +57,11 @@ jobs:
           VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
 
       - name: Deploy to Vercel
-        run: vercel deploy --prod --yes --token="$VERCEL_TOKEN"
+        working-directory: eurotrans.client
+        run: vercel deploy --cwd . --prod --yes --token="$VERCEL_TOKEN"
         env:
           VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
           VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
           VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+
 
