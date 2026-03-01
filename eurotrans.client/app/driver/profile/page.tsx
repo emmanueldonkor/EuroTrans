@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react"
 import { useRouter, useSearchParams } from "next/navigation"
+import { useQueryClient } from "@tanstack/react-query"
 import { Card } from "@/components/ui/card"
 import { Label } from "@/components/ui/label"
 import { Input } from "@/components/ui/input"
@@ -17,6 +18,7 @@ import { useI18n } from "@/components/providers/i18n-provider"
 
 export default function DriverProfilePage() {
   const router = useRouter()
+  const queryClient = useQueryClient()
   const searchParams = useSearchParams()
   const isForcedCompletion = searchParams.get("complete") === "1"
   const { toast } = useToast()
@@ -67,13 +69,15 @@ export default function DriverProfilePage() {
 
       const me = await api.getCurrentUserContext()
       setProfile(me)
+      queryClient.setQueryData(["current-user"], me)
       toast({
         title: t("driver.profile.savedTitle"),
         description: t("driver.profile.savedDescription"),
       })
 
       if (me.driverProfileComplete) {
-        router.push("/driver")
+        await queryClient.invalidateQueries({ queryKey: ["current-user"] })
+        router.replace("/driver")
       }
     } catch (err) {
       const message = toActionErrorMessage(err, t("driver.profile.saveError"))
