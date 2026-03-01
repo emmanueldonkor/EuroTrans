@@ -32,21 +32,9 @@ export const metadata: Metadata = {
   description: "Centralized fleet & shipment management system",
   generator: "Emmy Dev",
   icons: {
-    icon: [
-      {
-        url: "/icon-light-32x32.png",
-        media: "(prefers-color-scheme: light)",
-      },
-      {
-        url: "/icon-dark-32x32.png",
-        media: "(prefers-color-scheme: dark)",
-      },
-      {
-        url: "/icon.svg",
-        type: "image/svg+xml",
-      },
-    ],
-    apple: "/apple-icon.png",
+    icon: "/eurotrans-icon.svg",
+    shortcut: "/eurotrans-icon.svg",
+    apple: "/eurotrans-icon.svg",
   },
 }
 
