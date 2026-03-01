@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useCallback, useMemo, useState } from "react"
 import dynamic from "next/dynamic"
 import { Badge } from "@/components/ui/badge"
 import { MapPin } from "lucide-react"
@@ -10,6 +10,7 @@ import { useLiveMap } from "@/hooks/use-transport-data"
 import { PageErrorState, SectionLoader } from "@/components/ui/page-state"
 import { PageHeading, PageShell, PageSurface } from "@/components/ui/page-shell"
 import { useI18n } from "@/components/providers/i18n-provider"
+import { useInfiniteScroll } from "@/hooks/use-infinite-scroll"
 
 const LiveMap = dynamic(() => import("@/components/maps/live-map").then((module) => module.LiveMap), {
   ssr: false,
@@ -17,8 +18,23 @@ const LiveMap = dynamic(() => import("@/components/maps/live-map").then((module)
 
 export default function LiveMapPage() {
   const [selectedPin, setSelectedPin] = useState<LiveMapPin | null>(null)
+  const [visiblePinsCount, setVisiblePinsCount] = useState(12)
   const { data: pins = [], isLoading, error, refetch } = useLiveMap()
   const { t } = useI18n()
+
+  const visiblePins = useMemo(() => pins.slice(0, visiblePinsCount), [pins, visiblePinsCount])
+  const hasMorePins = visiblePinsCount < pins.length
+
+  const loadMorePins = useCallback(() => {
+    if (!hasMorePins) return
+    setVisiblePinsCount((current) => Math.min(current + 12, pins.length))
+  }, [hasMorePins, pins.length])
+
+  const loadMoreRef = useInfiniteScroll({
+    hasMore: hasMorePins,
+    enabled: pins.length > 0,
+    onLoadMore: loadMorePins,
+  })
 
   const getShipmentStatusLabel = (status: LiveMapPin["status"]) => {
     switch (status) {
@@ -79,8 +95,8 @@ export default function LiveMapPage() {
           {pins.length === 0 ? (
             <p className="text-sm text-muted-foreground">{t("map.noActiveShipments")}</p>
           ) : (
-            <div className="space-y-3">
-              {pins.map((pin) => (
+            <div className="max-h-[540px] space-y-3 overflow-y-auto pr-1">
+              {visiblePins.map((pin) => (
                 <button
                   key={pin.id}
                   onClick={() => setSelectedPin(pin)}
@@ -113,6 +129,12 @@ export default function LiveMapPage() {
                   </div>
                 </button>
               ))}
+
+              {(hasMorePins || pins.length > 12) && (
+                <div ref={loadMoreRef} className="py-2 text-center text-xs text-muted-foreground">
+                  {hasMorePins ? t("map.scrollMore") : t("map.endOfList")}
+                </div>
+              )}
             </div>
           )}
         </PageSurface>

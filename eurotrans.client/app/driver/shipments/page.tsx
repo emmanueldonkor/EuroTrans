@@ -1,24 +1,42 @@
 "use client"
 
+import { useCallback, useMemo } from "react"
 import Link from "next/link"
 import { Card } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
-import { Package } from "lucide-react"
+import { Loader2, Package } from "lucide-react"
 import { getStatusColor, formatDate } from "@/lib/utils/format"
 import { useCurrentUser } from "@/hooks/use-current-user"
-import { useShipments } from "@/hooks/use-transport-data"
+import { useInfiniteShipments } from "@/hooks/use-transport-data"
 import { PageErrorState, SectionLoader } from "@/components/ui/page-state"
 import { useI18n } from "@/components/providers/i18n-provider"
+import { useInfiniteScroll } from "@/hooks/use-infinite-scroll"
 
 export default function DriverShipmentsPage() {
   const { t } = useI18n()
   const { data: currentUser, isLoading: isUserLoading } = useCurrentUser()
   const {
-    data: shipments = [],
+    data,
     isLoading,
+    isFetchingNextPage,
+    hasNextPage,
+    fetchNextPage,
     error,
     refetch,
-  } = useShipments()
+  } = useInfiniteShipments(undefined, { pageSize: 10 })
+
+  const shipments = useMemo(() => data?.pages.flatMap((page) => page.items) ?? [], [data?.pages])
+
+  const loadMore = useCallback(() => {
+    if (!hasNextPage || isFetchingNextPage) return
+    void fetchNextPage()
+  }, [fetchNextPage, hasNextPage, isFetchingNextPage])
+
+  const loadMoreRef = useInfiniteScroll({
+    hasMore: Boolean(hasNextPage),
+    enabled: !isLoading,
+    onLoadMore: loadMore,
+  })
 
   if (isUserLoading || isLoading) {
     return <SectionLoader label={t("shipments.loading")} />
@@ -79,6 +97,19 @@ export default function DriverShipmentsPage() {
               </Card>
             </Link>
           ))}
+
+          {(hasNextPage || isFetchingNextPage) && (
+            <div ref={loadMoreRef} className="flex items-center justify-center py-4 text-sm text-muted-foreground">
+              {isFetchingNextPage ? (
+                <span className="inline-flex items-center gap-2">
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                  {t("driver.shipments.loadingMore")}
+                </span>
+              ) : (
+                t("driver.shipments.scrollMore")
+              )}
+            </div>
+          )}
         </div>
       )}
     </div>

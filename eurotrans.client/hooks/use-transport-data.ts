@@ -1,4 +1,4 @@
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query"
+import { useInfiniteQuery, useQuery, useMutation, useQueryClient } from "@tanstack/react-query"
 import { api } from "@/lib/api"
 import type { ShipmentStatus, Truck, Location } from "@/lib/types"
 
@@ -19,6 +19,38 @@ export function useShipments(filters?: {
         staleTime: 60_000,
         gcTime: 5 * 60_000,
         placeholderData: (previousData) => previousData,
+    })
+}
+
+export function useInfiniteShipments(
+    filters?: {
+        status?: ShipmentStatus
+        driverId?: string
+        startDate?: string
+        endDate?: string
+        search?: string
+        hasProofOfDelivery?: boolean
+    },
+    options?: { enabled?: boolean; pageSize?: number },
+) {
+    const pageSize = options?.pageSize ?? 10
+
+    return useInfiniteQuery({
+        queryKey: ["shipments", "infinite", filters, pageSize],
+        initialPageParam: 1,
+        queryFn: ({ pageParam }) =>
+            api.getShipmentsPage({
+                ...filters,
+                page: pageParam,
+                pageSize,
+            }),
+        getNextPageParam: (lastPage) => {
+            const totalPages = Math.max(1, Math.ceil(lastPage.totalCount / Math.max(lastPage.pageSize, 1)))
+            return lastPage.page < totalPages ? lastPage.page + 1 : undefined
+        },
+        enabled: options?.enabled ?? true,
+        staleTime: 60_000,
+        gcTime: 5 * 60_000,
     })
 }
 
