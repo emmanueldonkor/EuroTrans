@@ -8,7 +8,7 @@ export function FullPageLoader({ label = "Loading..." }: { label?: string }) {
     <div className="min-h-screen flex items-center justify-center p-4 animate-fade-in">
       <Card className="w-full max-w-md p-6 text-center space-y-4 panel">
         <div className="flex justify-center">
-          <LoadingSpinner />
+          <LoadingSpinner size="lg" />
         </div>
         <p className="text-sm text-muted-foreground">{label}</p>
       </Card>
@@ -20,7 +20,7 @@ export function SectionLoader({ label = "Loading..." }: { label?: string }) {
   return (
     <div className="flex items-center justify-center min-h-[280px] animate-fade-in">
       <div className="flex flex-col items-center gap-3 rounded-xl border border-border/70 bg-card/70 px-6 py-5 backdrop-blur-sm">
-        <LoadingSpinner size="sm" />
+        <LoadingSpinner size="md" />
         <p className="text-sm text-muted-foreground">{label}</p>
       </div>
     </div>

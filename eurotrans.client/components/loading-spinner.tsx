@@ -1,16 +1,46 @@
-export function LoadingSpinner({ size = "md" }: { size?: "sm" | "md" | "lg" }) {
-  const sizeClasses = {
-    sm: "h-4 w-4 border-2",
-    md: "h-8 w-8 border-[3px]",
-    lg: "h-12 w-12 border-4",
-  }
+import { LoaderCircle } from "lucide-react"
+import { cn } from "@/lib/utils"
 
+type LoadingSpinnerSize = "sm" | "md" | "lg"
+
+const spinnerSizes: Record<
+  LoadingSpinnerSize,
+  {
+    container: string
+    icon: string
+  }
+> = {
+  sm: {
+    container: "h-5 w-5",
+    icon: "h-3 w-3",
+  },
+  md: {
+    container: "h-10 w-10",
+    icon: "h-5 w-5",
+  },
+  lg: {
+    container: "h-14 w-14",
+    icon: "h-7 w-7",
+  },
+}
+
+export function LoadingSpinner({ size = "md" }: { size?: LoadingSpinnerSize }) {
   return (
     <div
-      className={`${sizeClasses[size]} rounded-full border-primary/30 border-t-primary shadow-[0_0_0_1px_color-mix(in_oklab,var(--primary)_20%,transparent)] animate-spin`}
+      className={cn("relative inline-flex items-center justify-center", spinnerSizes[size].container)}
       role="status"
       aria-label="Loading"
     >
+      <span className="absolute inset-0 rounded-full border border-primary/20" />
+      <span
+        className="absolute inset-[2px] rounded-full border-2 border-transparent border-t-primary border-r-primary/60 animate-spin"
+        style={{ animationDuration: "0.85s" }}
+      />
+      <span className="absolute inset-[24%] rounded-full bg-primary/8 blur-[1px]" />
+      <LoaderCircle
+        className={cn("relative text-primary/80 animate-spin", spinnerSizes[size].icon)}
+        style={{ animationDuration: "1.2s" }}
+      />
       <span className="sr-only">Loading...</span>
     </div>
   )
