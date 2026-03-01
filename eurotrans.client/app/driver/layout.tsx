@@ -35,22 +35,28 @@ export default function DriverLayout({ children }: { children: React.ReactNode }
   const router = useRouter()
   const { t, locale, setLocale } = useI18n()
   const { data: currentUser, isLoading, error, refetch } = useCurrentUser()
-  const isAuthError = error instanceof ApiRequestError && (error.status === 401 || error.status === 403)
+  const isUnauthorized = error instanceof ApiRequestError && error.status === 401
+  const isForbidden = error instanceof ApiRequestError && error.status === 403
   const isDriver = currentUser?.role === "driver"
   const profileComplete = currentUser?.driverProfileComplete ?? false
 
   useEffect(() => {
     if (isLoading) return
 
-    if (isAuthError) {
+    if (isUnauthorized) {
       router.replace("/auth/login")
+      return
+    }
+
+    if (isForbidden) {
+      router.replace("/access-denied")
       return
     }
 
     if (currentUser && currentUser.role !== "driver") {
       router.replace(getRedirectPath(currentUser.role))
     }
-  }, [currentUser, isAuthError, isLoading, router])
+  }, [currentUser, isUnauthorized, isForbidden, isLoading, router])
 
   useEffect(() => {
     if (!currentUser || currentUser.role !== "driver") return
@@ -83,7 +89,7 @@ export default function DriverLayout({ children }: { children: React.ReactNode }
     return <FullPageLoader label="Loading driver workspace..." />
   }
 
-  if (error && !isAuthError) {
+  if (error && !isUnauthorized && !isForbidden) {
     return (
       <PageErrorState
         title="Unable to load driver session"
@@ -154,7 +160,7 @@ export default function DriverLayout({ children }: { children: React.ReactNode }
 
       {/* Main Content */}
       <main className="p-4 space-y-4">
-        {error && !isAuthError && (
+        {error && !isUnauthorized && !isForbidden && (
           <Alert variant="destructive">
             <AlertDescription>{error instanceof Error ? error.message : "Unexpected error."}</AlertDescription>
           </Alert>

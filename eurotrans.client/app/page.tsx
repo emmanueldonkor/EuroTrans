@@ -6,13 +6,17 @@ export const dynamic = "force-dynamic"
 export default async function Page() {
   const user = await getSessionUser()
 
-  if (user?.role === "driver") {
+  if (!user) {
+    redirect("/auth/login")
+  }
+
+  if (user.role === "driver") {
     redirect("/driver")
   }
 
-  if (user) {
+  if (user.role === "manager") {
     redirect("/dashboard")
   }
 
-  redirect("/auth/login")
+  redirect("/access-denied")
 }

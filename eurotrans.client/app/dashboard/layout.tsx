@@ -39,20 +39,26 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const router = useRouter()
   const { t, locale, setLocale } = useI18n()
   const { data: currentUser, isLoading, error, refetch } = useCurrentUser()
-  const isAuthError = error instanceof ApiRequestError && (error.status === 401 || error.status === 403)
+  const isUnauthorized = error instanceof ApiRequestError && error.status === 401
+  const isForbidden = error instanceof ApiRequestError && error.status === 403
 
   useEffect(() => {
     if (isLoading) return
 
-    if (isAuthError) {
+    if (isUnauthorized) {
       router.replace("/auth/login")
+      return
+    }
+
+    if (isForbidden) {
+      router.replace("/access-denied")
       return
     }
 
     if (currentUser && currentUser.role !== "manager") {
       router.replace(getRedirectPath(currentUser.role))
     }
-  }, [currentUser, isAuthError, isLoading, router])
+  }, [currentUser, isUnauthorized, isForbidden, isLoading, router])
 
   useEffect(() => {
     const onScroll = () => setHasScrolled(window.scrollY > 6)
@@ -76,7 +82,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     return <FullPageLoader label="Loading manager workspace..." />
   }
 
-  if (error && !isAuthError) {
+  if (error && !isUnauthorized && !isForbidden) {
     return (
       <PageErrorState
         title="Could not load your workspace"
