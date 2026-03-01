@@ -27,6 +27,23 @@ public class TruckRepository : ITruckRepository
             .ToListAsync(ct);
     }
 
+    public async Task<(List<Truck> Items, int TotalCount)> GetPagedAsync(int page, int pageSize, CancellationToken ct = default)
+    {
+        var query = db.Trucks
+            .AsNoTracking()
+            .Where(t => t.IsActive);
+
+        var totalCount = await query.CountAsync(ct);
+
+        var items = await query
+            .OrderBy(t => t.PlateNumber)
+            .Skip((page - 1) * pageSize)
+            .Take(pageSize)
+            .ToListAsync(ct);
+
+        return (items, totalCount);
+    }
+
     public async Task AddAsync(Truck truck, CancellationToken ct = default)
     {
         await db.Trucks.AddAsync(truck, ct);

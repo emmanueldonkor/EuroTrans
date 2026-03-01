@@ -4,6 +4,13 @@ export type UserRole = "manager" | "driver" | "guest"
 
 export type ShipmentStatus = "unassigned" | "assigned" | "in-transit" | "delivered" | "cancelled"
 
+export interface PagedResult<T> {
+  items: T[]
+  totalCount: number
+  page: number
+  pageSize: number
+}
+
 export interface User {
   id: string
   name: string

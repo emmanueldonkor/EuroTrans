@@ -1,46 +1,43 @@
 "use client"
 
-import { useMemo, useState } from "react"
+import { useState } from "react"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { FileText, Download, Search, Package } from "lucide-react"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
-import { api } from "@/lib/api"
-import type { Shipment } from "@/lib/types"
 import { formatDate } from "@/lib/utils/format"
 import { getStatusBadgeColor, getStatusLabel } from "@/lib/shipment-rules"
 import Link from "next/link"
-import { useQuery } from "@tanstack/react-query"
 import { useDebouncedValue } from "@/hooks/use-debounced-value"
 import { PageErrorState, SectionLoader } from "@/components/ui/page-state"
 import { PageHeading, PageShell, PageSurface } from "@/components/ui/page-shell"
 import { useI18n } from "@/components/providers/i18n-provider"
+import { useShipmentsPage } from "@/hooks/use-transport-data"
+import { DataPagination } from "@/components/ui/data-pagination"
 
 export default function DocumentsPage() {
   const [searchTerm, setSearchTerm] = useState("")
+  const [page, setPage] = useState(1)
+  const pageSize = 10
   const debouncedSearchTerm = useDebouncedValue(searchTerm, 250)
   const { t } = useI18n()
 
   const {
-    data: shipments = [],
+    data: shipmentsPage,
     isLoading,
+    isFetching,
     error,
     refetch,
-  } = useQuery({
-    queryKey: ["documents", "delivered-with-pod"],
-    queryFn: async () => {
-      const delivered = await api.getShipments({ status: "delivered" })
-      const detailed = await Promise.all(delivered.map((shipment) => api.getShipment(shipment.id)))
-      return detailed.filter((s): s is Shipment => Boolean(s && s.proofOfDeliveryUrl))
-    },
-    staleTime: 60_000,
+  } = useShipmentsPage({
+    status: "delivered",
+    hasProofOfDelivery: true,
+    search: debouncedSearchTerm || undefined,
+    page,
+    pageSize,
   })
-
-  const filteredShipments = useMemo(
-    () => shipments.filter((shipment) => shipment.trackingId.toLowerCase().includes(debouncedSearchTerm.toLowerCase())),
-    [debouncedSearchTerm, shipments],
-  )
+  const shipments = shipmentsPage?.items ?? []
+  const totalCount = shipmentsPage?.totalCount ?? 0
 
   if (isLoading) {
     return <SectionLoader label={t("documents.loading")} />
@@ -68,13 +65,16 @@ export default function DocumentsPage() {
           <Input
             placeholder={t("documents.searchPlaceholder")}
             value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
+            onChange={(e) => {
+              setSearchTerm(e.target.value)
+              setPage(1)
+            }}
             className="h-10 pl-9 bg-background/90"
           />
         </div>
       </PageSurface>
 
-      {filteredShipments.length === 0 ? (
+      {shipments.length === 0 ? (
         <PageSurface className="panel-muted p-12 flex flex-col items-center justify-center min-h-[400px]">
           <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-primary/10">
             <FileText className="h-8 w-8 text-primary" />
@@ -99,7 +99,7 @@ export default function DocumentsPage() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {filteredShipments.map((shipment) => (
+              {shipments.map((shipment) => (
                 <TableRow key={shipment.id} className="table-row-interactive">
                   <TableCell>
                     <Link href={`/dashboard/shipments/${shipment.id}`} className="font-medium hover:underline underline-offset-4">
@@ -134,17 +134,21 @@ export default function DocumentsPage() {
         </PageSurface>
       )}
 
-      {filteredShipments.length > 0 && (
+      {totalCount > 0 && (
         <PageSurface className="p-6 surface-hover">
           <div className="flex items-center gap-4">
             <Package className="h-8 w-8 text-primary" />
             <div>
               <p className="text-sm text-muted-foreground">{t("documents.totalDocuments")}</p>
-              <p className="text-2xl font-bold">{filteredShipments.length}</p>
+              <p className="text-2xl font-bold">{totalCount}</p>
             </div>
           </div>
         </PageSurface>
       )}
+
+      <PageSurface className="p-4">
+        <DataPagination page={page} pageSize={pageSize} totalCount={totalCount} onPageChange={setPage} disabled={isFetching} />
+      </PageSurface>
     </PageShell>
   )
 }

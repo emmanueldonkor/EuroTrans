@@ -6,6 +6,7 @@ public interface ITruckRepository
 {
     Task<Truck?> GetByIdAsync(Guid id, CancellationToken ct = default);
     Task<List<Truck>> GetAllAsync(CancellationToken ct = default);
+    Task<(List<Truck> Items, int TotalCount)> GetPagedAsync(int page, int pageSize, CancellationToken ct = default);
     Task AddAsync(Truck truck, CancellationToken ct = default);
     Task UpdateAsync(Truck truck, CancellationToken ct = default);
 }

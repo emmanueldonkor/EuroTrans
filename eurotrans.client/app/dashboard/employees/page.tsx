@@ -16,15 +16,20 @@ import { Label } from "@/components/ui/label"
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 import type { Driver } from "@/lib/types"
 import { User, Loader2 } from "lucide-react"
-import { useDriverMutations, useDrivers } from "@/hooks/use-transport-data"
+import { useDriverMutations, useDriversPage } from "@/hooks/use-transport-data"
 import { useToast } from "@/hooks/use-toast"
 import { PageErrorState, SectionLoader } from "@/components/ui/page-state"
 import { PageHeading, PageShell, PageSurface } from "@/components/ui/page-shell"
 import { toActionErrorMessage } from "@/lib/utils/error"
 import { useI18n } from "@/components/providers/i18n-provider"
+import { DataPagination } from "@/components/ui/data-pagination"
 
 export default function EmployeesPage() {
-  const { data: drivers = [], isLoading, error: queryError, refetch } = useDrivers()
+  const [page, setPage] = useState(1)
+  const pageSize = 10
+  const { data: driversPage, isLoading, isFetching, error: queryError, refetch } = useDriversPage({ page, pageSize })
+  const drivers = driversPage?.items ?? []
+  const totalCount = driversPage?.totalCount ?? 0
   const { updateStatus } = useDriverMutations()
   const { toast } = useToast()
   const { t } = useI18n()
@@ -154,6 +159,10 @@ export default function EmployeesPage() {
             )}
           </TableBody>
         </Table>
+      </PageSurface>
+
+      <PageSurface className="p-4">
+        <DataPagination page={page} pageSize={pageSize} totalCount={totalCount} onPageChange={setPage} disabled={isFetching} />
       </PageSurface>
 
       <Dialog open={showStatusDialog} onOpenChange={setShowStatusDialog}>

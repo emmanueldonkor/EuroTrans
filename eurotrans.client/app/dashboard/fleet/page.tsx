@@ -27,15 +27,20 @@ import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import type { Truck as TruckType } from "@/lib/types"
 import { Plus, Edit, Trash2, Loader2 } from "lucide-react"
-import { useTruckMutations, useTrucks } from "@/hooks/use-transport-data"
+import { useTruckMutations, useTrucksPage } from "@/hooks/use-transport-data"
 import { useToast } from "@/hooks/use-toast"
 import { PageErrorState, SectionLoader } from "@/components/ui/page-state"
 import { PageHeader, PageHeading, PageShell, PageSurface } from "@/components/ui/page-shell"
 import { toActionErrorMessage } from "@/lib/utils/error"
 import { useI18n } from "@/components/providers/i18n-provider"
+import { DataPagination } from "@/components/ui/data-pagination"
 
 export default function FleetPage() {
-  const { data: trucks = [], isLoading, error: queryError, refetch } = useTrucks()
+  const [page, setPage] = useState(1)
+  const pageSize = 10
+  const { data: trucksPage, isLoading, isFetching, error: queryError, refetch } = useTrucksPage({ page, pageSize })
+  const trucks = trucksPage?.items ?? []
+  const totalCount = trucksPage?.totalCount ?? 0
   const { createTruck, updateTruck, deleteTruck } = useTruckMutations()
   const { toast } = useToast()
   const { t } = useI18n()
@@ -250,6 +255,10 @@ export default function FleetPage() {
             )}
           </TableBody>
         </Table>
+      </PageSurface>
+
+      <PageSurface className="p-4">
+        <DataPagination page={page} pageSize={pageSize} totalCount={totalCount} onPageChange={setPage} disabled={isFetching} />
       </PageSurface>
 
       <Dialog open={showCreateDialog} onOpenChange={setShowCreateDialog}>

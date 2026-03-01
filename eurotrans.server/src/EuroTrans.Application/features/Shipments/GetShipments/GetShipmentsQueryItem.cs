@@ -11,5 +11,7 @@ public record GetShipmentsQueryItem(
     string? OriginCountry,
     string? DestinationCity,
     string? DestinationCountry,
-    DateTime? UpdatedAtUtc
+    DateTime? UpdatedAtUtc,
+    DateTime? DeliveredAtUtc,
+    string? ProofOfDeliveryUrl
 );

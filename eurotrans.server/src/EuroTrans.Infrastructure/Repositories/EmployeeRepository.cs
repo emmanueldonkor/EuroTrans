@@ -37,6 +37,24 @@ public class EmployeeRepository : IEmployeeRepository
             .ToListAsync(ct);
     }
 
+    public async Task<(List<Employee> Items, int TotalCount)> GetDriversPagedAsync(int page, int pageSize, CancellationToken ct = default)
+    {
+        var query = db.Employees
+            .AsNoTracking()
+            .Include(e => e.Driver)
+            .Where(e => e.Role == EmployeeRole.Driver && e.Driver != null);
+
+        var totalCount = await query.CountAsync(ct);
+
+        var items = await query
+            .OrderBy(e => e.Name)
+            .Skip((page - 1) * pageSize)
+            .Take(pageSize)
+            .ToListAsync(ct);
+
+        return (items, totalCount);
+    }
+
     public async Task AddAsync(Employee employee, CancellationToken ct = default)
     {
         await db.Employees.AddAsync(employee, ct);

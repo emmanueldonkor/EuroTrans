@@ -96,14 +96,13 @@ public class ShipmentRepository : IShipmentRepository
     DateTime? startDate,
     DateTime? endDate,
     string? search,
+    bool? hasProofOfDelivery,
     int page,
     int pageSize,
     CancellationToken ct = default)
     {
         var query = db.Shipments
             .AsNoTracking()
-            .Include(s => s.Driver)
-                .ThenInclude(d => d!.Employee)
             .AsQueryable();
 
         if (status.HasValue)
@@ -123,6 +122,13 @@ public class ShipmentRepository : IShipmentRepository
                 s.TrackingId.Contains(search) ||
                 s.Cargo != null && s.Cargo.Description.Contains(search));
 
+        if (hasProofOfDelivery.HasValue)
+        {
+            query = hasProofOfDelivery.Value
+                ? query.Where(s => s.Documents.Any(d => d.Type == DocumentType.ProofOfDelivery))
+                : query.Where(s => !s.Documents.Any(d => d.Type == DocumentType.ProofOfDelivery));
+        }
+
         var totalCount = await query.CountAsync(ct);
 
         var items = await query
@@ -138,7 +144,13 @@ public class ShipmentRepository : IShipmentRepository
                 s.OriginAddress != null ? s.OriginAddress.Country : null,
                 s.DestinationAddress != null ? s.DestinationAddress.City : null,
                 s.DestinationAddress != null ? s.DestinationAddress.Country : null,
-                s.UpdatedAtUtc
+                s.UpdatedAtUtc,
+                s.DeliveredAtUtc,
+                s.Documents
+                    .Where(d => d.Type == DocumentType.ProofOfDelivery)
+                    .OrderByDescending(d => d.UploadedAtUtc)
+                    .Select(d => d.Url)
+                    .FirstOrDefault()
             ))
             .ToListAsync(ct);
 

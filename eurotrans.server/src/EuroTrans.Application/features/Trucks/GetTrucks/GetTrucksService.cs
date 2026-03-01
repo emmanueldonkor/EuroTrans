@@ -1,7 +1,6 @@
 using ErrorOr;
 using EuroTrans.Application.Common.Caching;
 using EuroTrans.Application.Common.Interfaces;
-using EuroTrans.Domain.Trucks;
 
 namespace EuroTrans.Application.features.Trucks.GetTrucks;
 
@@ -16,18 +15,24 @@ public class GetTrucksService
         this.cache = cache;
     }
 
-    public async Task<ErrorOr<List<Truck>>> GetAsync(CancellationToken ct = default)
+    public async Task<ErrorOr<GetTrucksResponse>> GetAsync(GetTrucksRequest request, CancellationToken ct = default)
     {
         var version = cache.GetVersion(QueryCacheScopes.Trucks);
-        var key = $"trucks:list:v{version}";
+        var key = $"trucks:list:v{version}:page={request.Page}:size={request.PageSize}";
 
         return await cache.GetOrCreateAsync(
             key,
             QueryCacheTtls.Trucks,
             async token =>
             {
-                var data = await trucks.GetAllAsync(token);
-                return (ErrorOr<List<Truck>>)data;
+                var (items, totalCount) = await trucks.GetPagedAsync(request.Page, request.PageSize, token);
+
+                return (ErrorOr<GetTrucksResponse>)new GetTrucksResponse(
+                    Items: items,
+                    TotalCount: totalCount,
+                    Page: request.Page,
+                    PageSize: request.PageSize
+                );
             },
             ct);
     }

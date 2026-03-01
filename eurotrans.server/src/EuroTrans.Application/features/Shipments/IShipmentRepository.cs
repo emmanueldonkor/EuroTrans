@@ -19,6 +19,7 @@ public interface IShipmentRepository
      DateTime? startDate,
      DateTime? endDate,
      string? search,
+     bool? hasProofOfDelivery,
      int page,
      int pageSize,
      CancellationToken ct = default);

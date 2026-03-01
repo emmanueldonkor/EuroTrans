@@ -8,6 +8,7 @@ public record GetShipmentsRequest(
     DateTime? StartDate,
     DateTime? EndDate,
     string? Search,
+    bool? HasProofOfDelivery,
     int Page = 1,
     int PageSize = 20
 );

@@ -11,6 +11,10 @@ export const en = {
   "common.error": "An error occurred",
   "common.success": "Success",
   "common.logout": "Logout",
+  "common.previous": "Previous",
+  "common.next": "Next",
+  "common.pagination.showing": "Showing {from}-{to} of {total}",
+  "common.pagination.page": "Page {page} of {totalPages}",
 
   // Landing
   "landing.title": "EuroTrans",

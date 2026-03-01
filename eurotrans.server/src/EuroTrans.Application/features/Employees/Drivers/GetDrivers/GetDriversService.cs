@@ -15,19 +15,19 @@ public class GetDriversService
         this.cache = cache;
     }
 
-    public async Task<ErrorOr<List<GetDriversResponse>>> GetAsync(CancellationToken ct = default)
+    public async Task<ErrorOr<GetDriversPagedResponse>> GetAsync(GetDriversRequest request, CancellationToken ct = default)
     {
         var version = cache.GetVersion(QueryCacheScopes.Drivers);
-        var key = $"drivers:list:v{version}";
+        var key = $"drivers:list:v{version}:page={request.Page}:size={request.PageSize}";
 
         return await cache.GetOrCreateAsync(
             key,
             QueryCacheTtls.Drivers,
             async token =>
             {
-                var drivers = await employees.GetDriversAsync(token);
+                var (drivers, totalCount) = await employees.GetDriversPagedAsync(request.Page, request.PageSize, token);
 
-                return (ErrorOr<List<GetDriversResponse>>)drivers.Select(e => new GetDriversResponse(
+                var items = drivers.Select(e => new GetDriversResponse(
                     EmployeeId: e.Id,
                     Name: e.Name,
                     Email: e.Email,
@@ -35,6 +35,13 @@ public class GetDriversService
                     Status: e.Driver!.Status,
                     LicenseNumber: e.Driver?.LicenseNumber
                 )).ToList();
+
+                return (ErrorOr<GetDriversPagedResponse>)new GetDriversPagedResponse(
+                    Items: items,
+                    TotalCount: totalCount,
+                    Page: request.Page,
+                    PageSize: request.PageSize
+                );
             },
             ct);
     }

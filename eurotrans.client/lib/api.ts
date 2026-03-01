@@ -4,6 +4,7 @@ import type {
   Shipment,
   Activity,
   LiveMapPin,
+  PagedResult,
   ShipmentStatus,
   Location,
   Milestone,
@@ -61,6 +62,15 @@ type ShipmentSummaryApi = {
   origin?: string
   destination?: string
   updatedAtUtc?: string | null
+  deliveredAtUtc?: string | null
+  proofOfDeliveryUrl?: string | null
+}
+
+type PagedApiResponse<T> = {
+  items: T[]
+  totalCount: number
+  page: number
+  pageSize: number
 }
 
 type ShipmentDetailApi = {
@@ -202,6 +212,34 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
   }
 
   return responseText as T
+}
+
+function mapPagedResult<TApi, TDomain>(
+  response: PagedApiResponse<TApi>,
+  mapper: (item: TApi) => TDomain,
+): PagedResult<TDomain> {
+  return {
+    items: (response.items ?? []).map(mapper),
+    totalCount: response.totalCount ?? 0,
+    page: response.page ?? 1,
+    pageSize: response.pageSize ?? (response.items?.length ?? 0),
+  }
+}
+
+async function fetchAllPages<T>(
+  getPage: (page: number, pageSize: number) => Promise<PagedResult<T>>,
+  pageSize = 100,
+): Promise<T[]> {
+  const firstPage = await getPage(1, pageSize)
+  const items = [...firstPage.items]
+  const totalPages = Math.max(1, Math.ceil(Math.max(firstPage.totalCount, items.length) / Math.max(firstPage.pageSize, 1)))
+
+  for (let page = 2; page <= totalPages; page += 1) {
+    const nextPage = await getPage(page, pageSize)
+    items.push(...nextPage.items)
+  }
+
+  return items
 }
 
 function mapShipmentStatus(status: ShipmentApiStatus): ShipmentStatus {
@@ -347,6 +385,8 @@ function mapShipmentSummary(item: ShipmentSummaryApi): Shipment {
     driverName: item.driverName ?? undefined,
     createdAt: updatedAt,
     updatedAt,
+    deliveredAt: item.deliveredAtUtc ?? undefined,
+    proofOfDeliveryUrl: item.proofOfDeliveryUrl ?? undefined,
   }
 }
 
@@ -483,27 +523,49 @@ export const api = {
     window.location.href = "/auth/logout"
   },
 
-  async getShipments(filters?: {
+  async getShipmentsPage(filters?: {
     status?: ShipmentStatus
     driverId?: string
     startDate?: string
     endDate?: string
     search?: string
+    hasProofOfDelivery?: boolean
     page?: number
     pageSize?: number
-  }): Promise<Shipment[]> {
+  }): Promise<PagedResult<Shipment>> {
     const params = new URLSearchParams()
     if (filters?.status) params.set("status", toShipmentApiStatus(filters.status))
     if (filters?.driverId) params.set("driverId", filters.driverId)
     if (filters?.startDate) params.set("startDate", filters.startDate)
     if (filters?.endDate) params.set("endDate", filters.endDate)
     if (filters?.search) params.set("search", filters.search)
+    if (typeof filters?.hasProofOfDelivery === "boolean") {
+      params.set("hasProofOfDelivery", String(filters.hasProofOfDelivery))
+    }
     if (filters?.page) params.set("page", String(filters.page))
     if (filters?.pageSize) params.set("pageSize", String(filters.pageSize))
 
     const query = params.toString()
-    const response = await request<{ items: ShipmentSummaryApi[] }>(`/api/shipments${query ? `?${query}` : ""}`)
-    return (response.items ?? []).map(mapShipmentSummary)
+    const response = await request<PagedApiResponse<ShipmentSummaryApi>>(`/api/shipments${query ? `?${query}` : ""}`)
+    return mapPagedResult(response, mapShipmentSummary)
+  },
+
+  async getShipments(filters?: {
+    status?: ShipmentStatus
+    driverId?: string
+    startDate?: string
+    endDate?: string
+    search?: string
+    hasProofOfDelivery?: boolean
+    page?: number
+    pageSize?: number
+  }): Promise<Shipment[]> {
+    if (filters?.page || filters?.pageSize) {
+      const paged = await api.getShipmentsPage(filters)
+      return paged.items
+    }
+
+    return fetchAllPages((page, pageSize) => api.getShipmentsPage({ ...filters, page, pageSize }))
   },
 
   async getShipment(id: string): Promise<Shipment | null> {
@@ -668,9 +730,14 @@ export const api = {
     return shipment
   },
 
-  async getDrivers(): Promise<Driver[]> {
-    const drivers = await request<
-      Array<{
+  async getDriversPage(filters?: { page?: number; pageSize?: number }): Promise<PagedResult<Driver>> {
+    const params = new URLSearchParams()
+    if (filters?.page) params.set("page", String(filters.page))
+    if (filters?.pageSize) params.set("pageSize", String(filters.pageSize))
+
+    const query = params.toString()
+    const response = await request<
+      PagedApiResponse<{
         employeeId: string
         name: string
         email: string
@@ -678,9 +745,9 @@ export const api = {
         licenseNumber?: string | null
         status: DriverApiStatus
       }>
-    >("/api/drivers")
+    >(`/api/drivers${query ? `?${query}` : ""}`)
 
-    return drivers.map((d) => ({
+    return mapPagedResult(response, (d) => ({
       id: d.employeeId,
       name: d.name,
       email: d.email,
@@ -688,6 +755,15 @@ export const api = {
       licenseNumber: d.licenseNumber ?? undefined,
       status: mapDriverStatus(d.status),
     }))
+  },
+
+  async getDrivers(filters?: { page?: number; pageSize?: number }): Promise<Driver[]> {
+    if (filters?.page || filters?.pageSize) {
+      const paged = await api.getDriversPage(filters)
+      return paged.items
+    }
+
+    return fetchAllPages((page, pageSize) => api.getDriversPage({ ...filters, page, pageSize }))
   },
 
   async getDriver(id: string): Promise<Driver | null> {
@@ -728,24 +804,38 @@ export const api = {
     }
   },
 
-  async getTrucks(): Promise<Truck[]> {
-    const trucks = await request<
-      Array<{
+  async getTrucksPage(filters?: { page?: number; pageSize?: number }): Promise<PagedResult<Truck>> {
+    const params = new URLSearchParams()
+    if (filters?.page) params.set("page", String(filters.page))
+    if (filters?.pageSize) params.set("pageSize", String(filters.pageSize))
+
+    const query = params.toString()
+    const response = await request<
+      PagedApiResponse<{
         id: string
         plateNumber: string
         model: string
         capacity: number
         status: TruckApiStatus
       }>
-    >("/api/trucks")
+    >(`/api/trucks${query ? `?${query}` : ""}`)
 
-    return trucks.map((t) => ({
+    return mapPagedResult(response, (t) => ({
       id: t.id,
       plateNumber: t.plateNumber,
       model: t.model,
       capacity: t.capacity,
       status: mapTruckStatus(t.status),
     }))
+  },
+
+  async getTrucks(filters?: { page?: number; pageSize?: number }): Promise<Truck[]> {
+    if (filters?.page || filters?.pageSize) {
+      const paged = await api.getTrucksPage(filters)
+      return paged.items
+    }
+
+    return fetchAllPages((page, pageSize) => api.getTrucksPage({ ...filters, page, pageSize }))
   },
 
   async getTruck(id: string): Promise<Truck | null> {

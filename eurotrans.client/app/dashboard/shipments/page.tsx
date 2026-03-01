@@ -8,7 +8,7 @@ import { Badge } from "@/components/ui/badge"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Plus, Search } from "lucide-react"
-import { useShipments, useDrivers } from "@/hooks/use-transport-data"
+import { useShipmentsPage, useDrivers } from "@/hooks/use-transport-data"
 import { getStatusColor, formatDate } from "@/lib/utils/format"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import type { ShipmentStatus } from "@/lib/types"
@@ -16,24 +16,33 @@ import { useDebouncedValue } from "@/hooks/use-debounced-value"
 import { SectionLoader } from "@/components/ui/page-state"
 import { PageHeader, PageHeading, PageShell, PageSurface } from "@/components/ui/page-shell"
 import { useI18n } from "@/components/providers/i18n-provider"
+import { DataPagination } from "@/components/ui/data-pagination"
 
 export default function ShipmentsPage() {
   const [searchTerm, setSearchTerm] = useState("")
   const [statusFilter, setStatusFilter] = useState<string>("all")
   const [driverFilter, setDriverFilter] = useState<string>("all")
+  const [page, setPage] = useState(1)
+  const pageSize = 12
   const debouncedSearchTerm = useDebouncedValue(searchTerm, 300)
   const { t } = useI18n()
 
   const {
-    data: shipments = [],
+    data: shipmentsPage,
     isLoading: shipmentsLoading,
     isFetching: shipmentsFetching,
     error: shipmentsError,
-  } = useShipments({
+  } = useShipmentsPage({
     status: statusFilter !== "all" ? (statusFilter as ShipmentStatus) : undefined,
     driverId: driverFilter !== "all" ? driverFilter : undefined,
     search: debouncedSearchTerm || undefined,
+    page,
+    pageSize,
   })
+  const shipments = shipmentsPage?.items ?? []
+  const totalCount = shipmentsPage?.totalCount ?? 0
+  const resolvedTotalPages = Math.max(1, Math.ceil(totalCount / pageSize))
+  const currentPage = Math.min(page, resolvedTotalPages)
 
   const { data: drivers = [], isLoading: driversLoading } = useDrivers()
   const isLoading = shipmentsLoading || driversLoading
@@ -82,11 +91,20 @@ export default function ShipmentsPage() {
             <Input
               placeholder={t("shipments.searchPlaceholder")}
               value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
+              onChange={(e) => {
+                setSearchTerm(e.target.value)
+                setPage(1)
+              }}
               className="h-10 pl-9 bg-background/90"
             />
           </div>
-          <Select value={statusFilter} onValueChange={setStatusFilter}>
+          <Select
+            value={statusFilter}
+            onValueChange={(value) => {
+              setStatusFilter(value)
+              setPage(1)
+            }}
+          >
             <SelectTrigger className="h-10 w-full sm:w-44 bg-background/90">
               <SelectValue placeholder={t("shipments.status")} />
             </SelectTrigger>
@@ -99,7 +117,13 @@ export default function ShipmentsPage() {
               <SelectItem value="cancelled">{t("shipments.status.cancelled")}</SelectItem>
             </SelectContent>
           </Select>
-          <Select value={driverFilter} onValueChange={setDriverFilter}>
+          <Select
+            value={driverFilter}
+            onValueChange={(value) => {
+              setDriverFilter(value)
+              setPage(1)
+            }}
+          >
             <SelectTrigger className="h-10 w-full sm:w-44 bg-background/90">
               <SelectValue placeholder={t("shipments.driver")} />
             </SelectTrigger>
@@ -164,6 +188,10 @@ export default function ShipmentsPage() {
             )}
           </TableBody>
         </Table>
+      </PageSurface>
+
+      <PageSurface className="p-4">
+        <DataPagination page={currentPage} pageSize={pageSize} totalCount={totalCount} onPageChange={setPage} disabled={shipmentsFetching} />
       </PageSurface>
     </PageShell>
   )

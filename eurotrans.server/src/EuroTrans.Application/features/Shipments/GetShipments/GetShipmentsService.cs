@@ -46,6 +46,7 @@ public class GetShipmentsService
             $"start={request.StartDate?.ToUniversalTime().ToString("O") ?? "_"}",
             $"end={request.EndDate?.ToUniversalTime().ToString("O") ?? "_"}",
             $"search={QueryCacheKey.Segment(request.Search)}",
+            $"hasPod={request.HasProofOfDelivery?.ToString().ToLowerInvariant() ?? "_"}",
             $"page={request.Page}",
             $"size={request.PageSize}");
 
@@ -60,6 +61,7 @@ public class GetShipmentsService
                     startDate: request.StartDate,
                     endDate: request.EndDate,
                     search: request.Search,
+                    hasProofOfDelivery: request.HasProofOfDelivery,
                     page: request.Page,
                     pageSize: request.PageSize,
                     ct: token
@@ -73,7 +75,9 @@ public class GetShipmentsService
                         item.DriverName,
                         FormatLocation(item.OriginCity, item.OriginCountry),
                         FormatLocation(item.DestinationCity, item.DestinationCountry),
-                        item.UpdatedAtUtc
+                        item.UpdatedAtUtc,
+                        item.DeliveredAtUtc,
+                        item.ProofOfDeliveryUrl
                     ))
                     .ToList();
 

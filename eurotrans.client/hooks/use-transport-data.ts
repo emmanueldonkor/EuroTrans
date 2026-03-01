@@ -10,10 +10,31 @@ export function useShipments(filters?: {
     startDate?: string
     endDate?: string
     search?: string
+    hasProofOfDelivery?: boolean
 }, options?: { enabled?: boolean }) {
     return useQuery({
         queryKey: ["shipments", filters],
         queryFn: () => api.getShipments(filters),
+        enabled: options?.enabled ?? true,
+        staleTime: 60_000,
+        gcTime: 5 * 60_000,
+        placeholderData: (previousData) => previousData,
+    })
+}
+
+export function useShipmentsPage(filters?: {
+    status?: ShipmentStatus
+    driverId?: string
+    startDate?: string
+    endDate?: string
+    search?: string
+    hasProofOfDelivery?: boolean
+    page?: number
+    pageSize?: number
+}, options?: { enabled?: boolean }) {
+    return useQuery({
+        queryKey: ["shipments", "page", filters],
+        queryFn: () => api.getShipmentsPage(filters),
         enabled: options?.enabled ?? true,
         staleTime: 60_000,
         gcTime: 5 * 60_000,
@@ -117,6 +138,16 @@ export function useDrivers() {
     })
 }
 
+export function useDriversPage(filters?: { page?: number; pageSize?: number }) {
+    return useQuery({
+        queryKey: ["drivers", "page", filters],
+        queryFn: () => api.getDriversPage(filters),
+        staleTime: 45_000,
+        gcTime: 10 * 60_000,
+        placeholderData: (previousData) => previousData,
+    })
+}
+
 export function useDriver(id: string) {
     return useQuery({
         queryKey: ["driver", id],
@@ -150,6 +181,16 @@ export function useTrucks() {
         queryFn: () => api.getTrucks(),
         staleTime: 45_000,
         gcTime: 10 * 60_000,
+    })
+}
+
+export function useTrucksPage(filters?: { page?: number; pageSize?: number }) {
+    return useQuery({
+        queryKey: ["trucks", "page", filters],
+        queryFn: () => api.getTrucksPage(filters),
+        staleTime: 45_000,
+        gcTime: 10 * 60_000,
+        placeholderData: (previousData) => previousData,
     })
 }
 

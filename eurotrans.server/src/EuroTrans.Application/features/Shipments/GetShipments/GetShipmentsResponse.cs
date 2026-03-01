@@ -9,7 +9,9 @@ public record GetShipmentsItemResponse(
     string? DriverName,
     string Origin,
     string Destination,
-    DateTime? UpdatedAtUtc
+    DateTime? UpdatedAtUtc,
+    DateTime? DeliveredAtUtc,
+    string? ProofOfDeliveryUrl
 );
 
 public record GetShipmentsResponse(
