@@ -18,14 +18,24 @@ public class GetTrucksService
     public async Task<ErrorOr<GetTrucksResponse>> GetAsync(GetTrucksRequest request, CancellationToken ct = default)
     {
         var version = cache.GetVersion(QueryCacheScopes.Trucks);
-        var key = $"trucks:list:v{version}:page={request.Page}:size={request.PageSize}";
+        var key = string.Join(":",
+            $"trucks:list:v{version}",
+            $"search={QueryCacheKey.Segment(request.Search)}",
+            $"status={request.Status?.ToString().ToLowerInvariant() ?? "_"}",
+            $"page={request.Page}",
+            $"size={request.PageSize}");
 
         return await cache.GetOrCreateAsync(
             key,
             QueryCacheTtls.Trucks,
             async token =>
             {
-                var (items, totalCount) = await trucks.GetPagedAsync(request.Page, request.PageSize, token);
+                var (items, totalCount) = await trucks.GetPagedAsync(
+                    request.Search,
+                    request.Status,
+                    request.Page,
+                    request.PageSize,
+                    token);
 
                 return (ErrorOr<GetTrucksResponse>)new GetTrucksResponse(
                     Items: items,

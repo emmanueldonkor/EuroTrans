@@ -27,11 +27,29 @@ public class TruckRepository : ITruckRepository
             .ToListAsync(ct);
     }
 
-    public async Task<(List<Truck> Items, int TotalCount)> GetPagedAsync(int page, int pageSize, CancellationToken ct = default)
+    public async Task<(List<Truck> Items, int TotalCount)> GetPagedAsync(
+        string? search,
+        TruckStatus? status,
+        int page,
+        int pageSize,
+        CancellationToken ct = default)
     {
         var query = db.Trucks
             .AsNoTracking()
             .Where(t => t.IsActive);
+
+        if (status.HasValue)
+        {
+            query = query.Where(t => t.Status == status.Value);
+        }
+
+        if (!string.IsNullOrWhiteSpace(search))
+        {
+            var pattern = $"%{search.Trim()}%";
+            query = query.Where(t =>
+                EF.Functions.ILike(t.PlateNumber, pattern) ||
+                EF.Functions.ILike(t.Model, pattern));
+        }
 
         var totalCount = await query.CountAsync(ct);
 

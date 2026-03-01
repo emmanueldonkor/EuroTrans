@@ -37,12 +37,35 @@ public class EmployeeRepository : IEmployeeRepository
             .ToListAsync(ct);
     }
 
-    public async Task<(List<Employee> Items, int TotalCount)> GetDriversPagedAsync(int page, int pageSize, CancellationToken ct = default)
+    public async Task<(List<Employee> Items, int TotalCount)> GetDriversPagedAsync(
+        string? search,
+        DriverStatus? status,
+        int page,
+        int pageSize,
+        CancellationToken ct = default)
     {
         var query = db.Employees
             .AsNoTracking()
             .Include(e => e.Driver)
             .Where(e => e.Role == EmployeeRole.Driver && e.Driver != null);
+
+        if (status.HasValue)
+        {
+            query = query.Where(e => e.Driver!.Status == status.Value);
+        }
+
+        if (!string.IsNullOrWhiteSpace(search))
+        {
+            var pattern = $"%{search.Trim()}%";
+
+            query = query.Where(e =>
+                EF.Functions.ILike(e.Name, pattern) ||
+                EF.Functions.ILike(e.Email, pattern) ||
+                (e.Driver != null && (
+                    (e.Driver.Phone != null && EF.Functions.ILike(e.Driver.Phone, pattern)) ||
+                    (e.Driver.LicenseNumber != null && EF.Functions.ILike(e.Driver.LicenseNumber, pattern))
+                )));
+        }
 
         var totalCount = await query.CountAsync(ct);
 

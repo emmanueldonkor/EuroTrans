@@ -730,8 +730,15 @@ export const api = {
     return shipment
   },
 
-  async getDriversPage(filters?: { page?: number; pageSize?: number }): Promise<PagedResult<Driver>> {
+  async getDriversPage(filters?: {
+    search?: string
+    status?: Driver["status"]
+    page?: number
+    pageSize?: number
+  }): Promise<PagedResult<Driver>> {
     const params = new URLSearchParams()
+    if (filters?.search) params.set("search", filters.search)
+    if (filters?.status) params.set("status", toDriverApiStatus(filters.status))
     if (filters?.page) params.set("page", String(filters.page))
     if (filters?.pageSize) params.set("pageSize", String(filters.pageSize))
 
@@ -757,7 +764,12 @@ export const api = {
     }))
   },
 
-  async getDrivers(filters?: { page?: number; pageSize?: number }): Promise<Driver[]> {
+  async getDrivers(filters?: {
+    search?: string
+    status?: Driver["status"]
+    page?: number
+    pageSize?: number
+  }): Promise<Driver[]> {
     if (filters?.page || filters?.pageSize) {
       const paged = await api.getDriversPage(filters)
       return paged.items
@@ -804,8 +816,15 @@ export const api = {
     }
   },
 
-  async getTrucksPage(filters?: { page?: number; pageSize?: number }): Promise<PagedResult<Truck>> {
+  async getTrucksPage(filters?: {
+    search?: string
+    status?: Truck["status"]
+    page?: number
+    pageSize?: number
+  }): Promise<PagedResult<Truck>> {
     const params = new URLSearchParams()
+    if (filters?.search) params.set("search", filters.search)
+    if (filters?.status) params.set("status", toTruckApiStatus(filters.status))
     if (filters?.page) params.set("page", String(filters.page))
     if (filters?.pageSize) params.set("pageSize", String(filters.pageSize))
 
@@ -829,7 +848,12 @@ export const api = {
     }))
   },
 
-  async getTrucks(filters?: { page?: number; pageSize?: number }): Promise<Truck[]> {
+  async getTrucks(filters?: {
+    search?: string
+    status?: Truck["status"]
+    page?: number
+    pageSize?: number
+  }): Promise<Truck[]> {
     if (filters?.page || filters?.pageSize) {
       const paged = await api.getTrucksPage(filters)
       return paged.items

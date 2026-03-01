@@ -138,7 +138,12 @@ export function useDrivers() {
     })
 }
 
-export function useDriversPage(filters?: { page?: number; pageSize?: number }) {
+export function useDriversPage(filters?: {
+    search?: string
+    status?: "available" | "on-duty" | "off-duty"
+    page?: number
+    pageSize?: number
+}) {
     return useQuery({
         queryKey: ["drivers", "page", filters],
         queryFn: () => api.getDriversPage(filters),
@@ -184,7 +189,12 @@ export function useTrucks() {
     })
 }
 
-export function useTrucksPage(filters?: { page?: number; pageSize?: number }) {
+export function useTrucksPage(filters?: {
+    search?: string
+    status?: "available" | "in-use" | "maintenance"
+    page?: number
+    pageSize?: number
+}) {
     return useQuery({
         queryKey: ["trucks", "page", filters],
         queryFn: () => api.getTrucksPage(filters),

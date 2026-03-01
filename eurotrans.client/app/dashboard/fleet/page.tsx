@@ -25,8 +25,9 @@ import {
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { useDebouncedValue } from "@/hooks/use-debounced-value"
 import type { Truck as TruckType } from "@/lib/types"
-import { Plus, Edit, Trash2, Loader2 } from "lucide-react"
+import { Plus, Edit, Trash2, Loader2, Search } from "lucide-react"
 import { useTruckMutations, useTrucksPage } from "@/hooks/use-transport-data"
 import { useToast } from "@/hooks/use-toast"
 import { PageErrorState, SectionLoader } from "@/components/ui/page-state"
@@ -36,9 +37,17 @@ import { useI18n } from "@/components/providers/i18n-provider"
 import { DataPagination } from "@/components/ui/data-pagination"
 
 export default function FleetPage() {
+  const [searchTerm, setSearchTerm] = useState("")
+  const [statusFilter, setStatusFilter] = useState<"all" | TruckType["status"]>("all")
   const [page, setPage] = useState(1)
   const pageSize = 10
-  const { data: trucksPage, isLoading, isFetching, error: queryError, refetch } = useTrucksPage({ page, pageSize })
+  const debouncedSearchTerm = useDebouncedValue(searchTerm, 250)
+  const { data: trucksPage, isLoading, isFetching, error: queryError, refetch } = useTrucksPage({
+    search: debouncedSearchTerm || undefined,
+    status: statusFilter !== "all" ? statusFilter : undefined,
+    page,
+    pageSize,
+  })
   const trucks = trucksPage?.items ?? []
   const totalCount = trucksPage?.totalCount ?? 0
   const { createTruck, updateTruck, deleteTruck } = useTruckMutations()
@@ -214,6 +223,40 @@ export default function FleetPage() {
           {t("fleet.addTruck")}
         </Button>
       </PageHeader>
+
+      <PageSurface className="p-4 bg-gradient-to-r from-card to-muted/30">
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-center">
+          <div className="relative flex-1">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <Input
+              value={searchTerm}
+              onChange={(e) => {
+                setSearchTerm(e.target.value)
+                setPage(1)
+              }}
+              placeholder={t("fleet.searchPlaceholder")}
+              className="h-10 pl-9 bg-background/90"
+            />
+          </div>
+          <Select
+            value={statusFilter}
+            onValueChange={(value) => {
+              setStatusFilter(value as "all" | TruckType["status"])
+              setPage(1)
+            }}
+          >
+            <SelectTrigger className="h-10 w-full sm:w-52 bg-background/90">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">{t("fleet.statusFilter.all")}</SelectItem>
+              <SelectItem value="available">{t("fleet.status.available")}</SelectItem>
+              <SelectItem value="in-use">{t("fleet.status.inUse")}</SelectItem>
+              <SelectItem value="maintenance">{t("fleet.status.maintenance")}</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+      </PageSurface>
 
       <PageSurface className="table-shell">
         <Table>

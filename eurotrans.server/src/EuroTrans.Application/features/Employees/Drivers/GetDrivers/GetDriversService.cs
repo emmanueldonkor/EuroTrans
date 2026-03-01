@@ -18,14 +18,24 @@ public class GetDriversService
     public async Task<ErrorOr<GetDriversPagedResponse>> GetAsync(GetDriversRequest request, CancellationToken ct = default)
     {
         var version = cache.GetVersion(QueryCacheScopes.Drivers);
-        var key = $"drivers:list:v{version}:page={request.Page}:size={request.PageSize}";
+        var key = string.Join(":",
+            $"drivers:list:v{version}",
+            $"search={QueryCacheKey.Segment(request.Search)}",
+            $"status={request.Status?.ToString().ToLowerInvariant() ?? "_"}",
+            $"page={request.Page}",
+            $"size={request.PageSize}");
 
         return await cache.GetOrCreateAsync(
             key,
             QueryCacheTtls.Drivers,
             async token =>
             {
-                var (drivers, totalCount) = await employees.GetDriversPagedAsync(request.Page, request.PageSize, token);
+                var (drivers, totalCount) = await employees.GetDriversPagedAsync(
+                    request.Search,
+                    request.Status,
+                    request.Page,
+                    request.PageSize,
+                    token);
 
                 var items = drivers.Select(e => new GetDriversResponse(
                     EmployeeId: e.Id,

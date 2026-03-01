@@ -75,6 +75,8 @@ export const en = {
   "fleet.errorMessage": "Unexpected error while loading fleet.",
   "fleet.title": "Fleet",
   "fleet.description": "Manage your truck fleet",
+  "fleet.searchPlaceholder": "Search by plate or model...",
+  "fleet.statusFilter.all": "All statuses",
   "fleet.addTruck": "Add Truck",
   "fleet.table.plateNumber": "Plate Number",
   "fleet.table.model": "Model",
@@ -177,6 +179,8 @@ export const en = {
   // Employees
   "employees.title": "Employees",
   "employees.description": "Manage your driver workforce",
+  "employees.searchPlaceholder": "Search by name, email, phone, or license...",
+  "employees.statusFilter.all": "All statuses",
   "employees.loading": "Loading drivers...",
   "employees.errorTitle": "Could not load employees",
   "employees.errorMessage": "Unexpected error while loading employees.",
