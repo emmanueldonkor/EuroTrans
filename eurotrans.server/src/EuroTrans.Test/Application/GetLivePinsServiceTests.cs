@@ -58,8 +58,8 @@ public class GetLivePinsServiceTests
         };
 
         var shipments = new Mock<IShipmentRepository>();
-        shipments.Setup(x => x.GetLivePinItemsAsync(It.IsAny<CancellationToken>()))
-            .ReturnsAsync(items);
+        shipments.Setup(x => x.GetLivePinItemsPagedAsync(1, 20, It.IsAny<CancellationToken>()))
+            .ReturnsAsync((items, items.Count));
 
         var clock = new Mock<IDateTimeProvider>();
         clock.SetupGet(x => x.UtcNow).Returns(now);
@@ -67,15 +67,16 @@ public class GetLivePinsServiceTests
         var service = new GetLivePinsService(shipments.Object, clock.Object);
 
         // Act
-        var result = await service.GetAsync();
+        var result = await service.GetAsync(new GetLivePinsRequest());
 
         // Assert
-        result.Should().HaveCount(2);
-        result[0].ShipmentId.Should().Be(shipmentA);
-        result[0].IsStale.Should().BeFalse();
-        result[1].ShipmentId.Should().Be(shipmentB);
-        result[1].DriverName.Should().Be("Unknown");
-        result[1].Cargo.Should().Be("Shipment cargo");
-        result[1].IsStale.Should().BeTrue();
+        result.Items.Should().HaveCount(2);
+        result.Items[0].ShipmentId.Should().Be(shipmentA);
+        result.Items[0].IsStale.Should().BeFalse();
+        result.Items[1].ShipmentId.Should().Be(shipmentB);
+        result.Items[1].DriverName.Should().Be("Unknown");
+        result.Items[1].Cargo.Should().Be("Shipment cargo");
+        result.Items[1].IsStale.Should().BeTrue();
+        result.TotalCount.Should().Be(items.Count);
     }
 }

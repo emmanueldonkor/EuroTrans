@@ -12,7 +12,10 @@ public interface IShipmentRepository
     Task AddAsync(Shipment shipment, CancellationToken ct = default);
     Task<bool> HasActiveAssignmentForDriverAsync(Guid driverId, CancellationToken ct = default);
     Task<bool> HasActiveAssignmentForTruckAsync(Guid truckId, CancellationToken ct = default);
-    Task<List<ShipmentLivePinQueryItem>> GetLivePinItemsAsync(CancellationToken ct = default);
+    Task<(List<ShipmentLivePinQueryItem> Items, int TotalCount)> GetLivePinItemsPagedAsync(
+        int page,
+        int pageSize,
+        CancellationToken ct = default);
     Task<(List<GetShipmentsQueryItem> Items, int TotalCount)> GetFilteredAsync(
      ShipmentStatus? status,
      Guid? driverId,

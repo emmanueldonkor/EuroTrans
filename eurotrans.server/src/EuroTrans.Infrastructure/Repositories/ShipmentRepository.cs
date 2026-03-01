@@ -61,11 +61,25 @@ public class ShipmentRepository : IShipmentRepository
             .AnyAsync(s => s.TruckId == truckId && ActiveStatuses.Contains(s.Status), ct);
     }
 
-    public async Task<List<ShipmentLivePinQueryItem>> GetLivePinItemsAsync(CancellationToken ct = default)
+    public async Task<(List<ShipmentLivePinQueryItem> Items, int TotalCount)> GetLivePinItemsPagedAsync(
+        int page,
+        int pageSize,
+        CancellationToken ct = default)
     {
-        return await db.Shipments
+        var query = db.Shipments
             .AsNoTracking()
             .Where(s => s.Status == ShipmentStatus.InTransit)
+            .Where(s => s.Milestones.Any(m => m.Type == MilestoneType.LocationUpdate));
+
+        var totalCount = await query.CountAsync(ct);
+
+        var items = await query
+            .OrderByDescending(s => s.Milestones
+                .Where(m => m.Type == MilestoneType.LocationUpdate)
+                .Select(m => (DateTime?)m.TimestampUtc)
+                .Max())
+            .Skip((page - 1) * pageSize)
+            .Take(pageSize)
             .Select(s => new ShipmentLivePinQueryItem(
                 s.Id,
                 s.TrackingId,
@@ -88,6 +102,8 @@ public class ShipmentRepository : IShipmentRepository
                     .Select(m => (DateTime?)m.TimestampUtc)
                     .FirstOrDefault()))
             .ToListAsync(ct);
+
+        return (items, totalCount);
     }
 
     public async Task<(List<GetShipmentsQueryItem> Items, int TotalCount)> GetFilteredAsync(

@@ -14,12 +14,12 @@ public class GetLivePinsService
         this.clock = clock;
     }
 
-    public async Task<List<GetLivePinsResponse>> GetAsync(CancellationToken ct = default)
+    public async Task<GetLivePinsPagedResponse> GetAsync(GetLivePinsRequest request, CancellationToken ct = default)
     {
         var now = clock.UtcNow;
-        var pins = await shipments.GetLivePinItemsAsync(ct);
+        var (pins, totalCount) = await shipments.GetLivePinItemsPagedAsync(request.Page, request.PageSize, ct);
 
-        return pins
+        var items = pins
             .Where(x =>
                 x.Latitude.HasValue &&
                 x.Longitude.HasValue &&
@@ -36,5 +36,12 @@ public class GetLivePinsService
                 IsStale: now - x.LastLocationUpdatedAtUtc!.Value > StaleThreshold))
             .OrderByDescending(x => x.LastUpdateUtc)
             .ToList();
+
+        return new GetLivePinsPagedResponse(
+            Items: items,
+            TotalCount: totalCount,
+            Page: request.Page,
+            PageSize: request.PageSize
+        );
     }
 }

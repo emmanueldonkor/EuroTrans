@@ -925,9 +925,23 @@ export const api = {
     }
   },
 
-  async getLiveMapPins(): Promise<LiveMapPin[]> {
-    const pins = await request<LivePinApi[]>("/api/shipments/live-pins")
-    return pins.map(mapLivePin)
+  async getLiveMapPinsPage(filters?: { page?: number; pageSize?: number }): Promise<PagedResult<LiveMapPin>> {
+    const params = new URLSearchParams()
+    if (filters?.page) params.set("page", String(filters.page))
+    if (filters?.pageSize) params.set("pageSize", String(filters.pageSize))
+
+    const query = params.toString()
+    const response = await request<PagedApiResponse<LivePinApi>>(`/api/shipments/live-pins${query ? `?${query}` : ""}`)
+    return mapPagedResult(response, mapLivePin)
+  },
+
+  async getLiveMapPins(filters?: { page?: number; pageSize?: number }): Promise<LiveMapPin[]> {
+    if (filters?.page || filters?.pageSize) {
+      const paged = await api.getLiveMapPinsPage(filters)
+      return paged.items
+    }
+
+    return fetchAllPages((page, pageSize) => api.getLiveMapPinsPage({ ...filters, page, pageSize }), 50)
   },
 
   async getAnalytics() {

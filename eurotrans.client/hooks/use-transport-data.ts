@@ -286,6 +286,27 @@ export function useLiveMap() {
     })
 }
 
+export function useInfiniteLiveMap(options?: { enabled?: boolean; pageSize?: number }) {
+    const pageSize = options?.pageSize ?? 12
+
+    return useInfiniteQuery({
+        queryKey: ["live-map", "infinite", pageSize],
+        initialPageParam: 1,
+        queryFn: ({ pageParam }) =>
+            api.getLiveMapPinsPage({
+                page: pageParam,
+                pageSize,
+            }),
+        getNextPageParam: (lastPage) => {
+            const totalPages = Math.max(1, Math.ceil(lastPage.totalCount / Math.max(lastPage.pageSize, 1)))
+            return lastPage.page < totalPages ? lastPage.page + 1 : undefined
+        },
+        enabled: options?.enabled ?? true,
+        staleTime: 5_000,
+        refetchInterval: 15000,
+    })
+}
+
 export function useAnalytics() {
     return useQuery({
         queryKey: ["analytics"],

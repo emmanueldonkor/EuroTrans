@@ -65,6 +65,7 @@ export const en = {
   "map.emptyDescription": "Start transit and send at least one location update to place a shipment on the map.",
   "map.activeShipments": "Active Shipments",
   "map.noActiveShipments": "No active shipments",
+  "map.loadingMore": "Loading more shipments...",
   "map.scrollMore": "Scroll for more shipments...",
   "map.endOfList": "End of active shipment list",
   "map.badge.stale": "Stale",

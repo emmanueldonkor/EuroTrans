@@ -6,7 +6,7 @@ import { Badge } from "@/components/ui/badge"
 import { MapPin } from "lucide-react"
 import type { LiveMapPin } from "@/lib/types"
 import { getStatusColor, formatDate } from "@/lib/utils/format"
-import { useLiveMap } from "@/hooks/use-transport-data"
+import { useInfiniteLiveMap } from "@/hooks/use-transport-data"
 import { PageErrorState, SectionLoader } from "@/components/ui/page-state"
 import { PageHeading, PageShell, PageSurface } from "@/components/ui/page-shell"
 import { useI18n } from "@/components/providers/i18n-provider"
@@ -18,17 +18,24 @@ const LiveMap = dynamic(() => import("@/components/maps/live-map").then((module)
 
 export default function LiveMapPage() {
   const [selectedPin, setSelectedPin] = useState<LiveMapPin | null>(null)
-  const [visiblePinsCount, setVisiblePinsCount] = useState(12)
-  const { data: pins = [], isLoading, error, refetch } = useLiveMap()
+  const {
+    data,
+    isLoading,
+    isFetchingNextPage,
+    hasNextPage,
+    fetchNextPage,
+    error,
+    refetch,
+  } = useInfiniteLiveMap({ pageSize: 12 })
   const { t } = useI18n()
 
-  const visiblePins = useMemo(() => pins.slice(0, visiblePinsCount), [pins, visiblePinsCount])
-  const hasMorePins = visiblePinsCount < pins.length
+  const pins = useMemo(() => data?.pages.flatMap((page) => page.items) ?? [], [data?.pages])
+  const hasMorePins = Boolean(hasNextPage)
 
   const loadMorePins = useCallback(() => {
-    if (!hasMorePins) return
-    setVisiblePinsCount((current) => Math.min(current + 12, pins.length))
-  }, [hasMorePins, pins.length])
+    if (!hasMorePins || isFetchingNextPage) return
+    void fetchNextPage()
+  }, [fetchNextPage, hasMorePins, isFetchingNextPage])
 
   const loadMoreRef = useInfiniteScroll({
     hasMore: hasMorePins,
@@ -96,7 +103,7 @@ export default function LiveMapPage() {
             <p className="text-sm text-muted-foreground">{t("map.noActiveShipments")}</p>
           ) : (
             <div className="max-h-[540px] space-y-3 overflow-y-auto pr-1">
-              {visiblePins.map((pin) => (
+              {pins.map((pin) => (
                 <button
                   key={pin.id}
                   onClick={() => setSelectedPin(pin)}
@@ -130,9 +137,9 @@ export default function LiveMapPage() {
                 </button>
               ))}
 
-              {(hasMorePins || pins.length > 12) && (
+              {(hasMorePins || pins.length > 0) && (
                 <div ref={loadMoreRef} className="py-2 text-center text-xs text-muted-foreground">
-                  {hasMorePins ? t("map.scrollMore") : t("map.endOfList")}
+                  {isFetchingNextPage ? t("map.loadingMore") : hasMorePins ? t("map.scrollMore") : t("map.endOfList")}
                 </div>
               )}
             </div>
