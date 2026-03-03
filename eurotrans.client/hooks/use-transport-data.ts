@@ -22,6 +22,39 @@ export function useShipments(filters?: {
     })
 }
 
+export function useDriverCurrentShipment(
+    driverId?: string,
+    options?: { enabled?: boolean },
+) {
+    return useQuery({
+        queryKey: ["shipments", "driver-current", driverId],
+        enabled: (options?.enabled ?? true) && !!driverId,
+        queryFn: async () => {
+            const inTransit = await api.getShipmentsPage({
+                driverId,
+                status: "in-transit",
+                page: 1,
+                pageSize: 1,
+            })
+
+            if (inTransit.items.length > 0) {
+                return inTransit.items[0]
+            }
+
+            const assigned = await api.getShipmentsPage({
+                driverId,
+                status: "assigned",
+                page: 1,
+                pageSize: 1,
+            })
+
+            return assigned.items[0] ?? null
+        },
+        staleTime: 30_000,
+        gcTime: 5 * 60_000,
+    })
+}
+
 export function useInfiniteShipments(
     filters?: {
         status?: ShipmentStatus

@@ -69,6 +69,10 @@ public class EnsureCurrentUserMiddleware
         if (!path.StartsWithSegments("/api"))
             return false;
 
+        if (HttpMethods.IsGet(context.Request.Method) &&
+            path.Equals("/api/auth/me", StringComparison.OrdinalIgnoreCase))
+            return false;
+
         if (path.StartsWithSegments("/api/auth/sync-user"))
             return false;
 

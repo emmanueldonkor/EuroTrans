@@ -1,6 +1,5 @@
 "use client"
 
-import { useMemo } from "react"
 import { useRouter } from "next/navigation"
 import { Card } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
@@ -10,7 +9,7 @@ import { getStatusColor } from "@/lib/utils/format"
 import { canStartShipment } from "@/lib/shipment-rules"
 import { useToast } from "@/hooks/use-toast"
 import { useCurrentUser } from "@/hooks/use-current-user"
-import { useShipmentMutations, useShipments } from "@/hooks/use-transport-data"
+import { useDriverCurrentShipment, useShipmentMutations } from "@/hooks/use-transport-data"
 import { PageErrorState, SectionLoader } from "@/components/ui/page-state"
 import { useI18n } from "@/components/providers/i18n-provider"
 
@@ -20,17 +19,14 @@ export default function DriverHomePage() {
   const { t } = useI18n()
   const { data: currentUser, isLoading: isUserLoading, error: userError } = useCurrentUser()
   const {
-    data: shipments = [],
+    data: activeShipment,
     isLoading: isShipmentsLoading,
     error: shipmentsError,
     refetch,
-  } = useShipments()
+  } = useDriverCurrentShipment(currentUser?.employeeId, {
+    enabled: currentUser?.role === "driver",
+  })
   const { startShipment } = useShipmentMutations()
-
-  const activeShipment = useMemo(
-    () => shipments.find((shipment) => shipment.status !== "delivered" && shipment.status !== "cancelled") ?? null,
-    [shipments],
-  )
 
   const canStart = activeShipment ? canStartShipment(activeShipment) : false
   const isLoading = isUserLoading || isShipmentsLoading
