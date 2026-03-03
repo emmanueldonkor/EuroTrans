@@ -45,15 +45,28 @@ public class EnsureCurrentUserService
         var existing = await employees.GetByAuth0IdAsync(currentUser.Auth0UserId, ct);
         if (existing is not null)
         {
-            if (role is not null)
+            var roleChanged = role.HasValue && existing.Role != role.Value;
+            var identityChanged =
+                !string.Equals(existing.Name, resolvedName, StringComparison.Ordinal) ||
+                !string.Equals(existing.Email, currentUser.Email, StringComparison.OrdinalIgnoreCase);
+
+            if (roleChanged && role is { } expectedRole)
             {
-                var roleResult = existing.UpdateRole(role.Value);
+                var roleResult = existing.UpdateRole(expectedRole);
                 if (roleResult.IsError)
                     return roleResult.Errors;
             }
 
-            existing.UpdateFromIdentity(resolvedName, currentUser.Email);
-            await uow.SaveChangesAsync(ct);
+            if (identityChanged)
+            {
+                existing.UpdateFromIdentity(resolvedName, currentUser.Email);
+            }
+
+            if (roleChanged || identityChanged)
+            {
+                await uow.SaveChangesAsync(ct);
+            }
+
             return existing.Id;
         }
 
