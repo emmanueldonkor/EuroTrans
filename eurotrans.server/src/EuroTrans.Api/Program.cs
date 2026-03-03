@@ -4,7 +4,6 @@ using EuroTrans.Api.Endpoints;
 using EuroTrans.Api.Extensions;
 using EuroTrans.Api.Middlewares;
 using EuroTrans.Infrastructure.Persistence;
-using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 using Microsoft.EntityFrameworkCore;
 
@@ -33,8 +32,12 @@ if (app.Environment.IsDevelopment() && !disableAutoMigrate)
     await db.Database.MigrateAsync();
 }
 
-var swaggerEnabled = app.Environment.IsDevelopment() || app.Configuration.GetValue<bool>("Swagger:Enabled");
-var swaggerRequireAuth = app.Configuration.GetValue<bool>("Swagger:RequireAuth");
+// Configure the HTTP request pipeline.
+if (app.Environment.IsDevelopment())
+{
+    app.UseSwagger();
+    app.UseSwaggerUI();
+}
 
 app.UseHttpsRedirection();
 app.UseExceptionHandler();
@@ -44,35 +47,6 @@ app.UseRateLimiter();
 app.UseAuthorization();
 app.UseMiddleware<EnsureCurrentUserMiddleware>();
 app.UseAntiforgery();
-
-if (swaggerEnabled && swaggerRequireAuth)
-{
-    app.UseWhen(
-        context => context.Request.Path.StartsWithSegments("/swagger"),
-        branch =>
-        {
-            branch.Use(async (context, next) =>
-            {
-                if (context.User.Identity?.IsAuthenticated != true)
-                {
-                    await context.ChallengeAsync();
-                    return;
-                }
-
-                await next();
-            });
-        });
-}
-
-if (swaggerEnabled)
-{
-    app.UseSwagger();
-    app.UseSwaggerUI(options =>
-    {
-        options.SwaggerEndpoint("/swagger/v1/swagger.json", "EuroTrans API v1");
-        options.DisplayRequestDuration();
-    });
-}
 
 app.MapHealthChecks("/health/live", new HealthCheckOptions
 {
