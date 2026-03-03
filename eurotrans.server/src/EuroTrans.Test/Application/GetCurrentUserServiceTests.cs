@@ -1,6 +1,8 @@
 using ErrorOr;
 using EuroTrans.Application.Common.Interfaces;
 using EuroTrans.Application.features.Employees;
+using EuroTrans.Application.features;
+using EuroTrans.Application.features.Employees.User;
 using EuroTrans.Application.features.Employees.User.GetCurrentUser;
 using EuroTrans.Test.TestData;
 using FluentAssertions;
@@ -18,7 +20,8 @@ public class GetCurrentUserServiceTests
         currentUser.SetupGet(x => x.Auth0UserId).Returns(string.Empty);
 
         var employees = new Mock<IEmployeeRepository>();
-        var service = new GetCurrentUserService(currentUser.Object, employees.Object);
+        var ensureCurrentUserService = CreateEnsureCurrentUserService(currentUser, employees);
+        var service = new GetCurrentUserService(currentUser.Object, employees.Object, ensureCurrentUserService);
 
         // Act
         var result = await service.GetAsync();
@@ -43,7 +46,8 @@ public class GetCurrentUserServiceTests
         employees.Setup(x => x.GetByAuth0IdAsync(auth0UserId, It.IsAny<CancellationToken>()))
             .ReturnsAsync(employee);
 
-        var service = new GetCurrentUserService(currentUser.Object, employees.Object);
+        var ensureCurrentUserService = CreateEnsureCurrentUserService(currentUser, employees);
+        var service = new GetCurrentUserService(currentUser.Object, employees.Object, ensureCurrentUserService);
 
         // Act
         var result = await service.GetAsync();
@@ -55,5 +59,20 @@ public class GetCurrentUserServiceTests
         result.Value.DriverProfileComplete.Should().BeTrue();
         result.Value.Phone.Should().NotBeNullOrWhiteSpace();
         result.Value.LicenseNumber.Should().NotBeNullOrWhiteSpace();
+    }
+
+    private static EnsureCurrentUserService CreateEnsureCurrentUserService(
+        Mock<ICurrentUser> currentUser,
+        Mock<IEmployeeRepository> employees)
+    {
+        var uow = new Mock<IUnitOfWork>();
+        var clock = new Mock<IDateTimeProvider>();
+        clock.SetupGet(x => x.UtcNow).Returns(DateTime.UtcNow);
+
+        return new EnsureCurrentUserService(
+            employees.Object,
+            uow.Object,
+            currentUser.Object,
+            clock.Object);
     }
 }
