@@ -23,8 +23,9 @@ export default function DriverHomePage() {
     isLoading: isShipmentsLoading,
     error: shipmentsError,
     refetch,
-  } = useDriverCurrentShipment(currentUser?.employeeId, {
-    enabled: currentUser?.role === "driver",
+  } = useDriverCurrentShipment({
+    enabled: currentUser?.role === "driver" && currentUser.driverProfileComplete,
+    driverId: currentUser?.employeeId,
   })
   const { startShipment } = useShipmentMutations()
 

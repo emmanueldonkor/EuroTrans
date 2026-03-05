@@ -9,6 +9,7 @@ public interface IShipmentRepository
 {
     Task<Shipment?> GetByIdAsync(Guid id, CancellationToken ct = default);
     Task<Shipment?> GetForTrackingAsync(Guid id, CancellationToken ct = default);
+    Task<CurrentDriverShipmentQueryItem?> GetCurrentForDriverAsync(Guid driverId, CancellationToken ct = default);
     Task AddAsync(Shipment shipment, CancellationToken ct = default);
     Task<bool> HasActiveAssignmentForDriverAsync(Guid driverId, CancellationToken ct = default);
     Task<bool> HasActiveAssignmentForTruckAsync(Guid truckId, CancellationToken ct = default);

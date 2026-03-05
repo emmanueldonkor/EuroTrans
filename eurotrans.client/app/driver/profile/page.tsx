@@ -15,6 +15,7 @@ import { SectionLoader } from "@/components/ui/page-state"
 import { useToast } from "@/hooks/use-toast"
 import { toActionErrorMessage } from "@/lib/utils/error"
 import { useI18n } from "@/components/providers/i18n-provider"
+import { useCurrentUser } from "@/hooks/use-current-user"
 
 export default function DriverProfilePage() {
   const router = useRouter()
@@ -23,31 +24,33 @@ export default function DriverProfilePage() {
   const isForcedCompletion = searchParams.get("complete") === "1"
   const { toast } = useToast()
   const { t } = useI18n()
+  const { data: profile, isLoading, error } = useCurrentUser()
 
-  const [profile, setProfile] = useState<CurrentUserContext | null>(null)
   const [phone, setPhone] = useState("")
   const [licenseNumber, setLicenseNumber] = useState("")
-  const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
-  const [loadError, setLoadError] = useState<string | null>(null)
 
   useEffect(() => {
-    const load = async () => {
-      setLoadError(null)
-      try {
-        const me = await api.getCurrentUserContext()
-        setProfile(me)
-        setPhone(me.phone ?? "")
-        setLicenseNumber(me.licenseNumber ?? "")
-      } catch (err) {
-        setLoadError(toActionErrorMessage(err, t("driver.profile.loadError")))
-      } finally {
-        setLoading(false)
-      }
+    if (!profile) return
+
+    setPhone((prev) => (prev === "" ? profile.phone ?? "" : prev))
+    setLicenseNumber((prev) => (prev === "" ? profile.licenseNumber ?? "" : prev))
+  }, [profile])
+
+  useEffect(() => {
+    if (!profile) return
+
+    if (profile.role !== "driver") {
+      router.replace("/")
+      return
     }
 
-    void load()
-  }, [t])
+    if (profile.driverProfileComplete && isForcedCompletion) {
+      router.replace("/driver")
+    }
+  }, [isForcedCompletion, profile, router])
+
+  const loadError = error ? toActionErrorMessage(error, t("driver.profile.loadError")) : null
 
   const handleSave = async () => {
     if (!phone.trim() || !licenseNumber.trim()) {
@@ -67,18 +70,26 @@ export default function DriverProfilePage() {
         licenseNumber: licenseNumber.trim(),
       })
 
-      const me = await api.getCurrentUserContext()
-      setProfile(me)
-      queryClient.setQueryData(["current-user"], me)
+      const trimmedPhone = phone.trim()
+      const trimmedLicenseNumber = licenseNumber.trim()
+      queryClient.setQueryData<CurrentUserContext>(["current-user"], (existing) =>
+        existing
+          ? {
+            ...existing,
+            phone: trimmedPhone,
+            licenseNumber: trimmedLicenseNumber,
+            driverProfileComplete: true,
+          }
+          : existing,
+      )
+
+      await queryClient.invalidateQueries({ queryKey: ["shipments", "driver-current"] })
       toast({
         title: t("driver.profile.savedTitle"),
         description: t("driver.profile.savedDescription"),
       })
 
-      if (me.driverProfileComplete) {
-        await queryClient.invalidateQueries({ queryKey: ["current-user"] })
-        router.replace("/driver")
-      }
+      router.replace("/driver")
     } catch (err) {
       const message = toActionErrorMessage(err, t("driver.profile.saveError"))
       toast({
@@ -91,8 +102,8 @@ export default function DriverProfilePage() {
     }
   }
 
-  if (loading || !profile) {
-    if (!loading && !profile) {
+  if (isLoading || !profile) {
+    if (!isLoading && !profile) {
       return (
         <div className="max-w-lg mx-auto">
           <Alert variant="destructive">

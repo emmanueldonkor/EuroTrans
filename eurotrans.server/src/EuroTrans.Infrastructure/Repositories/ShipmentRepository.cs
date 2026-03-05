@@ -47,6 +47,33 @@ public class ShipmentRepository : IShipmentRepository
         return db.Shipments.FirstOrDefaultAsync(s => s.Id == id, ct);
     }
 
+    public Task<CurrentDriverShipmentQueryItem?> GetCurrentForDriverAsync(Guid driverId, CancellationToken ct = default)
+    {
+        return db.Shipments
+            .AsNoTracking()
+            .Where(s => s.DriverId == driverId)
+            .Where(s => s.Status == ShipmentStatus.InTransit || s.Status == ShipmentStatus.Assigned)
+            .OrderBy(s => s.Status == ShipmentStatus.InTransit ? 0 : 1)
+            .ThenByDescending(s => s.UpdatedAtUtc ?? s.CreatedAtUtc)
+            .Select(s => new CurrentDriverShipmentQueryItem(
+                s.Id,
+                s.TrackingId,
+                s.Status,
+                s.Cargo.Description,
+                s.Cargo.Weight,
+                s.Cargo.Volume,
+                s.OriginAddress.AddressLine,
+                s.OriginAddress.City,
+                s.OriginAddress.Country,
+                s.OriginAddress.PostalCode,
+                s.DestinationAddress.AddressLine,
+                s.DestinationAddress.City,
+                s.DestinationAddress.Country,
+                s.DestinationAddress.PostalCode
+            ))
+            .FirstOrDefaultAsync(ct);
+    }
+
     public Task<bool> HasActiveAssignmentForDriverAsync(Guid driverId, CancellationToken ct = default)
     {
         return db.Shipments

@@ -66,6 +66,23 @@ type ShipmentSummaryApi = {
   proofOfDeliveryUrl?: string | null
 }
 
+type CurrentDriverShipmentApi = {
+  id: string
+  trackingId: string
+  status: ShipmentApiStatus
+  cargoDescription: string
+  cargoWeight: number
+  cargoVolume: number
+  originAddress: string
+  originCity: string
+  originCountry: string
+  originPostalCode: string
+  destinationAddress: string
+  destinationCity: string
+  destinationCountry: string
+  destinationPostalCode: string
+}
+
 type PagedApiResponse<T> = {
   items: T[]
   totalCount: number
@@ -390,6 +407,39 @@ function mapShipmentSummary(item: ShipmentSummaryApi): Shipment {
   }
 }
 
+function mapCurrentDriverShipment(item: CurrentDriverShipmentApi): Shipment {
+  const updatedAt = new Date().toISOString()
+
+  return {
+    id: item.id,
+    trackingId: item.trackingId,
+    status: mapShipmentStatus(item.status),
+    cargo: {
+      description: item.cargoDescription,
+      weight: item.cargoWeight,
+      volume: item.cargoVolume,
+    },
+    origin: {
+      address: item.originAddress,
+      city: item.originCity,
+      country: item.originCountry,
+      postalCode: item.originPostalCode,
+      lat: 0,
+      lng: 0,
+    },
+    destination: {
+      address: item.destinationAddress,
+      city: item.destinationCity,
+      country: item.destinationCountry,
+      postalCode: item.destinationPostalCode,
+      lat: 0,
+      lng: 0,
+    },
+    createdAt: updatedAt,
+    updatedAt,
+  }
+}
+
 function getFirstActivityTimestamp(
   activities: ShipmentDetailApi["activities"],
   type: ActivityApiType,
@@ -571,6 +621,11 @@ export const api = {
   async getShipment(id: string): Promise<Shipment | null> {
     const response = await request<ShipmentDetailApi>(`/api/shipments/${id}`)
     return response ? mapShipmentDetail(response) : null
+  },
+
+  async getCurrentDriverShipment(): Promise<Shipment | null> {
+    const response = await request<CurrentDriverShipmentApi | null>("/api/drivers/me/current-shipment")
+    return response ? mapCurrentDriverShipment(response) : null
   },
 
   async createShipment(data: {
