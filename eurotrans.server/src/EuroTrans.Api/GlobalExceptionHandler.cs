@@ -7,11 +7,16 @@ public class GlobalExceptionHandler : IExceptionHandler
 {
     private readonly ILogger<GlobalExceptionHandler> logger;
     private readonly IHostEnvironment environment;
+    private readonly IConfiguration configuration;
 
-    public GlobalExceptionHandler(ILogger<GlobalExceptionHandler> logger, IHostEnvironment environment)
+    public GlobalExceptionHandler(
+        ILogger<GlobalExceptionHandler> logger,
+        IHostEnvironment environment,
+        IConfiguration configuration)
     {
         this.logger = logger;
         this.environment = environment;
+        this.configuration = configuration;
     }
 
     public async ValueTask<bool> TryHandleAsync(HttpContext httpContext, Exception exception, CancellationToken cancellationToken)
@@ -34,20 +39,32 @@ public class GlobalExceptionHandler : IExceptionHandler
             correlationId);
 
         var (statusCode, title) = MapException(exception);
-        var detail = environment.IsDevelopment()
-            ? exception.Message
+        var includeExceptionDetails =
+            environment.IsDevelopment() ||
+            configuration.GetValue<bool>("Diagnostics:ExposeExceptionDetails");
+
+        var detail = includeExceptionDetails
+            ? exception.GetBaseException().Message
             : "Request failed due to an unexpected server error.";
+
+        var extensions = new Dictionary<string, object?>
+        {
+            { "traceId", traceId },
+            { "correlationId", correlationId },
+            { "exceptionType", exception.GetType().FullName },
+            { "baseExceptionType", exception.GetBaseException().GetType().FullName }
+        };
+
+        if (includeExceptionDetails)
+        {
+            extensions["stackTrace"] = exception.StackTrace;
+        }
 
         await Results.Problem(
            title: title,
            detail: detail,
            statusCode: statusCode,
-           extensions: new Dictionary<string, object?>
-           {
-                { "traceId", traceId },
-                { "correlationId", correlationId },
-                { "exceptionType", exception.GetType().FullName }
-           }
+           extensions: extensions
        ).ExecuteAsync(httpContext);
         return true;
     }
