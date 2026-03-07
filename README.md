@@ -15,6 +15,18 @@ EuroTrans is a full-stack logistics platform for shipment operations, driver wor
 - Architecture style: Clean Architecture + Vertical Slice (backend)
 - Stack: Next.js 16 + ASP.NET Core 8 + PostgreSQL + Auth0 + Azure Blob
 
+## Demo Access
+Use these demo users to review the app quickly:
+
+- Manager
+  - Email: `edonkor0001@gmail.com`
+  - Password: `Eurotrans1234@#`
+- Driver
+  - Email: `edonkor0000@gmail.com`
+  - Password: `Eurotrans1234@#`
+
+Note: this is modeled as an internal business app. Self-registered users do not get manager/driver roles automatically. Role assignment is done by the app administrator.
+
 ## Table of Contents
 - [Demo Access](#demo-access)
 - [Product Overview](#product-overview)
@@ -32,18 +44,6 @@ EuroTrans is a full-stack logistics platform for shipment operations, driver wor
 - [Observability and Operations](#observability-and-operations)
 - [CI/CD](#cicd)
 - [Portfolio Notes](#portfolio-notes)
-
-## Demo Access
-Use these demo users to review the app quickly:
-
-- Manager
-  - Email: `edonkor0001@gmail.com`
-  - Password: `Eurotrans1234@#`
-- Driver
-  - Email: `edonkor0000@gmail.com`
-  - Password: `Eurotrans1234@#`
-
-Note: this is modeled as an internal business app. Self-registered users do not get manager/driver roles automatically. Role assignment is done by the app administrator.
 
 ## Product Overview
 EuroTrans models two operational personas:
