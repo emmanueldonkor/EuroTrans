@@ -18,9 +18,8 @@ import { LanguageSwitcher } from "@/components/language-switcher"
 import { Package, Home, User, Truck, LogOut } from "lucide-react"
 import { logout, getRedirectPath } from "@/lib/auth"
 import { ApiRequestError } from "@/lib/api"
-import { Alert, AlertDescription } from "@/components/ui/alert"
 import { useCurrentUser } from "@/hooks/use-current-user"
-import { FullPageLoader, PageErrorState } from "@/components/ui/page-state"
+import { PageErrorState, WorkspaceShellLoader } from "@/components/ui/page-state"
 import { useI18n } from "@/components/providers/i18n-provider"
 import { TranslationKey } from "@/lib/i18n"
 const fullNavigation = [
@@ -39,33 +38,31 @@ export default function DriverLayout({ children }: { children: React.ReactNode }
   const isForbidden = error instanceof ApiRequestError && error.status === 403
   const isDriver = currentUser?.role === "driver"
   const profileComplete = currentUser?.driverProfileComplete ?? false
+  const isOnProfilePage = pathname.startsWith("/driver/profile")
+  const roleRedirectPath = currentUser && currentUser.role !== "driver" ? getRedirectPath(currentUser.role) : null
+  const driverRedirectPath =
+    isUnauthorized
+      ? "/auth/login"
+      : isForbidden
+        ? "/access-denied"
+        : roleRedirectPath
+          ? roleRedirectPath
+          : currentUser && currentUser.role === "driver" && !currentUser.driverProfileComplete && !isOnProfilePage
+            ? "/driver/profile?complete=1"
+            : null
+
+  useEffect(() => {
+    if (!driverRedirectPath) return
+    void router.prefetch(driverRedirectPath)
+  }, [driverRedirectPath, router])
 
   useEffect(() => {
     if (isLoading) return
 
-    if (isUnauthorized) {
-      router.replace("/auth/login")
-      return
+    if (driverRedirectPath) {
+      router.replace(driverRedirectPath)
     }
-
-    if (isForbidden) {
-      router.replace("/access-denied")
-      return
-    }
-
-    if (currentUser && currentUser.role !== "driver") {
-      router.replace(getRedirectPath(currentUser.role))
-    }
-  }, [currentUser, isUnauthorized, isForbidden, isLoading, router])
-
-  useEffect(() => {
-    if (!currentUser || currentUser.role !== "driver") return
-
-    const isOnProfilePage = pathname.startsWith("/driver/profile")
-    if (!currentUser.driverProfileComplete && !isOnProfilePage) {
-      router.replace("/driver/profile?complete=1")
-    }
-  }, [currentUser, pathname, router])
+  }, [driverRedirectPath, isLoading, router])
 
   useEffect(() => {
     const onScroll = () => setHasScrolled(window.scrollY > 6)
@@ -86,7 +83,13 @@ export default function DriverLayout({ children }: { children: React.ReactNode }
   }
 
   if (isLoading) {
-    return <FullPageLoader label="Loading driver workspace..." />
+    return (
+      <WorkspaceShellLoader
+        variant="driver"
+        label="Loading driver workspace..."
+        description="Checking your active assignment, profile, and delivery tools."
+      />
+    )
   }
 
   if (error && !isUnauthorized && !isForbidden) {
@@ -101,8 +104,18 @@ export default function DriverLayout({ children }: { children: React.ReactNode }
     )
   }
 
-  if (!currentUser || !isDriver) {
-    return <FullPageLoader label="Redirecting..." />
+  if (!currentUser || !isDriver || (!profileComplete && !isOnProfilePage)) {
+    return (
+      <WorkspaceShellLoader
+        variant="driver"
+        label={!profileComplete && !isOnProfilePage ? "Completing driver setup..." : "Checking access..."}
+        description={
+          !profileComplete && !isOnProfilePage
+            ? "Routing you to your profile so dispatch information is complete."
+            : "Routing you to the correct workspace for your account."
+        }
+      />
+    )
   }
 
   const navigation = profileComplete
@@ -160,11 +173,6 @@ export default function DriverLayout({ children }: { children: React.ReactNode }
 
       {/* Main Content */}
       <main className="p-4 space-y-4">
-        {error && !isUnauthorized && !isForbidden && (
-          <Alert variant="destructive">
-            <AlertDescription>{error instanceof Error ? error.message : "Unexpected error."}</AlertDescription>
-          </Alert>
-        )}
         <div className="mx-auto w-full max-w-3xl">{children}</div>
       </main>
 

@@ -30,7 +30,7 @@ import type { Truck as TruckType } from "@/lib/types"
 import { Plus, Edit, Trash2, Loader2, Search } from "lucide-react"
 import { useTruckMutations, useTrucksPage } from "@/hooks/use-transport-data"
 import { useToast } from "@/hooks/use-toast"
-import { PageErrorState, SectionLoader } from "@/components/ui/page-state"
+import { PageErrorState, SectionLoader, TableEmptyState } from "@/components/ui/page-state"
 import { PageHeader, PageHeading, PageShell, PageSurface } from "@/components/ui/page-shell"
 import { toActionErrorMessage } from "@/lib/utils/error"
 import { useI18n } from "@/components/providers/i18n-provider"
@@ -271,11 +271,17 @@ export default function FleetPage() {
           </TableHeader>
           <TableBody>
             {trucks.length === 0 ? (
-              <TableRow>
-                <TableCell colSpan={5} className="text-center py-8 text-muted-foreground">
-                  {t("fleet.table.empty")}
-                </TableCell>
-              </TableRow>
+              <TableEmptyState
+                colSpan={5}
+                title={t("fleet.table.empty")}
+                description={t("fleet.description")}
+                action={
+                  <Button onClick={() => setShowCreateDialog(true)}>
+                    <Plus className="mr-2 h-4 w-4" />
+                    {t("fleet.addTruck")}
+                  </Button>
+                }
+              />
             ) : (
               trucks.map((truck) => (
                 <TableRow key={truck.id} className="table-row-interactive">

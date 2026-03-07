@@ -20,7 +20,7 @@ import type { Driver } from "@/lib/types"
 import { User, Loader2, Search } from "lucide-react"
 import { useDriverMutations, useDriversPage } from "@/hooks/use-transport-data"
 import { useToast } from "@/hooks/use-toast"
-import { PageErrorState, SectionLoader } from "@/components/ui/page-state"
+import { PageErrorState, SectionLoader, TableEmptyState } from "@/components/ui/page-state"
 import { PageHeading, PageShell, PageSurface } from "@/components/ui/page-shell"
 import { toActionErrorMessage } from "@/lib/utils/error"
 import { useI18n } from "@/components/providers/i18n-provider"
@@ -172,11 +172,11 @@ export default function EmployeesPage() {
           </TableHeader>
           <TableBody>
             {drivers.length === 0 ? (
-              <TableRow>
-                <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
-                  {t("employees.table.empty")}
-                </TableCell>
-              </TableRow>
+              <TableEmptyState
+                colSpan={6}
+                title={t("employees.table.empty")}
+                description={t("employees.description")}
+              />
             ) : (
               drivers.map((driver) => (
                 <TableRow key={driver.id} className="table-row-interactive">
