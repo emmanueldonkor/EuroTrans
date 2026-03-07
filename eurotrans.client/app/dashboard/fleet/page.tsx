@@ -311,7 +311,7 @@ export default function FleetPage() {
             <DialogDescription>{t("fleet.dialog.createDescription")}</DialogDescription>
           </DialogHeader>
           <div className="space-y-4">
-            <div>
+            <div className="space-y-2">
               <Label htmlFor="plateNumber">{t("fleet.form.plateNumber")}</Label>
               <Input
                 id="plateNumber"
@@ -320,7 +320,7 @@ export default function FleetPage() {
                 placeholder={t("fleet.form.placeholder.plateNumber")}
               />
             </div>
-            <div>
+            <div className="space-y-2">
               <Label htmlFor="model">{t("fleet.form.model")}</Label>
               <Input
                 id="model"
@@ -329,7 +329,7 @@ export default function FleetPage() {
                 placeholder={t("fleet.form.placeholder.model")}
               />
             </div>
-            <div>
+            <div className="space-y-2">
               <Label htmlFor="capacity">{t("fleet.form.capacity")}</Label>
               <Input
                 id="capacity"
@@ -339,7 +339,7 @@ export default function FleetPage() {
                 placeholder={t("fleet.form.placeholder.capacity")}
               />
             </div>
-            <div>
+            <div className="space-y-2">
               <Label htmlFor="status">{t("fleet.form.status")}</Label>
               <Select
                 value={formData.status}
@@ -375,7 +375,7 @@ export default function FleetPage() {
             <DialogDescription>{t("fleet.dialog.editDescription")}</DialogDescription>
           </DialogHeader>
           <div className="space-y-4">
-            <div>
+            <div className="space-y-2">
               <Label htmlFor="edit-plateNumber">{t("fleet.form.plateNumber")}</Label>
               <Input
                 id="edit-plateNumber"
@@ -383,7 +383,7 @@ export default function FleetPage() {
                 onChange={(e) => setFormData({ ...formData, plateNumber: e.target.value })}
               />
             </div>
-            <div>
+            <div className="space-y-2">
               <Label htmlFor="edit-model">{t("fleet.form.model")}</Label>
               <Input
                 id="edit-model"
@@ -391,7 +391,7 @@ export default function FleetPage() {
                 onChange={(e) => setFormData({ ...formData, model: e.target.value })}
               />
             </div>
-            <div>
+            <div className="space-y-2">
               <Label htmlFor="edit-capacity">{t("fleet.form.capacity")}</Label>
               <Input
                 id="edit-capacity"
@@ -400,7 +400,7 @@ export default function FleetPage() {
                 onChange={(e) => setFormData({ ...formData, capacity: e.target.value })}
               />
             </div>
-            <div>
+            <div className="space-y-2">
               <Label htmlFor="edit-status">{t("fleet.form.status")}</Label>
               <Select
                 value={formData.status}
