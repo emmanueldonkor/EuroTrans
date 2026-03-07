@@ -24,23 +24,23 @@ public class AnalyticsRepository : IAnalyticsRepository
         var shipments = db.Shipments.AsNoTracking();
         var drivers = db.Drivers.AsNoTracking();
 
-        var totalShipmentsTask = shipments.CountAsync(ct);
-        var activeShipmentsTask = shipments.CountAsync(
+        var totalShipments = await shipments.CountAsync(ct);
+        var activeShipments = await shipments.CountAsync(
             shipment => shipment.Status == ShipmentStatus.Assigned || shipment.Status == ShipmentStatus.InTransit,
             ct);
-        var deliveredShipmentsTask = shipments.CountAsync(
+        var deliveredShipments = await shipments.CountAsync(
             shipment => shipment.Status == ShipmentStatus.Delivered,
             ct);
-        var activeDriversTask = drivers.CountAsync(driver => driver.Status == DriverStatus.OnDuty, ct);
-        var availableDriversTask = drivers.CountAsync(driver => driver.Status == DriverStatus.Available, ct);
+        var activeDrivers = await drivers.CountAsync(driver => driver.Status == DriverStatus.OnDuty, ct);
+        var availableDrivers = await drivers.CountAsync(driver => driver.Status == DriverStatus.Available, ct);
 
-        var shipmentsOverTimeTask = shipments
+        var shipmentsOverTime = await shipments
             .Where(shipment => shipment.CreatedAtUtc >= fromUtc && shipment.CreatedAtUtc < toUtcExclusive)
             .GroupBy(shipment => shipment.CreatedAtUtc.Date)
             .Select(group => new AnalyticsShipmentTrendPoint(group.Key, group.Count()))
             .ToListAsync(ct);
 
-        var deliveryDurationsTask = shipments
+        var deliveryDurations = await shipments
             .Where(shipment => shipment.StartedAtUtc.HasValue && shipment.DeliveredAtUtc.HasValue)
             .Select(shipment => new
             {
@@ -49,7 +49,7 @@ public class AnalyticsRepository : IAnalyticsRepository
             })
             .ToListAsync(ct);
 
-        var workloadRowsTask = (
+        var workloadRows = await (
             from shipment in shipments
             join employee in db.Employees.AsNoTracking() on shipment.DriverId equals (Guid?)employee.Id into employees
             from employee in employees.DefaultIfEmpty()
@@ -61,21 +61,11 @@ public class AnalyticsRepository : IAnalyticsRepository
             })
             .ToListAsync(ct);
 
-        await Task.WhenAll(
-            totalShipmentsTask,
-            activeShipmentsTask,
-            deliveredShipmentsTask,
-            activeDriversTask,
-            availableDriversTask,
-            shipmentsOverTimeTask,
-            deliveryDurationsTask,
-            workloadRowsTask);
-
-        var averageDeliveryHours = deliveryDurationsTask.Result.Count == 0
+        var averageDeliveryHours = deliveryDurations.Count == 0
             ? (double?)null
-            : deliveryDurationsTask.Result.Average(item => (item.DeliveredAtUtc - item.StartedAtUtc).TotalHours);
+            : deliveryDurations.Average(item => (item.DeliveredAtUtc - item.StartedAtUtc).TotalHours);
 
-        var driverWorkload = workloadRowsTask.Result
+        var driverWorkload = workloadRows
             .GroupBy(item => item.DriverName)
             .Select(group =>
             {
@@ -94,13 +84,13 @@ public class AnalyticsRepository : IAnalyticsRepository
             .ToList();
 
         return new AnalyticsOverviewQueryResult(
-            TotalShipments: totalShipmentsTask.Result,
-            ActiveShipments: activeShipmentsTask.Result,
-            DeliveredShipments: deliveredShipmentsTask.Result,
+            TotalShipments: totalShipments,
+            ActiveShipments: activeShipments,
+            DeliveredShipments: deliveredShipments,
             AverageDeliveryHours: averageDeliveryHours,
-            ActiveDrivers: activeDriversTask.Result,
-            AvailableDrivers: availableDriversTask.Result,
-            ShipmentsOverTime: shipmentsOverTimeTask.Result,
+            ActiveDrivers: activeDrivers,
+            AvailableDrivers: availableDrivers,
+            ShipmentsOverTime: shipmentsOverTime,
             DriverWorkloadDistribution: driverWorkload);
     }
 }
