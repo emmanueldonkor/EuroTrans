@@ -13,7 +13,7 @@ import { getStatusColor, formatDate } from "@/lib/utils/format"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import type { ShipmentStatus } from "@/lib/types"
 import { useDebouncedValue } from "@/hooks/use-debounced-value"
-import { SectionLoader, TableEmptyState } from "@/components/ui/page-state"
+import { SectionLoader } from "@/components/ui/page-state"
 import { PageHeader, PageHeading, PageShell, PageSurface } from "@/components/ui/page-shell"
 import { useI18n } from "@/components/providers/i18n-provider"
 import { DataPagination } from "@/components/ui/data-pagination"
@@ -152,11 +152,11 @@ export default function ShipmentsPage() {
           </TableHeader>
           <TableBody>
             {shipments.length === 0 ? (
-              <TableEmptyState
-                colSpan={5}
-                title={shipmentsError ? t("shipments.errorLoad") : t("shipments.noResults")}
-                description={t("shipments.description")}
-              />
+              <TableRow>
+                <TableCell colSpan={5} className="text-center text-muted-foreground py-8">
+                  {shipmentsError ? t("shipments.errorLoad") : t("shipments.noResults")}
+                </TableCell>
+              </TableRow>
             ) : (
               shipments.map((shipment) => (
                 <TableRow key={shipment.id} className="cursor-pointer table-row-interactive">

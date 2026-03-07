@@ -4,12 +4,11 @@ import { useCallback, useMemo } from "react"
 import Link from "next/link"
 import { Card } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
-import { ArrowRight, Loader2, Package } from "lucide-react"
+import { Loader2, Package } from "lucide-react"
 import { getStatusColor, formatDate } from "@/lib/utils/format"
 import { useCurrentUser } from "@/hooks/use-current-user"
 import { useInfiniteShipments } from "@/hooks/use-transport-data"
-import { EmptyStateCard, PageErrorState, SectionLoader } from "@/components/ui/page-state"
-import { PageHeading, PageShell, PageSurface } from "@/components/ui/page-shell"
+import { PageErrorState, SectionLoader } from "@/components/ui/page-state"
 import { useI18n } from "@/components/providers/i18n-provider"
 import { useInfiniteScroll } from "@/hooks/use-infinite-scroll"
 
@@ -60,45 +59,39 @@ export default function DriverShipmentsPage() {
   }
 
   return (
-    <PageShell className="mx-auto max-w-3xl">
-      <PageSurface className="panel-muted p-6 md:p-8">
-        <PageHeading title={t("driver.shipments.title")} description={t("driver.shipments.description")} />
-      </PageSurface>
+    <div className="max-w-lg mx-auto space-y-6">
+      <div>
+        <h1 className="text-3xl font-bold">{t("driver.shipments.title")}</h1>
+        <p className="text-muted-foreground">{t("driver.shipments.description")}</p>
+      </div>
 
       {shipments.length === 0 ? (
-        <EmptyStateCard
-          icon={Package}
-          title={t("driver.shipments.emptyTitle")}
-          description={t("driver.shipments.emptyDescription")}
-          className="surface-hover"
-        />
+        <Card className="panel p-12 flex flex-col items-center justify-center text-center surface-hover">
+          <Package className="h-16 w-16 text-muted-foreground mb-4" />
+          <h3 className="text-lg font-medium mb-2">{t("driver.shipments.emptyTitle")}</h3>
+          <p className="text-sm text-muted-foreground">{t("driver.shipments.emptyDescription")}</p>
+        </Card>
       ) : (
         <div className="space-y-3">
           {shipments.map((shipment) => (
             <Link key={shipment.id} href={`/driver/shipments/${shipment.id}`}>
-              <Card className="panel p-5 motion-smooth hover:bg-muted/40 hover:shadow-md">
-                <div className="space-y-4">
-                  <div className="flex items-start justify-between gap-3">
-                    <div className="space-y-1">
+              <Card className="panel p-4 motion-smooth hover:bg-muted/40 hover:shadow-md">
+                <div className="space-y-3">
+                  <div className="flex items-start justify-between gap-2">
+                    <div>
                       <p className="font-semibold">{shipment.trackingId}</p>
-                      <p className="text-sm text-muted-foreground">{shipment.cargo.description}</p>
+                      <p className="text-sm text-muted-foreground mt-1">{shipment.cargo.description}</p>
                     </div>
                     <Badge className={getStatusColor(shipment.status)}>{shipment.status.replace("-", " ")}</Badge>
                   </div>
 
-                  <div className="grid gap-3 text-sm text-muted-foreground sm:grid-cols-[minmax(0,1fr)_auto] sm:items-end">
-                    <div>
-                      <p>
-                        {shipment.origin.city} -{">"} {shipment.destination.city}
-                      </p>
-                      <p className="mt-1 text-xs">
-                        {t("map.updatedLabel")}: {formatDate(shipment.updatedAt)}
-                      </p>
-                    </div>
-                    <div className="inline-flex items-center gap-2 text-sm font-medium text-foreground">
-                      {t("driver.home.viewDetails")}
-                      <ArrowRight className="h-4 w-4" />
-                    </div>
+                  <div className="text-sm text-muted-foreground">
+                    <p>
+                      {shipment.origin.city} -{">"} {shipment.destination.city}
+                    </p>
+                    <p className="text-xs mt-1">
+                      {t("map.updatedLabel")}: {formatDate(shipment.updatedAt)}
+                    </p>
                   </div>
                 </div>
               </Card>
@@ -106,21 +99,19 @@ export default function DriverShipmentsPage() {
           ))}
 
           {(hasNextPage || isFetchingNextPage) && (
-            <PageSurface className="border-dashed bg-card/70 p-4">
-              <div ref={loadMoreRef} className="flex items-center justify-center text-sm text-muted-foreground">
-                {isFetchingNextPage ? (
-                  <span className="inline-flex items-center gap-2">
-                    <Loader2 className="h-4 w-4 animate-spin" />
-                    {t("driver.shipments.loadingMore")}
-                  </span>
-                ) : (
-                  t("driver.shipments.scrollMore")
-                )}
-              </div>
-            </PageSurface>
+            <div ref={loadMoreRef} className="flex items-center justify-center py-4 text-sm text-muted-foreground">
+              {isFetchingNextPage ? (
+                <span className="inline-flex items-center gap-2">
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                  {t("driver.shipments.loadingMore")}
+                </span>
+              ) : (
+                t("driver.shipments.scrollMore")
+              )}
+            </div>
           )}
         </div>
       )}
-    </PageShell>
+    </div>
   )
 }

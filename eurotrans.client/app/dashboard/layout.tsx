@@ -19,7 +19,7 @@ import { Package, Map, Truck, Users, BarChart3, FileText, Menu, X, LogOut } from
 import { logout, getRedirectPath } from "@/lib/auth"
 import { ApiRequestError } from "@/lib/api"
 import { useCurrentUser } from "@/hooks/use-current-user"
-import { PageErrorState, WorkspaceShellLoader } from "@/components/ui/page-state"
+import { FullPageLoader, PageErrorState } from "@/components/ui/page-state"
 import { useI18n } from "@/components/providers/i18n-provider"
 import { TranslationKey } from "@/lib/i18n"
 
@@ -41,21 +41,24 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const { data: currentUser, isLoading, error, refetch } = useCurrentUser()
   const isUnauthorized = error instanceof ApiRequestError && error.status === 401
   const isForbidden = error instanceof ApiRequestError && error.status === 403
-  const roleRedirectPath = currentUser && currentUser.role !== "manager" ? getRedirectPath(currentUser.role) : null
-  const redirectPath = isUnauthorized ? "/auth/login" : isForbidden ? "/access-denied" : roleRedirectPath
-
-  useEffect(() => {
-    if (!redirectPath) return
-    void router.prefetch(redirectPath)
-  }, [redirectPath, router])
 
   useEffect(() => {
     if (isLoading) return
 
-    if (redirectPath) {
-      router.replace(redirectPath)
+    if (isUnauthorized) {
+      router.replace("/auth/login")
+      return
     }
-  }, [isLoading, redirectPath, router])
+
+    if (isForbidden) {
+      router.replace("/access-denied")
+      return
+    }
+
+    if (currentUser && currentUser.role !== "manager") {
+      router.replace(getRedirectPath(currentUser.role))
+    }
+  }, [currentUser, isUnauthorized, isForbidden, isLoading, router])
 
   useEffect(() => {
     const onScroll = () => setHasScrolled(window.scrollY > 6)
@@ -76,13 +79,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   }
 
   if (isLoading) {
-    return (
-      <WorkspaceShellLoader
-        variant="manager"
-        label="Loading manager workspace..."
-        description="Preparing live operations, fleet, and staffing views."
-      />
-    )
+    return <FullPageLoader label="Loading manager workspace..." />
   }
 
   if (error && !isUnauthorized && !isForbidden) {
@@ -99,15 +96,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
   if (!currentUser || currentUser.role !== "manager") {
     return (
-      <WorkspaceShellLoader
-        variant="manager"
-        label={isUnauthorized ? "Signing you in..." : "Checking access..."}
-        description={
-          isForbidden
-            ? "Your current account cannot open the manager workspace."
-            : "Routing you to the correct workspace for your account."
-        }
-      />
+      <FullPageLoader label="Redirecting..." />
     )
   }
 

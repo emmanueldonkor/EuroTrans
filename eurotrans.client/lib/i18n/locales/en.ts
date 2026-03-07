@@ -70,7 +70,6 @@ export const en = {
   "map.endOfList": "End of active shipment list",
   "map.badge.stale": "Stale",
   "map.driverLabel": "Driver",
-  "map.positionLabel": "Current Position",
   "map.updatedLabel": "Updated",
 
   // Fleet
@@ -140,9 +139,6 @@ export const en = {
   // Analytics
   "analytics.title": "Analytics",
   "analytics.description": "Performance metrics and insights",
-  "analytics.snapshotTitle": "Operations Snapshot",
-  "analytics.snapshotDescription":
-    "Dispatch demand, driver capacity, and completed work in one view so managers can spot load imbalance quickly.",
   "analytics.loading": "Loading analytics...",
   "analytics.errorTitle": "Could not load analytics",
   "analytics.errorMessage": "Unexpected error while loading analytics.",
