@@ -1,9 +1,9 @@
 # EuroTrans
 
-[![Watch EuroTrans Walkthrough](https://img.youtube.com/vi/YOUTUBE_VIDEO_ID/hqdefault.jpg)](https://www.youtube.com/watch?v=YOUTUBE_VIDEO_ID)
+<!--[![Watch EuroTrans Walkthrough](https://img.youtube.com/vi/YOUTUBE_VIDEO_ID/hqdefault.jpg)](https://www.youtube.com/watch?v=YOUTUBE_VIDEO_ID)
 
 **Walkthrough video:**  
-`https://www.youtube.com/watch?v=YOUTUBE_VIDEO_ID`
+`https://www.youtube.com/watch?v=YOUTUBE_VIDEO_ID`-->
 
 EuroTrans is a full-stack logistics platform for shipment operations, driver workflows, fleet management, and live shipment tracking.
 
@@ -110,11 +110,6 @@ flowchart TD
     API --> MW[Cross-Cutting Middleware\nException Handling / Logging / Auth / Rate Limit]
     MW --> APP
 ```
-
-Detailed architecture docs:
-- `docs/portfolio/architecture/system-architecture.md`
-- `docs/portfolio/architecture/backend-clean-architecture.md`
-- `docs/portfolio/architecture/shipment-sequence.md`
 
 ## Database Design
 Current persistence uses PostgreSQL with EF Core migrations.
