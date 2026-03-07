@@ -161,7 +161,10 @@ export default function ShipmentsPage() {
               shipments.map((shipment) => (
                 <TableRow key={shipment.id} className="cursor-pointer table-row-interactive">
                   <TableCell>
-                    <Link href={`/dashboard/shipments/${shipment.id}`} className="font-medium hover:underline underline-offset-4">
+                    <Link
+                      href={`/dashboard/shipments/${shipment.id}`}
+                      className="font-medium text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300 hover:underline underline-offset-4"
+                    >
                       {shipment.trackingId}
                     </Link>
                   </TableCell>
