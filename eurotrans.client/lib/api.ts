@@ -31,12 +31,14 @@ type ApiErrorPayload = {
 export class ApiRequestError extends Error {
   status: number
   path: string
+  debugMessage?: string
 
-  constructor(message: string, status: number, path: string) {
+  constructor(message: string, status: number, path: string, debugMessage?: string) {
     super(message)
     this.name = "ApiRequestError"
     this.status = status
     this.path = path
+    this.debugMessage = debugMessage
   }
 }
 
@@ -60,6 +62,7 @@ type CurrentUserContextApi = {
 type ShipmentSummaryApi = {
   id: string
   trackingId: string
+  cargoDescription?: string | null
   status: ShipmentApiStatus
   driverName?: string | null
   origin?: string
@@ -164,6 +167,25 @@ type LivePinApi = {
   isStale: boolean
 }
 
+function statusFallbackMessage(status: number): string {
+  switch (status) {
+    case 400:
+      return "Request validation failed."
+    case 401:
+      return "You are not authenticated. Please sign in again."
+    case 403:
+      return "You do not have permission to perform this action."
+    case 404:
+      return "Requested resource was not found."
+    case 409:
+      return "Request could not be completed due to a conflict."
+    default:
+      return status >= 500
+        ? "Request failed due to an unexpected server error."
+        : `Request failed with status ${status}.`
+  }
+}
+
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
   const isFormData = init?.body instanceof FormData
   const headers = new Headers(init?.headers)
@@ -201,20 +223,16 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
       details.push(...validationDetails)
     }
 
-    let bodyDump = rawBody
-    if (!bodyDump && parsedBody) {
-      bodyDump = JSON.stringify(parsedBody)
-    }
-
     const message = [
       `HTTP ${response.status} ${response.statusText} on ${path}`,
       details.length > 0 ? details.join(" | ") : undefined,
-      bodyDump ? `Response Body: ${bodyDump}` : undefined,
+      rawBody ? `Response Body: ${rawBody}` : undefined,
     ]
       .filter(Boolean)
       .join("\n")
 
-    throw new ApiRequestError(message, response.status, path)
+    const publicMessage = details.length > 0 ? details.join(" | ") : statusFallbackMessage(response.status)
+    throw new ApiRequestError(publicMessage, response.status, path, message)
   }
 
   if (response.status === 204 || response.status === 205) {
@@ -382,7 +400,7 @@ function mapShipmentSummary(item: ShipmentSummaryApi): Shipment {
     trackingId: item.trackingId,
     status: mapShipmentStatus(item.status),
     cargo: {
-      description: "N/A",
+      description: item.cargoDescription ?? "",
       weight: 0,
       volume: 0,
     },
@@ -536,6 +554,21 @@ function mapLivePin(item: LivePinApi): LiveMapPin {
     },
     lastUpdate: item.lastUpdateUtc,
     isStale: item.isStale,
+  }
+}
+
+function fallbackActorName(type: Activity["type"]): string {
+  switch (type) {
+    case "created":
+    case "assigned":
+    case "cancelled":
+      return "Manager"
+    case "started":
+    case "delivered":
+    case "milestone":
+      return "Driver"
+    default:
+      return "User"
   }
 }
 
@@ -723,15 +756,18 @@ export const api = {
       }>
     >(`/api/shipments/${shipmentId}/activities`)
 
-    return activities.map((a) => ({
-      id: a.id,
-      shipmentId,
-      type: mapActivityType(a.type),
-      description: a.description,
-      timestamp: a.timestampUtc,
-      userId: a.employeeId,
-      userName: a.employeeName ?? "Unknown",
-    }))
+    return activities.map((a) => {
+      const type = mapActivityType(a.type)
+      return {
+        id: a.id,
+        shipmentId,
+        type,
+        description: a.description,
+        timestamp: a.timestampUtc,
+        userId: a.employeeId,
+        userName: a.employeeName?.trim() || fallbackActorName(type),
+      }
+    })
   },
 
   async updateShipmentLocation(id: string, location: Location): Promise<Shipment> {

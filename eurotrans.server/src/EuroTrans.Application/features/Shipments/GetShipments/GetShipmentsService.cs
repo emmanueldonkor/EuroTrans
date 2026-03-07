@@ -71,6 +71,7 @@ public class GetShipmentsService
                     .Select(item => new GetShipmentsItemResponse(
                         item.Id,
                         item.TrackingId,
+                        item.CargoDescription,
                         item.Status,
                         item.DriverName,
                         FormatLocation(item.OriginCity, item.OriginCountry),

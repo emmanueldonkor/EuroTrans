@@ -1,6 +1,7 @@
 using ErrorOr;
 using EuroTrans.Application.Common.Caching;
 using EuroTrans.Application.Common.Interfaces;
+using EuroTrans.Domain.Shipments.Enums;
 
 namespace EuroTrans.Application.features.Shipments.GetShipment;
 
@@ -86,7 +87,7 @@ public class GetShipmentService
                         ? null
                         : new DriverDto(
                             shipment.Driver.Id,
-                            shipment.Driver.Employee?.Name ?? "Unknown",
+                            ResolveDriverName(shipment.Driver.Employee?.Name),
                             shipment.Driver.Phone
                         ),
                     shipment.Truck is null
@@ -104,7 +105,7 @@ public class GetShipmentService
                             a.Type,
                             a.TimestampUtc,
                             a.EmployeeId,
-                            a.Employee?.Name ?? "Unknown"
+                            ResolveActorName(a.Type, a.Employee?.Name)
                         ))
                         .ToList(),
                     shipment.Milestones
@@ -117,11 +118,34 @@ public class GetShipmentService
                             m.Note,
                             m.LocationLabel,
                             m.TimestampUtc,
-                            m.Employee?.Name ?? "Unknown"
+                            ResolveMilestoneActorName(m.Employee?.Name)
                         ))
                         .ToList()
                 );
             },
             ct);
+    }
+
+    private static string ResolveDriverName(string? employeeName)
+    {
+        return string.IsNullOrWhiteSpace(employeeName) ? "Driver" : employeeName;
+    }
+
+    private static string ResolveActorName(ActivityType type, string? employeeName)
+    {
+        if (!string.IsNullOrWhiteSpace(employeeName))
+            return employeeName;
+
+        return type switch
+        {
+            ActivityType.Created or ActivityType.Assigned or ActivityType.Cancelled => "Manager",
+            ActivityType.Started or ActivityType.Delivered or ActivityType.MilestoneAdded => "Driver",
+            _ => "User"
+        };
+    }
+
+    private static string ResolveMilestoneActorName(string? employeeName)
+    {
+        return string.IsNullOrWhiteSpace(employeeName) ? "Driver" : employeeName;
     }
 }

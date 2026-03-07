@@ -27,6 +27,7 @@ import { useToast } from "@/hooks/use-toast"
 import { SectionLoader } from "@/components/ui/page-state"
 import { useShipmentTracking } from "@/hooks/use-shipment-tracking"
 import { useI18n } from "@/components/providers/i18n-provider"
+import { toActionErrorMessage } from "@/lib/utils/error"
 
 export default function DriverShipmentDetailPage() {
   const params = useParams()
@@ -64,11 +65,6 @@ export default function DriverShipmentDetailPage() {
     lat: "",
     lng: "",
   })
-
-  const toErrorMessage = (error: unknown, fallback: string) => {
-    if (error instanceof Error && error.message.trim().length > 0) return error.message
-    return fallback
-  }
 
   const getShipmentStatusText = (status: Shipment["status"]) => {
     switch (status) {
@@ -127,10 +123,9 @@ export default function DriverShipmentDetailPage() {
         setShowDeliverPanel(false)
       }
     } catch (error) {
-      console.error("Failed to load shipment:", error)
       toast({
         title: t("driver.shipmentDetail.loadErrorTitle"),
-        description: toErrorMessage(error, t("driver.shipmentDetail.loadErrorFallback")),
+        description: toActionErrorMessage(error, t("driver.shipmentDetail.loadErrorFallback")),
         variant: "destructive",
       })
     } finally {
@@ -150,10 +145,9 @@ export default function DriverShipmentDetailPage() {
       })
       await loadData()
     } catch (error) {
-      console.error("Failed to start journey:", error)
       toast({
         title: t("driver.shipmentDetail.loadErrorTitle"),
-        description: toErrorMessage(error, t("driver.shipmentDetail.startErrorFallback")),
+        description: toActionErrorMessage(error, t("driver.shipmentDetail.startErrorFallback")),
         variant: "destructive",
       })
     } finally {
@@ -194,10 +188,9 @@ export default function DriverShipmentDetailPage() {
             await loadData()
           }
         } catch (error) {
-          console.error("Failed to update location:", error)
           toast({
             title: t("driver.shipmentDetail.loadErrorTitle"),
-            description: toErrorMessage(error, t("driver.shipmentDetail.locationUpdateErrorFallback")),
+            description: toActionErrorMessage(error, t("driver.shipmentDetail.locationUpdateErrorFallback")),
             variant: "destructive",
           })
         } finally {
@@ -257,10 +250,9 @@ export default function DriverShipmentDetailPage() {
       setLocationData({ city: "", address: "", country: "", postalCode: "", lat: "", lng: "" })
       await loadData()
     } catch (error) {
-      console.error("Failed to update location:", error)
       toast({
         title: t("driver.shipmentDetail.loadErrorTitle"),
-        description: toErrorMessage(error, t("driver.shipmentDetail.locationUpdateErrorFallback")),
+        description: toActionErrorMessage(error, t("driver.shipmentDetail.locationUpdateErrorFallback")),
         variant: "destructive",
       })
     } finally {
@@ -347,10 +339,9 @@ export default function DriverShipmentDetailPage() {
       setMilestoneData({ type: "checkpoint", note: "", locationLabel: "", lat: "", lng: "" })
       await loadData()
     } catch (error) {
-      console.error("Failed to add milestone:", error)
       toast({
         title: t("driver.shipmentDetail.loadErrorTitle"),
-        description: toErrorMessage(error, t("driver.shipmentDetail.milestoneAddErrorFallback")),
+        description: toActionErrorMessage(error, t("driver.shipmentDetail.milestoneAddErrorFallback")),
         variant: "destructive",
       })
     } finally {
@@ -384,10 +375,9 @@ export default function DriverShipmentDetailPage() {
       setShowDeliverPanel(false)
       await loadData()
     } catch (error) {
-      console.error("Failed to deliver shipment:", error)
       toast({
         title: t("driver.shipmentDetail.loadErrorTitle"),
-        description: toErrorMessage(error, t("driver.shipmentDetail.deliverErrorFallback")),
+        description: toActionErrorMessage(error, t("driver.shipmentDetail.deliverErrorFallback")),
         variant: "destructive",
       })
     } finally {

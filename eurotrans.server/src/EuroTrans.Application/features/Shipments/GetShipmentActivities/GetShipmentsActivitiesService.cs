@@ -1,6 +1,7 @@
 using ErrorOr;
 using EuroTrans.Application.Common.Caching;
 using EuroTrans.Application.Common.Interfaces;
+using EuroTrans.Domain.Shipments.Enums;
 
 
 namespace EuroTrans.Application.features.Shipments.GetShipmentActivities;
@@ -59,10 +60,24 @@ public class GetShipmentActivitiesService
                         a.EmployeeId,
                         a.Type,
                         a.Description,
-                        a.TimestampUtc
+                        a.TimestampUtc,
+                        ResolveActorName(a.Type, a.Employee?.Name)
                     ))
                     .ToList();
             },
             ct);
+    }
+
+    private static string ResolveActorName(ActivityType type, string? employeeName)
+    {
+        if (!string.IsNullOrWhiteSpace(employeeName))
+            return employeeName;
+
+        return type switch
+        {
+            ActivityType.Created or ActivityType.Assigned or ActivityType.Cancelled => "Manager",
+            ActivityType.Started or ActivityType.Delivered or ActivityType.MilestoneAdded => "Driver",
+            _ => "User"
+        };
     }
 }

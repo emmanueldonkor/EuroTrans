@@ -5,6 +5,7 @@ namespace EuroTrans.Application.features.Shipments.GetShipments;
 public record GetShipmentsItemResponse(
     Guid Id,
     string TrackingId,
+    string CargoDescription,
     ShipmentStatus Status,
     string? DriverName,
     string Origin,

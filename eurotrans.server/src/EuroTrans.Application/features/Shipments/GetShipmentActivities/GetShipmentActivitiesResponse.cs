@@ -7,6 +7,6 @@ public record GetShipmentActivitiesResponse(
     Guid EmployeeId,
     ActivityType Type,
     string Description,
-    //Guid CreatedByEmployeeId,
-    DateTime TimestampUtc
+    DateTime TimestampUtc,
+    string EmployeeName
 );

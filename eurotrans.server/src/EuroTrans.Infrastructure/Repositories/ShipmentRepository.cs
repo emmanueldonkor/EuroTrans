@@ -181,6 +181,7 @@ public class ShipmentRepository : IShipmentRepository
             .Select(s => new GetShipmentsQueryItem(
                 s.Id,
                 s.TrackingId,
+                s.Cargo.Description,
                 s.Status,
                 s.Driver != null ? s.Driver.Employee.Name : null,
                 s.OriginAddress != null ? s.OriginAddress.City : null,

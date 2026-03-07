@@ -137,19 +137,6 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
               })}
             </div>
           </nav>
-          <div className="border-t border-sidebar-border/80 p-3">
-            <div className="glass-surface flex items-center gap-3 rounded-lg px-3 py-2">
-              <Avatar className="h-8 w-8 border border-sidebar-border">
-                <AvatarFallback className="bg-sidebar-accent text-sidebar-accent-foreground text-xs">
-                  {currentUser.name.charAt(0)}
-                </AvatarFallback>
-              </Avatar>
-              <div className="flex-1 min-w-0">
-                <p className="text-sm font-medium text-sidebar-foreground truncate">{currentUser.name}</p>
-                <p className="text-xs text-sidebar-foreground/50 truncate">{currentUser.email}</p>
-              </div>
-            </div>
-          </div>
         </aside>
 
         {/* Mobile Sidebar */}
