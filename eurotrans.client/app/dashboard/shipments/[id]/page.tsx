@@ -21,7 +21,7 @@ import {
 import { ArrowLeft, Package, MapPin, Clock, User, TruckIcon, Trash2, Loader2, CircleDot } from "lucide-react"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { api } from "@/lib/api"
-import type { Shipment, Driver, Truck, Activity } from "@/lib/types"
+import type { Shipment, DriverOption, TruckOption, Activity } from "@/lib/types"
 import { formatDate } from "@/lib/utils/format"
 import { getStatusBadgeColor, getStatusLabel, canAssignShipment, canDeleteShipment } from "@/lib/shipment-rules"
 import { PageErrorState, SectionLoader } from "@/components/ui/page-state"
@@ -35,8 +35,8 @@ export default function ShipmentDetailPage() {
   const { toast } = useToast()
   const { t } = useI18n()
   const [shipment, setShipment] = useState<Shipment | null>(null)
-  const [drivers, setDrivers] = useState<Driver[]>([])
-  const [trucks, setTrucks] = useState<Truck[]>([])
+  const [drivers, setDrivers] = useState<DriverOption[]>([])
+  const [trucks, setTrucks] = useState<TruckOption[]>([])
   const [activities, setActivities] = useState<Activity[]>([])
   const [loading, setLoading] = useState(true)
   const [assigning, setAssigning] = useState(false)
@@ -59,8 +59,8 @@ export default function ShipmentDetailPage() {
       const shipmentId = String(params.id)
       const [shipmentData, driversData, trucksData, activitiesData] = await Promise.all([
         api.getShipment(shipmentId),
-        api.getDrivers(),
-        api.getTrucks(),
+        api.getDriverOptions(),
+        api.getTruckOptions(),
         api.getShipmentActivities(shipmentId),
       ])
 

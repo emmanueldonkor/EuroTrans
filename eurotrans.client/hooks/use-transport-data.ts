@@ -182,6 +182,15 @@ export function useDrivers() {
     })
 }
 
+export function useDriverOptions() {
+    return useQuery({
+        queryKey: ["drivers", "options"],
+        queryFn: () => api.getDriverOptions(),
+        staleTime: 45_000,
+        gcTime: 10 * 60_000,
+    })
+}
+
 export function useDriversPage(filters?: {
     search?: string
     status?: "available" | "on-duty" | "off-duty"
@@ -228,6 +237,15 @@ export function useTrucks() {
     return useQuery({
         queryKey: ["trucks"],
         queryFn: () => api.getTrucks(),
+        staleTime: 45_000,
+        gcTime: 10 * 60_000,
+    })
+}
+
+export function useTruckOptions() {
+    return useQuery({
+        queryKey: ["trucks", "options"],
+        queryFn: () => api.getTruckOptions(),
         staleTime: 45_000,
         gcTime: 10 * 60_000,
     })

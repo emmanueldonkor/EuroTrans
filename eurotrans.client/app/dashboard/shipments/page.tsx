@@ -8,7 +8,7 @@ import { Badge } from "@/components/ui/badge"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Plus, Search } from "lucide-react"
-import { useShipmentsPage, useDrivers } from "@/hooks/use-transport-data"
+import { useDriverOptions, useShipmentsPage } from "@/hooks/use-transport-data"
 import { getStatusColor, formatDate } from "@/lib/utils/format"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import type { ShipmentStatus } from "@/lib/types"
@@ -44,7 +44,7 @@ export default function ShipmentsPage() {
   const resolvedTotalPages = Math.max(1, Math.ceil(totalCount / pageSize))
   const currentPage = Math.min(page, resolvedTotalPages)
 
-  const { data: drivers = [], isLoading: driversLoading } = useDrivers()
+  const { data: drivers = [], isLoading: driversLoading } = useDriverOptions()
   const isLoading = shipmentsLoading || driversLoading
 
   const getDriverName = (driverId?: string, driverName?: string) => {

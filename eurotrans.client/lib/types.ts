@@ -40,11 +40,25 @@ export interface Driver {
   currentShipmentId?: string
 }
 
+export interface DriverOption {
+  id: string
+  name: string
+  phone?: string
+  status: "available" | "on-duty" | "off-duty"
+}
+
 export interface Truck {
   id: string
   plateNumber: string
   model: string
   capacity: number
+  status: "available" | "in-use" | "maintenance"
+}
+
+export interface TruckOption {
+  id: string
+  plateNumber: string
+  model: string
   status: "available" | "in-use" | "maintenance"
 }
 
@@ -115,4 +129,24 @@ export interface LiveMapPin {
   }
   lastUpdate: string
   isStale: boolean
+}
+
+export interface AnalyticsOverview {
+  totalShipments: number
+  activeShipments: number
+  deliveredShipments: number
+  avgDeliveryTime: string
+  activeDrivers: number
+  availableDrivers: number
+  shipmentsOverTime: Array<{
+    date: string
+    label: string
+    count: number
+  }>
+  driverWorkloadDistribution: Array<{
+    driverName: string
+    assigned: number
+    inTransit: number
+    total: number
+  }>
 }

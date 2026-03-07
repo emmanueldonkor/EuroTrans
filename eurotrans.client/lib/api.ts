@@ -1,9 +1,12 @@
 import type {
   Driver,
+  DriverOption,
   Truck,
+  TruckOption,
   Shipment,
   Activity,
   LiveMapPin,
+  AnalyticsOverview,
   PagedResult,
   ShipmentStatus,
   Location,
@@ -833,6 +836,24 @@ export const api = {
     return fetchAllPages((page, pageSize) => api.getDriversPage({ ...filters, page, pageSize }))
   },
 
+  async getDriverOptions(): Promise<DriverOption[]> {
+    const response = await request<
+      Array<{
+        employeeId: string
+        name: string
+        phone?: string | null
+        status: DriverApiStatus
+      }>
+    >("/api/drivers/options")
+
+    return response.map((driver) => ({
+      id: driver.employeeId,
+      name: driver.name,
+      phone: driver.phone ?? undefined,
+      status: mapDriverStatus(driver.status),
+    }))
+  },
+
   async getDriver(id: string): Promise<Driver | null> {
     const d = await request<{
       employeeId: string
@@ -917,6 +938,24 @@ export const api = {
     return fetchAllPages((page, pageSize) => api.getTrucksPage({ ...filters, page, pageSize }))
   },
 
+  async getTruckOptions(): Promise<TruckOption[]> {
+    const response = await request<
+      Array<{
+        id: string
+        plateNumber: string
+        model: string
+        status: TruckApiStatus
+      }>
+    >("/api/trucks/options")
+
+    return response.map((truck) => ({
+      id: truck.id,
+      plateNumber: truck.plateNumber,
+      model: truck.model,
+      status: mapTruckStatus(truck.status),
+    }))
+  },
+
   async getTruck(id: string): Promise<Truck | null> {
     const truck = await request<{
       id: string
@@ -999,81 +1038,8 @@ export const api = {
     return fetchAllPages((page, pageSize) => api.getLiveMapPinsPage({ ...filters, page, pageSize }), 50)
   },
 
-  async getAnalytics() {
-    const [shipments, drivers] = await Promise.all([api.getShipments(), api.getDrivers()])
-    const activeShipmentStatuses: ShipmentStatus[] = ["assigned", "in-transit"]
-    const today = new Date()
-    today.setHours(0, 0, 0, 0)
-
-    const shipmentsPerDay = new Map<string, number>()
-    for (let i = 13; i >= 0; i -= 1) {
-      const day = new Date(today)
-      day.setDate(day.getDate() - i)
-      const key = day.toISOString().slice(0, 10)
-      shipmentsPerDay.set(key, 0)
-    }
-
-    for (const shipment of shipments) {
-      const dateValue = shipment.createdAt || shipment.updatedAt
-      if (!dateValue) continue
-
-      const parsed = new Date(dateValue)
-      if (Number.isNaN(parsed.getTime())) continue
-      parsed.setHours(0, 0, 0, 0)
-
-      const key = parsed.toISOString().slice(0, 10)
-      if (shipmentsPerDay.has(key)) {
-        shipmentsPerDay.set(key, (shipmentsPerDay.get(key) ?? 0) + 1)
-      }
-    }
-
-    const shipmentsOverTime = Array.from(shipmentsPerDay.entries()).map(([date, count]) => ({
-      date,
-      label: new Date(`${date}T00:00:00`).toLocaleDateString(undefined, {
-        month: "short",
-        day: "numeric",
-      }),
-      count,
-    }))
-
-    const workloadMap = new Map<string, { assigned: number; inTransit: number }>()
-    for (const shipment of shipments) {
-      if (!activeShipmentStatuses.includes(shipment.status)) continue
-
-      const driverName = shipment.driverName?.trim() || "Unassigned"
-      const current = workloadMap.get(driverName) ?? { assigned: 0, inTransit: 0 }
-
-      if (shipment.status === "assigned") {
-        current.assigned += 1
-      }
-
-      if (shipment.status === "in-transit") {
-        current.inTransit += 1
-      }
-
-      workloadMap.set(driverName, current)
-    }
-
-    const driverWorkloadDistribution = Array.from(workloadMap.entries())
-      .map(([driverName, value]) => ({
-        driverName,
-        assigned: value.assigned,
-        inTransit: value.inTransit,
-        total: value.assigned + value.inTransit,
-      }))
-      .sort((a, b) => b.total - a.total)
-      .slice(0, 8)
-
-    return {
-      totalShipments: shipments.length,
-      activeShipments: shipments.filter((s) => activeShipmentStatuses.includes(s.status)).length,
-      deliveredShipments: shipments.filter((s) => s.status === "delivered").length,
-      avgDeliveryTime: "N/A",
-      activeDrivers: drivers.filter((d) => d.status === "on-duty").length,
-      availableDrivers: drivers.filter((d) => d.status === "available").length,
-      shipmentsOverTime,
-      driverWorkloadDistribution,
-    }
+  async getAnalytics(): Promise<AnalyticsOverview> {
+    return request<AnalyticsOverview>("/api/analytics/overview")
   },
 
   async uploadProofOfDelivery(file: File): Promise<File> {
