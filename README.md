@@ -2,12 +2,12 @@
 
 [![Watch EuroTrans Walkthrough](https://img.youtube.com/vi/YOUTUBE_VIDEO_ID/hqdefault.jpg)](https://www.youtube.com/watch?v=YOUTUBE_VIDEO_ID)
 
-**Walkthrough video (replace with your real link):**  
+**Walkthrough video:**  
 `https://www.youtube.com/watch?v=YOUTUBE_VIDEO_ID`
 
 EuroTrans is a full-stack logistics platform for shipment operations, driver workflows, fleet management, and live shipment tracking.
 
-## Recruiter Quick View
+## Quick View
 - Frontend (prod): `https://eurotrans.vercel.app`
 - Backend base URL (prod): set by your deployment target
 - Health checks: `/health/live`, `/health/ready`
@@ -213,7 +213,6 @@ erDiagram
     employees ||--o{ documents : "uploaded by"
 ```
 
-Detailed DB doc: `docs/portfolio/database/erd.md`
 
 ## API Endpoints
 Base version: `v1.0` (`api-version` query or `x-api-version` header)
@@ -423,8 +422,8 @@ Required secrets:
 - Client: `VERCEL_TOKEN`, `VERCEL_ORG_ID`, `VERCEL_PROJECT_ID`
 - Server: `PROD_DB_CONNECTION_STRING`, `AZUREAPPSERVICE_PUBLISHPROFILE_5EEA8F3C1C964300BE898AC8B6FEEA84`
 
-## Portfolio Notes
-If you are reviewing this project for hiring, start with:
+## Notes
+If you are reviewing this project, start with:
 - `eurotrans.server/src/EuroTrans.Api/Program.cs`
 - `eurotrans.server/src/EuroTrans.Application`
 - `eurotrans.server/src/EuroTrans.Domain`
