@@ -79,14 +79,14 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   }
 
   if (isLoading) {
-    return <FullPageLoader label="Loading manager workspace..." />
+    return <FullPageLoader label={t("layout.manager.loadingWorkspace")} />
   }
 
   if (error && !isUnauthorized && !isForbidden) {
     return (
       <PageErrorState
-        title="Could not load your workspace"
-        message={error instanceof Error ? error.message : "An unexpected error occurred."}
+        title={t("layout.manager.loadErrorTitle")}
+        message={error instanceof Error ? error.message : t("layout.manager.loadErrorMessage")}
         onRetry={() => {
           void refetch()
         }}
@@ -96,7 +96,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
   if (!currentUser || currentUser.role !== "manager") {
     return (
-      <FullPageLoader label="Redirecting..." />
+      <FullPageLoader label={t("layout.redirecting")} />
     )
   }
 
@@ -203,7 +203,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           >
             <Button variant="ghost" size="icon" className="md:hidden text-foreground" onClick={() => setSidebarOpen(!sidebarOpen)}>
               {sidebarOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
-              <span className="sr-only">Toggle menu</span>
+              <span className="sr-only">{t("common.toggleMenu")}</span>
             </Button>
 
             <div className="flex-1" />

@@ -15,11 +15,18 @@ export const fr: TranslationDictionary = {
   "common.error": "Une erreur est survenue",
   "common.success": "Succ\u00e8s",
   "common.logout": "D\u00e9connexion",
+  "common.notAvailable": "N/D",
+  "common.toggleMenu": "Basculer le menu",
 
   // Landing
   "landing.title": "EuroTrans",
   "landing.tagline": "Gestion centralis\u00e9e de flotte et exp\u00e9ditions",
   "landing.login": "Se connecter",
+
+  // Language
+  "language.switch": "Changer de langue",
+  "language.saveErrorTitle": "Langue non enregistr\u00e9e",
+  "language.saveErrorDescription": "Impossible d'enregistrer votre langue pr\u00e9f\u00e9r\u00e9e. Veuillez r\u00e9essayer.",
 
   // Navigation
   "nav.home": "Accueil",
@@ -69,6 +76,8 @@ export const fr: TranslationDictionary = {
   "map.badge.stale": "Ancien",
   "map.driverLabel": "Chauffeur",
   "map.updatedLabel": "Mise \u00e0 jour",
+  "map.popup.driver": "Chauffeur",
+  "map.popup.status": "Statut",
 
   // Fleet
   "fleet.loading": "Chargement des camions...",
@@ -119,6 +128,19 @@ export const fr: TranslationDictionary = {
   "fleet.action.updating": "Mise \u00e0 jour...",
   "fleet.action.update": "Mettre \u00e0 jour le camion",
   "fleet.action.deleting": "Suppression...",
+
+  // Documents
+  "documents.table.pod": "POD",
+
+  // Layout
+  "layout.redirecting": "Redirection...",
+  "layout.loadingSession": "Chargement de votre session...",
+  "layout.manager.loadingWorkspace": "Chargement de l'espace manager...",
+  "layout.manager.loadErrorTitle": "Impossible de charger votre espace",
+  "layout.manager.loadErrorMessage": "Une erreur inattendue s'est produite.",
+  "layout.driver.loadingWorkspace": "Chargement de l'espace chauffeur...",
+  "layout.driver.loadErrorTitle": "Impossible de charger la session chauffeur",
+  "layout.driver.loadErrorMessage": "Une erreur inattendue s'est produite.",
 
   // Not Found
   "notFound.title": "Page introuvable",

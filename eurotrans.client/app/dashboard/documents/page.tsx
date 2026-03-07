@@ -107,7 +107,7 @@ export default function DocumentsPage() {
                     </Link>
                   </TableCell>
                   <TableCell>
-                    <Badge className={getStatusBadgeColor(shipment.status)}>{getStatusLabel(shipment.status)}</Badge>
+                    <Badge className={getStatusBadgeColor(shipment.status)}>{getStatusLabel(shipment.status, t)}</Badge>
                   </TableCell>
                   <TableCell className="max-w-xs truncate">
                     {shipment.origin.city} -{">"} {shipment.destination.city}
@@ -120,7 +120,7 @@ export default function DocumentsPage() {
                       <Button variant="ghost" size="sm" asChild>
                         <a href={shipment.proofOfDeliveryUrl} download>
                           <Download className="h-4 w-4 mr-2" />
-                          POD
+                          {t("documents.table.pod")}
                         </a>
                       </Button>
                     ) : (

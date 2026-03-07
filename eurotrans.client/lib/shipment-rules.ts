@@ -1,3 +1,4 @@
+import type { TranslationKey } from "./i18n"
 import type { ShipmentStatus, Shipment } from "./types"
 
 export interface ShipmentAction {
@@ -95,8 +96,34 @@ export function getStatusBadgeColor(status: ShipmentStatus): string {
   }
 }
 
-export function getStatusLabel(status: ShipmentStatus): string {
-  return status.replace("-", " ").replace(/\b\w/g, (l) => l.toUpperCase())
+const SHIPMENT_STATUS_KEYS: Record<ShipmentStatus, TranslationKey> = {
+  unassigned: "status.unassigned",
+  assigned: "shipments.status.assigned",
+  "in-transit": "status.inTransit",
+  delivered: "status.delivered",
+  cancelled: "shipments.status.cancelled",
+}
+
+export function getStatusLabel(status: ShipmentStatus, translate?: (key: TranslationKey) => string): string {
+  const translationKey = SHIPMENT_STATUS_KEYS[status]
+  if (translationKey && translate) {
+    return translate(translationKey)
+  }
+
+  switch (status) {
+    case "unassigned":
+      return "Unassigned"
+    case "assigned":
+      return "Assigned"
+    case "in-transit":
+      return "In Transit"
+    case "delivered":
+      return "Delivered"
+    case "cancelled":
+      return "Cancelled"
+    default:
+      return (status as string).replace("-", " ").replace(/\b\w/g, (letter: string) => letter.toUpperCase())
+  }
 }
 
 export function validateShipmentData(data: {

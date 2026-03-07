@@ -15,11 +15,18 @@ export const en = {
   "common.next": "Next",
   "common.pagination.showing": "Showing {from}-{to} of {total}",
   "common.pagination.page": "Page {page} of {totalPages}",
+  "common.notAvailable": "N/A",
+  "common.toggleMenu": "Toggle menu",
 
   // Landing
   "landing.title": "EuroTrans",
   "landing.tagline": "Centralized fleet & shipment management",
   "landing.login": "Login",
+
+  // Language
+  "language.switch": "Switch language",
+  "language.saveErrorTitle": "Language not saved",
+  "language.saveErrorDescription": "Could not save your preferred language. Please try again.",
 
   // Navigation
   "nav.home": "Home",
@@ -71,6 +78,8 @@ export const en = {
   "map.badge.stale": "Stale",
   "map.driverLabel": "Driver",
   "map.updatedLabel": "Updated",
+  "map.popup.driver": "Driver",
+  "map.popup.status": "Status",
 
   // Fleet
   "fleet.loading": "Loading trucks...",
@@ -177,7 +186,18 @@ export const en = {
   "documents.table.route": "Route",
   "documents.table.delivered": "Delivered",
   "documents.table.document": "Document",
+  "documents.table.pod": "POD",
   "documents.totalDocuments": "Total Documents",
+
+  // Layout
+  "layout.redirecting": "Redirecting...",
+  "layout.loadingSession": "Loading your session...",
+  "layout.manager.loadingWorkspace": "Loading manager workspace...",
+  "layout.manager.loadErrorTitle": "Could not load your workspace",
+  "layout.manager.loadErrorMessage": "An unexpected error occurred.",
+  "layout.driver.loadingWorkspace": "Loading driver workspace...",
+  "layout.driver.loadErrorTitle": "Unable to load driver session",
+  "layout.driver.loadErrorMessage": "An unexpected error occurred.",
 
   // Employees
   "employees.title": "Employees",

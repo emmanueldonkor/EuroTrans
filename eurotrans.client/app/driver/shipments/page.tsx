@@ -6,6 +6,7 @@ import { Card } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Loader2, Package } from "lucide-react"
 import { getStatusColor, formatDate } from "@/lib/utils/format"
+import { getStatusLabel } from "@/lib/shipment-rules"
 import { useCurrentUser } from "@/hooks/use-current-user"
 import { useInfiniteShipments } from "@/hooks/use-transport-data"
 import { PageErrorState, SectionLoader } from "@/components/ui/page-state"
@@ -82,7 +83,7 @@ export default function DriverShipmentsPage() {
                       <p className="font-semibold">{shipment.trackingId}</p>
                       <p className="text-sm text-muted-foreground mt-1">{shipment.cargo.description}</p>
                     </div>
-                    <Badge className={getStatusColor(shipment.status)}>{shipment.status.replace("-", " ")}</Badge>
+                    <Badge className={getStatusColor(shipment.status)}>{getStatusLabel(shipment.status, t)}</Badge>
                   </div>
 
                   <div className="text-sm text-muted-foreground">

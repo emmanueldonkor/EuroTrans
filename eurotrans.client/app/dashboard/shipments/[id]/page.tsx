@@ -161,7 +161,7 @@ export default function ShipmentDetailPage() {
       case "cancelled":
         return t("shipments.status.cancelled")
       default:
-        return getStatusLabel(status)
+        return getStatusLabel(status, t)
     }
   }
 

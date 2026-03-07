@@ -15,11 +15,18 @@ export const de: TranslationDictionary = {
   "common.error": "Ein Fehler ist aufgetreten",
   "common.success": "Erfolg",
   "common.logout": "Abmelden",
+  "common.notAvailable": "k. A.",
+  "common.toggleMenu": "Men\u00fc umschalten",
 
   // Landing
   "landing.title": "EuroTrans",
   "landing.tagline": "Zentralisierte Flotten- und Sendungsverwaltung",
   "landing.login": "Anmelden",
+
+  // Language
+  "language.switch": "Sprache wechseln",
+  "language.saveErrorTitle": "Sprache nicht gespeichert",
+  "language.saveErrorDescription": "Ihre bevorzugte Sprache konnte nicht gespeichert werden. Bitte versuchen Sie es erneut.",
 
   // Navigation
   "nav.home": "Startseite",
@@ -69,6 +76,8 @@ export const de: TranslationDictionary = {
   "map.badge.stale": "Veraltet",
   "map.driverLabel": "Fahrer",
   "map.updatedLabel": "Aktualisiert",
+  "map.popup.driver": "Fahrer",
+  "map.popup.status": "Status",
 
   // Fleet
   "fleet.loading": "LKWs werden geladen...",
@@ -119,6 +128,19 @@ export const de: TranslationDictionary = {
   "fleet.action.updating": "Wird aktualisiert...",
   "fleet.action.update": "LKW aktualisieren",
   "fleet.action.deleting": "Wird gel\u00f6scht...",
+
+  // Documents
+  "documents.table.pod": "POD",
+
+  // Layout
+  "layout.redirecting": "Weiterleitung...",
+  "layout.loadingSession": "Sitzung wird geladen...",
+  "layout.manager.loadingWorkspace": "Manager-Arbeitsbereich wird geladen...",
+  "layout.manager.loadErrorTitle": "Arbeitsbereich konnte nicht geladen werden",
+  "layout.manager.loadErrorMessage": "Ein unerwarteter Fehler ist aufgetreten.",
+  "layout.driver.loadingWorkspace": "Fahrer-Arbeitsbereich wird geladen...",
+  "layout.driver.loadErrorTitle": "Fahrer-Sitzung konnte nicht geladen werden",
+  "layout.driver.loadErrorMessage": "Ein unerwarteter Fehler ist aufgetreten.",
 
   // Not Found
   "notFound.title": "Seite nicht gefunden",

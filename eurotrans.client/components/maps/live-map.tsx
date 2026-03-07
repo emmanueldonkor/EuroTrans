@@ -3,6 +3,8 @@
 import { useEffect, useMemo } from "react"
 import { CircleMarker, MapContainer, Popup, TileLayer, useMap } from "react-leaflet"
 import type { LiveMapPin } from "@/lib/types"
+import { getStatusLabel } from "@/lib/shipment-rules"
+import { useI18n } from "@/components/providers/i18n-provider"
 
 type LiveMapProps = {
   pins: LiveMapPin[]
@@ -52,6 +54,7 @@ function pinColor(pin: LiveMapPin, isSelected: boolean): string {
 }
 
 export function LiveMap({ pins, selectedPinId, onSelectPin }: LiveMapProps) {
+  const { t } = useI18n()
   const validPins = useMemo(
     () => pins.filter((pin) => isValidCoordinate(pin.position.lat, pin.position.lng)),
     [pins],
@@ -83,8 +86,8 @@ export function LiveMap({ pins, selectedPinId, onSelectPin }: LiveMapProps) {
             <Popup>
               <div className="space-y-1 text-xs">
                 <p className="font-semibold">{pin.trackingId}</p>
-                <p>Driver: {pin.driverName}</p>
-                <p>Status: {pin.status}</p>
+                <p>{t("map.popup.driver")}: {pin.driverName}</p>
+                <p>{t("map.popup.status")}: {getStatusLabel(pin.status, t)}</p>
                 <p>{pin.cargo}</p>
               </div>
             </Popup>

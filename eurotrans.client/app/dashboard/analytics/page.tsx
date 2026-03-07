@@ -180,7 +180,7 @@ export default function AnalyticsPage() {
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           <div>
             <p className="text-sm text-muted-foreground mb-1">{t("analytics.avgDeliveryTime")}</p>
-            <p className="text-xl font-bold">{analytics?.avgDeliveryTime || "N/A"}</p>
+            <p className="text-xl font-bold">{analytics?.avgDeliveryTime || t("common.notAvailable")}</p>
           </div>
           <div>
             <p className="text-sm text-muted-foreground mb-1">{t("analytics.availableDrivers")}</p>

@@ -64,6 +64,12 @@ export default function EmployeesPage() {
   const isDriverStatus = (value: string): value is Driver["status"] =>
     value === "available" || value === "on-duty" || value === "off-duty"
 
+  const getDriverStatusLabel = (status: Driver["status"]) => {
+    if (status === "available") return t("employees.status.available")
+    if (status === "on-duty") return t("employees.status.onDuty")
+    return t("employees.status.offDuty")
+  }
+
   const handleUpdateStatus = (driver: Driver) => {
     setSelectedDriver(driver)
     setNewStatus(driver.status)
@@ -84,7 +90,7 @@ export default function EmployeesPage() {
           title: t("employees.toast.statusUpdatedTitle"),
           description: t("employees.toast.statusUpdatedDescription")
             .replace("{name}", selectedDriver.name)
-            .replace("{status}", newStatus.replace("-", " ")),
+            .replace("{status}", getDriverStatusLabel(newStatus)),
         })
       } else {
         const message = result.error || t("employees.toast.updateFailedFallback")
@@ -185,12 +191,8 @@ export default function EmployeesPage() {
                   <TableCell>{driver.phone}</TableCell>
                   <TableCell className="font-mono text-sm">{driver.licenseNumber}</TableCell>
                   <TableCell>
-                    <Badge className={getStatusColor(driver.status)}>
-                      {driver.status === "available"
-                        ? t("employees.status.available")
-                        : driver.status === "on-duty"
-                          ? t("employees.status.onDuty")
-                          : t("employees.status.offDuty")}
+                  <Badge className={getStatusColor(driver.status)}>
+                      {getDriverStatusLabel(driver.status)}
                     </Badge>
                   </TableCell>
                   <TableCell className="text-right">

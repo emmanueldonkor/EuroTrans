@@ -6,6 +6,7 @@ import { Badge } from "@/components/ui/badge"
 import { MapPin } from "lucide-react"
 import type { LiveMapPin } from "@/lib/types"
 import { getStatusColor, formatDate } from "@/lib/utils/format"
+import { getStatusLabel } from "@/lib/shipment-rules"
 import { useInfiniteLiveMap } from "@/hooks/use-transport-data"
 import { PageErrorState, SectionLoader } from "@/components/ui/page-state"
 import { PageHeading, PageShell, PageSurface } from "@/components/ui/page-shell"
@@ -42,19 +43,6 @@ export default function LiveMapPage() {
     enabled: pins.length > 0,
     onLoadMore: loadMorePins,
   })
-
-  const getShipmentStatusLabel = (status: LiveMapPin["status"]) => {
-    switch (status) {
-      case "unassigned":
-        return t("status.unassigned")
-      case "in-transit":
-        return t("status.inTransit")
-      case "delivered":
-        return t("status.delivered")
-      default:
-        return status.replace("-", " ")
-    }
-  }
 
   if (isLoading) {
     return <SectionLoader label={t("map.loadingData")} />
@@ -120,7 +108,7 @@ export default function LiveMapPage() {
                             {t("map.badge.stale")}
                           </Badge>
                         )}
-                        <Badge className={`${getStatusColor(pin.status)} text-xs`}>{getShipmentStatusLabel(pin.status)}</Badge>
+                        <Badge className={`${getStatusColor(pin.status)} text-xs`}>{getStatusLabel(pin.status, t)}</Badge>
                       </div>
                     </div>
                     <div className="space-y-1 text-xs text-muted-foreground">

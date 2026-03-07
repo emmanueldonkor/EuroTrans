@@ -6,7 +6,7 @@ import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Package, MapPin, ArrowRight, Play, Loader2 } from "lucide-react"
 import { getStatusColor } from "@/lib/utils/format"
-import { canStartShipment } from "@/lib/shipment-rules"
+import { canStartShipment, getStatusLabel } from "@/lib/shipment-rules"
 import { useToast } from "@/hooks/use-toast"
 import { useCurrentUser } from "@/hooks/use-current-user"
 import { useDriverCurrentShipment, useShipmentMutations } from "@/hooks/use-transport-data"
@@ -86,7 +86,7 @@ export default function DriverHomePage() {
               <h2 className="text-xl font-semibold mb-1">{t("nav.currentJob")}</h2>
               <p className="text-sm text-muted-foreground">{activeShipment.trackingId}</p>
             </div>
-            <Badge className={getStatusColor(activeShipment.status)}>{activeShipment.status.replace("-", " ")}</Badge>
+            <Badge className={getStatusColor(activeShipment.status)}>{getStatusLabel(activeShipment.status, t)}</Badge>
           </div>
 
           <div className="space-y-4">

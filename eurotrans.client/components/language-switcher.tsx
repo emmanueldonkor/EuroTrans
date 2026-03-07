@@ -17,7 +17,7 @@ const languages = [
 ]
 
 export function LanguageSwitcher() {
-  const { locale, setLocale } = useI18n()
+  const { locale, setLocale, t } = useI18n()
   const { toast } = useToast()
   const queryClient = useQueryClient()
 
@@ -45,8 +45,8 @@ export function LanguageSwitcher() {
       }
 
       toast({
-        title: "Language not saved",
-        description: "Could not save your preferred language. Please try again.",
+        title: t("language.saveErrorTitle"),
+        description: t("language.saveErrorDescription"),
         variant: "destructive",
       })
     }
@@ -57,7 +57,7 @@ export function LanguageSwitcher() {
       <DropdownMenuTrigger asChild>
         <Button variant="ghost" size="icon">
           <Globe className="h-5 w-5" />
-          <span className="sr-only">Switch language</span>
+          <span className="sr-only">{t("language.switch")}</span>
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end">

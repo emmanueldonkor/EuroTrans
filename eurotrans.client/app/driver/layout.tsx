@@ -86,14 +86,14 @@ export default function DriverLayout({ children }: { children: React.ReactNode }
   }
 
   if (isLoading) {
-    return <FullPageLoader label="Loading driver workspace..." />
+    return <FullPageLoader label={t("layout.driver.loadingWorkspace")} />
   }
 
   if (error && !isUnauthorized && !isForbidden) {
     return (
       <PageErrorState
-        title="Unable to load driver session"
-        message={error instanceof Error ? error.message : "An unexpected error occurred."}
+        title={t("layout.driver.loadErrorTitle")}
+        message={error instanceof Error ? error.message : t("layout.driver.loadErrorMessage")}
         onRetry={() => {
           void refetch()
         }}
@@ -102,7 +102,7 @@ export default function DriverLayout({ children }: { children: React.ReactNode }
   }
 
   if (!currentUser || !isDriver) {
-    return <FullPageLoader label="Redirecting..." />
+    return <FullPageLoader label={t("layout.redirecting")} />
   }
 
   const navigation = profileComplete
@@ -162,7 +162,7 @@ export default function DriverLayout({ children }: { children: React.ReactNode }
       <main className="p-4 space-y-4">
         {error && !isUnauthorized && !isForbidden && (
           <Alert variant="destructive">
-            <AlertDescription>{error instanceof Error ? error.message : "Unexpected error."}</AlertDescription>
+            <AlertDescription>{error instanceof Error ? error.message : t("layout.driver.loadErrorMessage")}</AlertDescription>
           </Alert>
         )}
         <div className="mx-auto w-full max-w-3xl">{children}</div>
