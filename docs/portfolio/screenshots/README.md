@@ -3,17 +3,17 @@
 Drop screenshots in this folder and keep these names for quick README wiring:
 
 - `manager-shipments.png`
-- `manager-live-map.png`
+- `manager-livemap.png`
 - `manager-fleet.png`
+- `manager-employees.png`
 - `manager-analytics.png`
-- `driver-home.png`
-- `driver-shipment-detail.png`
-
-Optional extra:
-- `driver-profile-complete.png`
 - `manager-documents.png`
+- `driver-home.png`
+- `driver-shipments.png`
+- `driver-profile.png`
+- `driver-deliver.png`
 
 Example markdown:
 ```md
-![Manager Live Map](docs/portfolio/screenshots/manager-live-map.png)
+![Manager Live Map](docs/portfolio/screenshots/manager-livemap.png)
 ```

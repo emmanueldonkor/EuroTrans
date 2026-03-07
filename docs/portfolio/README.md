@@ -18,11 +18,15 @@ Use this folder to keep visuals and docs referenced by the root `README.md`.
 ## UI Screenshots
 - `screenshots/README.md`
 - `screenshots/manager-shipments.png`
-- `screenshots/manager-live-map.png`
+- `screenshots/manager-livemap.png`
 - `screenshots/manager-fleet.png`
+- `screenshots/manager-employees.png`
 - `screenshots/manager-analytics.png`
+- `screenshots/manager-documents.png`
 - `screenshots/driver-home.png`
-- `screenshots/driver-shipment-detail.png`
+- `screenshots/driver-shipments.png`
+- `screenshots/driver-profile.png`
+- `screenshots/driver-deliver.png`
 
 ## Walkthrough Video
 Update these two values in root `README.md`:

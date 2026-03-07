@@ -65,30 +65,56 @@ The backend is designed with Clean Architecture boundaries and vertical slices p
 - `docs/portfolio` - architecture, DB, and screenshot assets for portfolio presentation
 
 ## Software Architecture Design
-### High-Level Request Flow
+### System Context
 ```mermaid
 flowchart LR
-    A[Next.js 16 Client] --> B[Next API Proxy /api/backend/*]
-    B --> C[ASP.NET Core 8 API]
-    C --> D[Application Layer Services]
-    D --> E[Domain Rules]
-    D --> F[Infrastructure Repositories]
-    F --> G[(PostgreSQL)]
-    D --> H[(Azure Blob Storage)]
-    C --> I[Auth0 JWT/RBAC]
+    subgraph Clients
+        M[Manager Browser]
+        D[Driver Browser]
+    end
+
+    M --> FE
+    D --> FE
+
+    FE[Next.js 16 App on Vercel]
+    FE --> Proxy[Next API Proxy\n/api/backend/*]
+    Proxy --> API[ASP.NET Core 8 API\nEuroTrans.Api]
+
+    API --> APP[Application Layer\nUse Cases + Validation]
+    APP --> DOM[Domain Layer\nBusiness Rules]
+    APP --> INF[Infrastructure Layer\nRepositories + Integrations]
+
+    INF --> DB[(PostgreSQL)]
+    INF --> BLOB[(Azure Blob Storage)]
+
+    FE --> AUTH0[Auth0\nOIDC + Session]
+    API --> AUTH0
+
+    GHA[GitHub Actions] --> VercelDeploy[Vercel Deploy]
+    GHA --> AzureDeploy[Azure App Service Deploy]
+    VercelDeploy --> FE
+    AzureDeploy --> API
 ```
 
-### Suggested Diagram Slots (add your files)
-- Detailed Mermaid diagrams (already created):
-  - `docs/portfolio/architecture/system-architecture.md`
-  - `docs/portfolio/architecture/backend-clean-architecture.md`
-  - `docs/portfolio/architecture/shipment-sequence.md`
-- Optional exported images:
-  - `docs/portfolio/architecture/system-architecture.png`
-  - `docs/portfolio/architecture/shipment-sequence.png`
-  - `docs/portfolio/architecture/driver-tracking-sequence.png`
+### Backend Clean Architecture + Vertical Slice
+```mermaid
+flowchart TD
+    API[Minimal API Endpoints\nEuroTrans.Api/Endpoints] --> APP[Application Services\nEuroTrans.Application/features/*]
+    APP --> DOMAIN[Domain Entities + Value Objects\nEuroTrans.Domain]
+    APP --> PORTS[Interfaces\nRepositories / External Services]
 
-Use `docs/portfolio/README.md` as a checklist for portfolio assets.
+    PORTS --> INFRA[Infrastructure Implementations\nEuroTrans.Infrastructure]
+    INFRA --> DB[(PostgreSQL)]
+    INFRA --> BLOB[(Azure Blob Storage)]
+
+    API --> MW[Cross-Cutting Middleware\nException Handling / Logging / Auth / Rate Limit]
+    MW --> APP
+```
+
+Detailed architecture docs:
+- `docs/portfolio/architecture/system-architecture.md`
+- `docs/portfolio/architecture/backend-clean-architecture.md`
+- `docs/portfolio/architecture/shipment-sequence.md`
 
 ## Database Design
 Current persistence uses PostgreSQL with EF Core migrations.
@@ -102,9 +128,92 @@ Current persistence uses PostgreSQL with EF Core migrations.
 - `shipment_milestones` - operational route/milestone events
 - `shipment_tracking_points` - heartbeat location points
 
-### ERD Slot (add your file)
-- Mermaid ERD (already created): `docs/portfolio/database/erd.md`
-- Optional ERD image path: `docs/portfolio/database/erd.png`
+### Entity Relationship Diagram
+```mermaid
+erDiagram
+    employees {
+        uuid id PK
+        string auth0_user_id UK
+        string name
+        string email
+        string role
+        string preferred_language
+        bool is_active
+        datetime created_at
+    }
+
+    drivers {
+        uuid employee_id PK,FK
+        string phone
+        string license_number
+        string status
+        bytes RowVersion
+    }
+
+    trucks {
+        uuid id PK
+        string plate_number UK
+        string model
+        float capacity
+        string status
+        bool is_active
+        datetime created_at
+        bytes RowVersion
+    }
+
+    shipments {
+        uuid id PK
+        string tracking_id UK
+        string status
+        string cargo_description
+        float cargo_weight
+        float cargo_volume
+        uuid driver_id FK
+        uuid truck_id FK
+        datetime created_at
+        datetime updated_at
+        datetime started_at
+        datetime delivered_at
+        bytes RowVersion
+    }
+
+    activities {
+        uuid id PK
+        uuid shipment_id FK
+        uuid employee_id FK
+        string type
+        datetime timestamp
+    }
+
+    milestones {
+        uuid id PK
+        uuid shipment_id FK
+        uuid created_by_employee_id FK
+        string type
+        datetime timestamp
+    }
+
+    documents {
+        uuid id PK
+        uuid shipment_id FK
+        uuid uploaded_by_employee_id FK
+        string type
+        string url
+        datetime uploaded_at
+    }
+
+    employees ||--o| drivers : "employee may be a driver"
+    drivers ||--o{ shipments : "assigned driver"
+    trucks ||--o{ shipments : "assigned truck"
+    shipments ||--o{ activities : "timeline"
+    employees ||--o{ activities : "actor"
+    shipments ||--o{ milestones : "tracking events"
+    employees ||--o{ milestones : "created by"
+    shipments ||--o{ documents : "pod files"
+    employees ||--o{ documents : "uploaded by"
+```
+
+Detailed DB doc: `docs/portfolio/database/erd.md`
 
 ## API Endpoints
 Base version: `v1.0` (`api-version` query or `x-api-version` header)
@@ -171,6 +280,38 @@ stateDiagram-v2
     in_transit --> cancelled: cancel
 ```
 
+### Operational Sequence
+```mermaid
+sequenceDiagram
+    participant Manager as Manager UI
+    participant Driver as Driver UI
+    participant API as EuroTrans API
+    participant DB as PostgreSQL
+    participant Blob as Azure Blob Storage
+
+    Manager->>API: POST /api/shipments
+    API->>DB: Insert shipment (Unassigned)
+    API-->>Manager: Tracking ID + details
+
+    Manager->>API: POST /api/shipments/{id}/assign
+    API->>DB: Assign driver + truck
+    API->>DB: Log activity
+
+    Driver->>API: POST /api/shipments/{id}/start
+    API->>DB: Transition -> InTransit
+
+    loop During transit
+        Driver->>API: POST /api/shipments/{id}/tracking/heartbeat
+        API->>DB: Save tracking point
+        Driver->>API: POST /api/shipments/{id}/milestones
+        API->>DB: Save milestone + activity
+    end
+
+    Driver->>API: POST /api/shipments/{id}/deliver
+    API->>Blob: Upload POD file
+    API->>DB: Save document + transition -> Delivered
+```
+
 ### Rule Summary
 - Only managers can create, assign, and cancel shipments.
 - Driver must have a completed profile before normal driver workflow access.
@@ -180,21 +321,19 @@ stateDiagram-v2
 - Truck/driver statuses are constrained by active-assignment rules.
 
 ## UI Screenshots
-Add screenshots under `docs/portfolio/screenshots/` and link them here.
-Checklist file: `docs/portfolio/screenshots/README.md`
-
-Suggested files:
-- `docs/portfolio/screenshots/manager-shipments.png`
-- `docs/portfolio/screenshots/manager-live-map.png`
-- `docs/portfolio/screenshots/manager-fleet.png`
-- `docs/portfolio/screenshots/manager-analytics.png`
-- `docs/portfolio/screenshots/driver-home.png`
-- `docs/portfolio/screenshots/driver-shipment-detail.png`
-
-Example markdown once image exists:
-```md
+### Manager UI
 ![Manager Shipments](docs/portfolio/screenshots/manager-shipments.png)
-```
+![Manager Live Map](docs/portfolio/screenshots/manager-livemap.png)
+![Manager Fleet](docs/portfolio/screenshots/manager-fleet.png)
+![Manager Employees](docs/portfolio/screenshots/manager-employees.png)
+![Manager Analytics](docs/portfolio/screenshots/manager-analytics.png)
+![Manager Documents](docs/portfolio/screenshots/manager-documents.png)
+
+### Driver UI
+![Driver Home](docs/portfolio/screenshots/driver-home.png)
+![Driver Shipments](docs/portfolio/screenshots/driver-shipments.png)
+![Driver Profile](docs/portfolio/screenshots/driver-profile.png)
+![Driver Delivery Flow](docs/portfolio/screenshots/driver-deliver.png)
 
 ## Local Setup
 ### Prerequisites
