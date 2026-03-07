@@ -79,9 +79,14 @@ flowchart LR
 ```
 
 ### Suggested Diagram Slots (add your files)
-- System architecture: `docs/portfolio/architecture/system-architecture.png`
-- Shipment sequence diagram: `docs/portfolio/architecture/shipment-sequence.png`
-- Driver tracking flow: `docs/portfolio/architecture/driver-tracking-sequence.png`
+- Detailed Mermaid diagrams (already created):
+  - `docs/portfolio/architecture/system-architecture.md`
+  - `docs/portfolio/architecture/backend-clean-architecture.md`
+  - `docs/portfolio/architecture/shipment-sequence.md`
+- Optional exported images:
+  - `docs/portfolio/architecture/system-architecture.png`
+  - `docs/portfolio/architecture/shipment-sequence.png`
+  - `docs/portfolio/architecture/driver-tracking-sequence.png`
 
 Use `docs/portfolio/README.md` as a checklist for portfolio assets.
 
@@ -98,7 +103,8 @@ Current persistence uses PostgreSQL with EF Core migrations.
 - `shipment_tracking_points` - heartbeat location points
 
 ### ERD Slot (add your file)
-- ERD image path: `docs/portfolio/database/erd.png`
+- Mermaid ERD (already created): `docs/portfolio/database/erd.md`
+- Optional ERD image path: `docs/portfolio/database/erd.png`
 
 ## API Endpoints
 Base version: `v1.0` (`api-version` query or `x-api-version` header)
@@ -175,6 +181,7 @@ stateDiagram-v2
 
 ## UI Screenshots
 Add screenshots under `docs/portfolio/screenshots/` and link them here.
+Checklist file: `docs/portfolio/screenshots/README.md`
 
 Suggested files:
 - `docs/portfolio/screenshots/manager-shipments.png`

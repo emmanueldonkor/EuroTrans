@@ -3,14 +3,20 @@
 Use this folder to keep visuals and docs referenced by the root `README.md`.
 
 ## Architecture
-- `architecture/system-architecture.png`
-- `architecture/shipment-sequence.png`
-- `architecture/driver-tracking-sequence.png`
+- `architecture/system-architecture.md` (Mermaid source)
+- `architecture/backend-clean-architecture.md` (Mermaid source)
+- `architecture/shipment-sequence.md` (Mermaid source)
+- Optional exported images:
+  - `architecture/system-architecture.png`
+  - `architecture/shipment-sequence.png`
+  - `architecture/driver-tracking-sequence.png`
 
 ## Database
-- `database/erd.png`
+- `database/erd.md` (Mermaid source)
+- Optional exported image: `database/erd.png`
 
 ## UI Screenshots
+- `screenshots/README.md`
 - `screenshots/manager-shipments.png`
 - `screenshots/manager-live-map.png`
 - `screenshots/manager-fleet.png`
