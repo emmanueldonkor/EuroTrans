@@ -625,7 +625,7 @@ export default function DriverShipmentDetailPage() {
             <DialogDescription>{t("driver.shipmentDetail.milestoneDialogDescription")}</DialogDescription>
           </DialogHeader>
           <div className="space-y-4">
-            <div>
+            <div className="space-y-2">
               <Label>{t("driver.shipmentDetail.milestoneType")}</Label>
               <select
                 className="w-full h-10 rounded-md border border-input bg-background px-3 text-sm"
@@ -639,7 +639,7 @@ export default function DriverShipmentDetailPage() {
                 <option value="custom">{t("driver.shipmentDetail.milestoneType.custom")}</option>
               </select>
             </div>
-            <div>
+            <div className="space-y-2">
               <Label>{t("driver.shipmentDetail.milestoneNote")}</Label>
               <Textarea
                 value={milestoneData.note}
@@ -648,7 +648,7 @@ export default function DriverShipmentDetailPage() {
                 rows={3}
               />
             </div>
-            <div>
+            <div className="space-y-2">
               <Label>{t("driver.shipmentDetail.locationLabelOptional")}</Label>
               <Input
                 value={milestoneData.locationLabel}
@@ -657,7 +657,7 @@ export default function DriverShipmentDetailPage() {
               />
             </div>
             <div className="grid grid-cols-2 gap-4">
-              <div>
+              <div className="space-y-2">
                 <Label>{t("driver.shipmentDetail.latitude")}</Label>
                 <Input
                   type="number"
@@ -667,7 +667,7 @@ export default function DriverShipmentDetailPage() {
                   placeholder={t("driver.shipmentDetail.placeholder.latitude")}
                 />
               </div>
-              <div>
+              <div className="space-y-2">
                 <Label>{t("driver.shipmentDetail.longitude")}</Label>
                 <Input
                   type="number"
