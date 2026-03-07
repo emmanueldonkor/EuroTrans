@@ -47,7 +47,7 @@ export default function DriverShipmentDetailPage() {
 
   const [showLocationDialog, setShowLocationDialog] = useState(false)
   const [showMilestoneDialog, setShowMilestoneDialog] = useState(false)
-  const [showDeliverPanel, setShowDeliverPanel] = useState(false)
+  const [showDeliverDialog, setShowDeliverDialog] = useState(false)
 
   const [locationData, setLocationData] = useState({
     city: "",
@@ -120,7 +120,7 @@ export default function DriverShipmentDetailPage() {
 
       setShipment(shipmentData)
       if (shipmentData.status !== "in-transit") {
-        setShowDeliverPanel(false)
+        setShowDeliverDialog(false)
       }
     } catch (error) {
       toast({
@@ -372,7 +372,7 @@ export default function DriverShipmentDetailPage() {
         description: t("driver.shipmentDetail.deliveredDescription"),
       })
       setSelectedFile(null)
-      setShowDeliverPanel(false)
+      setShowDeliverDialog(false)
       await loadData()
     } catch (error) {
       toast({
@@ -525,49 +525,11 @@ export default function DriverShipmentDetailPage() {
                 {t("driver.shipmentDetail.action.addMilestone")}
               </Button>
 
-              {!showDeliverPanel && (
-                <Button className="w-full h-14 text-lg" onClick={() => setShowDeliverPanel(true)}>
-                  <Truck className="mr-2 h-5 w-5" />
-                  {t("driver.shipmentDetail.action.deliverShipment")}
-                </Button>
-              )}
-            </>
-          )}
-
-          {canDeliver && showDeliverPanel && (
-            <Card className="panel p-4 space-y-3">
-              <div className="space-y-1">
-                <p className="text-sm font-medium">{t("driver.shipmentDetail.deliverPanelTitle")}</p>
-                <p className="text-xs text-muted-foreground">{t("driver.shipmentDetail.deliverPanelDescription")}</p>
-              </div>
-
-              <input ref={fileInputRef} type="file" accept="image/*,.pdf" className="hidden" onChange={handleFileSelect} />
-
-              <Button variant="outline" className="w-full bg-transparent" onClick={() => fileInputRef.current?.click()}>
-                {t("driver.shipmentDetail.chooseConfirmationFile")}
+              <Button className="w-full h-14 text-lg" onClick={() => setShowDeliverDialog(true)}>
+                <Truck className="mr-2 h-5 w-5" />
+                {t("driver.shipmentDetail.action.deliverShipment")}
               </Button>
-
-              {selectedFile ? (
-                <div className="flex items-center justify-between rounded border p-2">
-                  <span className="text-sm truncate max-w-[220px]">{selectedFile.name}</span>
-                  <Button variant="ghost" size="sm" onClick={() => setSelectedFile(null)}>
-                    {t("driver.shipmentDetail.removeFile")}
-                  </Button>
-                </div>
-              ) : (
-                <p className="text-xs text-muted-foreground">{t("driver.shipmentDetail.noFileSelected")}</p>
-              )}
-
-              <div className="flex gap-2">
-                <Button variant="outline" className="flex-1 bg-transparent" onClick={() => setShowDeliverPanel(false)}>
-                  {t("common.cancel")}
-                </Button>
-                <Button className="flex-1" onClick={handleDeliverShipment} disabled={uploadingProof || !selectedFile}>
-                  {uploadingProof && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                  {uploadingProof ? t("driver.shipmentDetail.action.delivering") : t("driver.shipmentDetail.action.confirmDelivery")}
-                </Button>
-              </div>
-            </Card>
+            </>
           )}
         </div>
       )}
@@ -738,6 +700,61 @@ export default function DriverShipmentDetailPage() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {canDeliver && (
+        <Dialog
+          open={showDeliverDialog}
+          onOpenChange={(open) => {
+            if (uploadingProof) return
+            setShowDeliverDialog(open)
+            if (!open) setSelectedFile(null)
+          }}
+        >
+          <DialogContent className="panel">
+            <DialogHeader>
+              <DialogTitle>{t("driver.shipmentDetail.deliverPanelTitle")}</DialogTitle>
+              <DialogDescription>{t("driver.shipmentDetail.deliverPanelDescription")}</DialogDescription>
+            </DialogHeader>
+
+            <div className="space-y-3">
+              <input ref={fileInputRef} type="file" accept="image/*,.pdf" className="hidden" onChange={handleFileSelect} />
+
+              <Button variant="outline" className="w-full bg-transparent" onClick={() => fileInputRef.current?.click()}>
+                {t("driver.shipmentDetail.chooseConfirmationFile")}
+              </Button>
+
+              {selectedFile ? (
+                <div className="flex items-center justify-between rounded border p-2">
+                  <span className="max-w-[220px] truncate text-sm">{selectedFile.name}</span>
+                  <Button variant="ghost" size="sm" onClick={() => setSelectedFile(null)}>
+                    {t("driver.shipmentDetail.removeFile")}
+                  </Button>
+                </div>
+              ) : (
+                <p className="text-xs text-muted-foreground">{t("driver.shipmentDetail.noFileSelected")}</p>
+              )}
+            </div>
+
+            <DialogFooter>
+              <Button
+                variant="outline"
+                className="bg-transparent"
+                onClick={() => {
+                  setShowDeliverDialog(false)
+                  setSelectedFile(null)
+                }}
+                disabled={uploadingProof}
+              >
+                {t("common.cancel")}
+              </Button>
+              <Button onClick={handleDeliverShipment} disabled={uploadingProof || !selectedFile}>
+                {uploadingProof && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                {uploadingProof ? t("driver.shipmentDetail.action.delivering") : t("driver.shipmentDetail.action.confirmDelivery")}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+      )}
     </div>
   )
 }

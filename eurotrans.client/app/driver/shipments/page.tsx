@@ -72,9 +72,9 @@ export default function DriverShipmentsPage() {
           <p className="text-sm text-muted-foreground">{t("driver.shipments.emptyDescription")}</p>
         </Card>
       ) : (
-        <div className="space-y-5">
+        <div className="space-y-4">
           {shipments.map((shipment) => (
-            <Link key={shipment.id} href={`/driver/shipments/${shipment.id}`}>
+            <Link key={shipment.id} href={`/driver/shipments/${shipment.id}`} className="block">
               <Card className="panel p-4 motion-smooth hover:bg-muted/40 hover:shadow-md">
                 <div className="space-y-3">
                   <div className="flex items-start justify-between gap-2">
