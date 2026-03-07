@@ -61,6 +61,39 @@ public class GetCurrentUserServiceTests
         result.Value.LicenseNumber.Should().NotBeNullOrWhiteSpace();
     }
 
+    [Fact]
+    public async Task GetAsync_ShouldReturnExistingEmployeeWithoutSyncingIdentityClaims()
+    {
+        // Arrange
+        const string auth0UserId = "auth0|driver-123";
+        var employee = TestFactory.CreateDriverEmployee();
+
+        var currentUser = new Mock<ICurrentUser>();
+        currentUser.SetupGet(x => x.Auth0UserId).Returns(auth0UserId);
+        currentUser.SetupGet(x => x.Email).Returns("changed@example.com");
+        currentUser.SetupGet(x => x.Name).Returns("Changed Name");
+        currentUser.SetupGet(x => x.IsManager).Returns(true);
+        currentUser.SetupGet(x => x.IsDriver).Returns(false);
+
+        var employees = new Mock<IEmployeeRepository>();
+        employees.Setup(x => x.GetByAuth0IdAsync(auth0UserId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(employee);
+
+        var ensureCurrentUserService = CreateEnsureCurrentUserService(currentUser, employees);
+        var service = new GetCurrentUserService(currentUser.Object, employees.Object, ensureCurrentUserService);
+
+        // Act
+        var result = await service.GetAsync();
+
+        // Assert
+        result.IsError.Should().BeFalse();
+        result.Value.EmployeeId.Should().Be(employee.Id);
+        result.Value.Name.Should().Be(employee.Name);
+        result.Value.Email.Should().Be(employee.Email);
+        result.Value.Role.Should().Be("driver");
+        employees.Verify(x => x.GetByIdAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()), Times.Never);
+    }
+
     private static EnsureCurrentUserService CreateEnsureCurrentUserService(
         Mock<ICurrentUser> currentUser,
         Mock<IEmployeeRepository> employees)

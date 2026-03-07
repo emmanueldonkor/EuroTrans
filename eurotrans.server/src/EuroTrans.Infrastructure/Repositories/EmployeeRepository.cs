@@ -1,4 +1,5 @@
 using EuroTrans.Application.features.Employees;
+using EuroTrans.Application.features.Employees.Drivers;
 using EuroTrans.Domain.Employees;
 using EuroTrans.Domain.Employees.Enums;
 using EuroTrans.Infrastructure.Persistence;
@@ -34,6 +35,20 @@ public class EmployeeRepository : IEmployeeRepository
         return await db.Employees
             .Include(e => e.Driver)
             .Where(e => e.Role == EmployeeRole.Driver && e.Driver != null)
+            .ToListAsync(ct);
+    }
+
+    public async Task<List<DriverOptionQueryItem>> GetDriverOptionsAsync(CancellationToken ct = default)
+    {
+        return await db.Employees
+            .AsNoTracking()
+            .Where(e => e.Role == EmployeeRole.Driver && e.Driver != null)
+            .OrderBy(e => e.Name)
+            .Select(e => new DriverOptionQueryItem(
+                e.Id,
+                e.Name,
+                e.Driver!.Phone,
+                e.Driver.Status))
             .ToListAsync(ct);
     }
 

@@ -5,6 +5,7 @@ namespace EuroTrans.Application.features.Trucks;
 public interface ITruckRepository
 {
     Task<Truck?> GetByIdAsync(Guid id, CancellationToken ct = default);
+    Task<List<TruckOptionQueryItem>> GetOptionsAsync(CancellationToken ct = default);
     Task<List<Truck>> GetAllAsync(CancellationToken ct = default);
     Task<(List<Truck> Items, int TotalCount)> GetPagedAsync(
         string? search,

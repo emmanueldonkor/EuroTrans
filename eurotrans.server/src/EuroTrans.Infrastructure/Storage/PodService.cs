@@ -1,4 +1,3 @@
-using Azure.Storage.Blobs;
 using Azure.Storage.Blobs.Models;
 using EuroTrans.Application.Common.Interfaces;
 
@@ -6,15 +5,16 @@ namespace EuroTrans.Infrastructure.Storage;
 
 public class PodService : IPodService
 {
-    private readonly BlobContainerClient container;
+    private readonly BlobContainerClientProvider containerProvider;
 
-    public PodService(BlobContainerClient container)
+    public PodService(BlobContainerClientProvider containerProvider)
     {
-        this.container = container;
+        this.containerProvider = containerProvider;
     }
 
     public async Task<string> UploadAsync(Stream fileStream, string fileName, string contentType)
     {
+        var container = await containerProvider.GetRequiredAsync();
         var finalName = $"{Guid.NewGuid()}_{fileName}";
         var blobClient = container.GetBlobClient(finalName);
 
@@ -34,6 +34,7 @@ public class PodService : IPodService
         if (!Uri.TryCreate(fileUrl, UriKind.Absolute, out var uri))
             return;
 
+        var container = await containerProvider.GetRequiredAsync(ct);
         var blobPath = uri.AbsolutePath.TrimStart('/');
         var containerPrefix = $"{container.Name}/";
         if (blobPath.StartsWith(containerPrefix, StringComparison.OrdinalIgnoreCase))

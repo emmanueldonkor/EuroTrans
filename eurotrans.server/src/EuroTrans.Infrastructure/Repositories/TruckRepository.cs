@@ -27,6 +27,20 @@ public class TruckRepository : ITruckRepository
             .ToListAsync(ct);
     }
 
+    public async Task<List<TruckOptionQueryItem>> GetOptionsAsync(CancellationToken ct = default)
+    {
+        return await db.Trucks
+            .AsNoTracking()
+            .Where(t => t.IsActive)
+            .OrderBy(t => t.PlateNumber)
+            .Select(t => new TruckOptionQueryItem(
+                t.Id,
+                t.PlateNumber,
+                t.Model,
+                t.Status))
+            .ToListAsync(ct);
+    }
+
     public async Task<(List<Truck> Items, int TotalCount)> GetPagedAsync(
         string? search,
         TruckStatus? status,

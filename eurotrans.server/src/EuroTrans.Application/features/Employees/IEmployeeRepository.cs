@@ -1,5 +1,6 @@
 using EuroTrans.Domain.Employees;
 using EuroTrans.Domain.Employees.Enums;
+using EuroTrans.Application.features.Employees.Drivers;
 
 namespace EuroTrans.Application.features.Employees;
 
@@ -7,6 +8,7 @@ public interface IEmployeeRepository
 {
     Task<Employee?> GetByIdAsync(Guid id, CancellationToken ct = default);
     Task<Employee?> GetByAuth0IdAsync(string auth0UserId, CancellationToken ct = default);
+    Task<List<DriverOptionQueryItem>> GetDriverOptionsAsync(CancellationToken ct = default);
     Task<List<Employee>> GetDriversAsync(CancellationToken ct = default);
     Task<(List<Employee> Items, int TotalCount)> GetDriversPagedAsync(
         string? search,

@@ -1,7 +1,9 @@
 using System.Reflection;
 using EuroTrans.Application.Common;
 using EuroTrans.Application.Common.Interfaces;
+using EuroTrans.Application.features.Analytics.GetAnalyticsOverview;
 using EuroTrans.Application.features.Employees.Drivers.GetDriver;
+using EuroTrans.Application.features.Employees.Drivers.GetDriverOptions;
 using EuroTrans.Application.features.Employees.Drivers.GetDrivers;
 using EuroTrans.Application.features.Employees.Drivers.UpdateDriverProfile;
 using EuroTrans.Application.features.Employees.Drivers.UpdateDriverStatus;
@@ -22,6 +24,7 @@ using EuroTrans.Application.features.Shipments.Tracking;
 using EuroTrans.Application.features.Trucks.CreateTruck;
 using EuroTrans.Application.features.Trucks.DeleteTruck;
 using EuroTrans.Application.features.Trucks.GetTruck;
+using EuroTrans.Application.features.Trucks.GetTruckOptions;
 using EuroTrans.Application.features.Trucks.GetTrucks;
 using EuroTrans.Application.features.Trucks.UpdateTruck;
 using FluentValidation;
@@ -34,6 +37,7 @@ public static class DependencyInjection
     public static IServiceCollection AddApplication(this IServiceCollection services)
     {
         services.AddScoped<ICurrentEmployeeProvider, CurrentEmployeeProvider>();
+        services.AddScoped<GetAnalyticsOverviewService>();
         services.AddScoped<CreateShipmentService>();
         services.AddScoped<AssignShipmentService>();
         services.AddScoped<StartShipmentService>();
@@ -47,6 +51,7 @@ public static class DependencyInjection
         services.AddScoped<GetShipmentService>();
         services.AddScoped<GetShipmentActivitiesService>();
         services.AddScoped<GetDriverService>();
+        services.AddScoped<GetDriverOptionsService>();
         services.AddScoped<GetDriversService>();
         services.AddScoped<UpdateDriverProfileService>();
         services.AddScoped<UpdateDriverStatusService>();
@@ -56,6 +61,7 @@ public static class DependencyInjection
         services.AddScoped<SyncUserService>();
         services.AddScoped<CreateTruckService>();
         services.AddScoped<GetTruckService>();
+        services.AddScoped<GetTruckOptionsService>();
         services.AddScoped<GetTrucksService>();
         services.AddScoped<UpdateTruckStatusService>();
         services.AddScoped<DeleteTruckService>();

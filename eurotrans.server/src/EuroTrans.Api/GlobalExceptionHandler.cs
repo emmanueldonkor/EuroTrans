@@ -1,4 +1,7 @@
 using System.Diagnostics;
+using System.Net.Sockets;
+using Azure;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.AspNetCore.Diagnostics;
 
 namespace EuroTrans.Api;
@@ -69,12 +72,19 @@ public class GlobalExceptionHandler : IExceptionHandler
         return true;
     }
 
-      private static (int statusCode, string Title) MapException(Exception exception)
+    private static (int statusCode, string Title) MapException(Exception exception)
     {
         return exception switch
         {
-            ArgumentNullException => (StatusCodes.Status400BadRequest, exception.Message),
-            _ => (StatusCodes.Status500InternalServerError, "We are very sorry, we are working on it to fix it immediately")
+            ArgumentException => (StatusCodes.Status400BadRequest, "Invalid request."),
+            FormatException => (StatusCodes.Status400BadRequest, "Invalid request payload."),
+            KeyNotFoundException => (StatusCodes.Status404NotFound, "Requested resource was not found."),
+            UnauthorizedAccessException => (StatusCodes.Status403Forbidden, "Access to the requested resource is forbidden."),
+            DbUpdateConcurrencyException => (StatusCodes.Status409Conflict, "The resource was updated by another operation. Retry the request."),
+            TimeoutException => (StatusCodes.Status503ServiceUnavailable, "A required dependency did not respond in time."),
+            SocketException => (StatusCodes.Status503ServiceUnavailable, "A required dependency is currently unreachable."),
+            RequestFailedException => (StatusCodes.Status503ServiceUnavailable, "A required external service is currently unavailable."),
+            _ => (StatusCodes.Status500InternalServerError, "An unexpected server error occurred.")
         };
     }
 }

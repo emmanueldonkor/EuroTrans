@@ -38,34 +38,6 @@ public class GetCurrentUserService
             if (employee is null)
                 return Error.NotFound(description: "Current user is not linked to an employee.");
         }
-        else
-        {
-            var expectedRole = currentUser.IsManager
-                ? EmployeeRole.Manager
-                : currentUser.IsDriver
-                    ? EmployeeRole.Driver
-                    : (EmployeeRole?)null;
-
-            var expectedName = string.IsNullOrWhiteSpace(currentUser.Name)
-                ? currentUser.Email
-                : currentUser.Name;
-
-            var requiresRoleSync = expectedRole.HasValue && employee.Role != expectedRole.Value;
-            var requiresIdentitySync = !string.IsNullOrWhiteSpace(currentUser.Email) &&
-                (!string.Equals(employee.Name, expectedName, StringComparison.Ordinal) ||
-                 !string.Equals(employee.Email, currentUser.Email, StringComparison.OrdinalIgnoreCase));
-
-            if (requiresRoleSync || requiresIdentitySync)
-            {
-                var ensureResult = await ensureCurrentUserService.EnsureAsync(ct);
-                if (ensureResult.IsError)
-                    return ensureResult.Errors;
-
-                employee = await employees.GetByIdAsync(ensureResult.Value, ct);
-                if (employee is null)
-                    return Error.NotFound(description: "Current user is not linked to an employee.");
-            }
-        }
 
         var isDriver = employee.Role == EmployeeRole.Driver;
         var phone = employee.Driver?.Phone;
