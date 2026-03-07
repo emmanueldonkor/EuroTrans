@@ -25,7 +25,7 @@ Use these demo users to review the app quickly:
   - Email: `edonkor0000@gmail.com`
   - Password: `Eurotrans1234@#`
 
-Note: this is modeled as an internal business app. Self-registered users do not get manager/driver roles automatically. Role assignment is done by the app administrator.
+Note: this is modeled as an internal business app. Self-registered users do not get manager/driver roles automatically. Role assignment is done by the app administrator via auth0 dashboard.
 
 ## Table of Contents
 - [Demo Access](#demo-access)
