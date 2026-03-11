@@ -5,7 +5,7 @@ namespace EuroTrans.Api.Middlewares;
 
 public class EnsureCurrentUserMiddleware
 {
-    private static readonly TimeSpan CacheDuration = TimeSpan.FromMinutes(5);
+    private static readonly TimeSpan CacheDuration = TimeSpan.FromMinutes(15);
 
     private readonly RequestDelegate next;
 
@@ -67,6 +67,9 @@ public class EnsureCurrentUserMiddleware
 
         var path = context.Request.Path;
         if (!path.StartsWithSegments("/api"))
+            return false;
+
+        if (path.Equals("/api/auth/me", StringComparison.OrdinalIgnoreCase))
             return false;
 
         if (path.StartsWithSegments("/api/auth/sync-user"))
