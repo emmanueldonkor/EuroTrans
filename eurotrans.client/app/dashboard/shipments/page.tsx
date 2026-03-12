@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, Suspense } from "react"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -18,14 +18,18 @@ import { PageHeader, PageHeading, PageShell, PageSurface } from "@/components/ui
 import { useI18n } from "@/components/providers/i18n-provider"
 import { DataPagination } from "@/components/ui/data-pagination"
 
-export default function ShipmentsPage() {
-  const [searchTerm, setSearchTerm] = useState("")
-  const [statusFilter, setStatusFilter] = useState<string>("all")
-  const [driverFilter, setDriverFilter] = useState<string>("all")
-  const [page, setPage] = useState(1)
-  const pageSize = 12
-  const debouncedSearchTerm = useDebouncedValue(searchTerm, 300)
+function ShipmentsTableContent({ 
+  searchTerm, statusFilter, driverFilter, page, setPage, pageSize
+}: {
+  searchTerm: string
+  statusFilter: string
+  driverFilter: string
+  page: number
+  setPage: (p: number) => void
+  pageSize: number
+}) {
   const { t } = useI18n()
+  const debouncedSearchTerm = useDebouncedValue(searchTerm, 300)
 
   const {
     data: shipmentsPage,
@@ -39,6 +43,7 @@ export default function ShipmentsPage() {
     page,
     pageSize,
   })
+  
   const shipments = shipmentsPage?.items ?? []
   const totalCount = shipmentsPage?.totalCount ?? 0
   const resolvedTotalPages = Math.max(1, Math.ceil(totalCount / pageSize))
@@ -58,17 +63,93 @@ export default function ShipmentsPage() {
     return <SectionLoader label={t("shipments.loading")} />
   }
 
+  if (shipmentsError) {
+    return (
+      <Alert variant="destructive" className="m-4">
+        <AlertDescription>{shipmentsError instanceof Error ? shipmentsError.message : t("shipments.errorLoad")}</AlertDescription>
+      </Alert>
+    )
+  }
+
+  return (
+    <>
+      <PageSurface className="table-shell relative">
+        <Table>
+          <TableHeader className="table-head-sticky">
+            <TableRow>
+              <TableHead>{t("shipments.trackingId")}</TableHead>
+              <TableHead>{t("shipments.status")}</TableHead>
+              <TableHead>{t("shipments.driver")}</TableHead>
+              <TableHead>{t("shipments.route")}</TableHead>
+              <TableHead>{t("shipments.lastUpdate")}</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {shipments.length === 0 ? (
+              <TableRow>
+                <TableCell colSpan={5} className="text-center text-muted-foreground py-8">
+                   {t("shipments.noResults")}
+                </TableCell>
+              </TableRow>
+            ) : (
+              shipments.map((shipment) => (
+                <TableRow key={shipment.id} className="cursor-pointer table-row-interactive">
+                  <TableCell>
+                    <Link
+                      href={`/dashboard/shipments/${shipment.id}`}
+                      className="font-medium text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300 hover:underline underline-offset-4"
+                    >
+                      {shipment.trackingId}
+                    </Link>
+                  </TableCell>
+                  <TableCell>
+                    <Badge className={getStatusColor(shipment.status)}>
+                      {shipment.status === "unassigned"
+                        ? t("status.unassigned")
+                        : shipment.status === "assigned"
+                          ? t("shipments.status.assigned")
+                          : shipment.status === "in-transit"
+                            ? t("status.inTransit")
+                            : shipment.status === "delivered"
+                              ? t("status.delivered")
+                              : t("shipments.status.cancelled")}
+                    </Badge>
+                  </TableCell>
+                  <TableCell>{getDriverName(shipment.driverId, shipment.driverName)}</TableCell>
+                  <TableCell className="max-w-xs truncate">
+                    {shipment.origin.city} -{">"} {shipment.destination.city}
+                  </TableCell>
+                  <TableCell className="text-muted-foreground">{formatDate(shipment.updatedAt)}</TableCell>
+                </TableRow>
+              ))
+            )}
+          </TableBody>
+        </Table>
+      </PageSurface>
+
+      <PageSurface className="p-4">
+        <DataPagination page={currentPage} pageSize={pageSize} totalCount={totalCount} onPageChange={setPage} disabled={shipmentsFetching} />
+      </PageSurface>
+    </>
+  )
+}
+
+export default function ShipmentsPage() {
+  const [searchTerm, setSearchTerm] = useState("")
+  const [statusFilter, setStatusFilter] = useState<string>("all")
+  const [driverFilter, setDriverFilter] = useState<string>("all")
+  const [page, setPage] = useState(1)
+  const pageSize = 12
+  const { t } = useI18n()
+
+  const { data: drivers = [] } = useDriverOptions()
+
   return (
     <PageShell>
       <PageHeader>
         <PageHeading
           title={t("shipments.title")}
-          description={
-            <>
-              {t("shipments.description")}
-              {shipmentsFetching && <span className="ml-2 text-xs">{t("shipments.refreshing")}</span>}
-            </>
-          }
+          description={t("shipments.description")}
         />
         <Link href="/dashboard/shipments/new">
           <Button>
@@ -77,12 +158,6 @@ export default function ShipmentsPage() {
           </Button>
         </Link>
       </PageHeader>
-
-      {shipmentsError && (
-        <Alert variant="destructive">
-          <AlertDescription>{shipmentsError instanceof Error ? shipmentsError.message : t("shipments.errorLoad")}</AlertDescription>
-        </Alert>
-      )}
 
       <PageSurface className="p-4 bg-gradient-to-r from-card to-muted/30">
         <div className="flex flex-col gap-4 sm:flex-row sm:items-center">
@@ -139,63 +214,16 @@ export default function ShipmentsPage() {
         </div>
       </PageSurface>
 
-      <PageSurface className="table-shell">
-        <Table>
-          <TableHeader className="table-head-sticky">
-            <TableRow>
-              <TableHead>{t("shipments.trackingId")}</TableHead>
-              <TableHead>{t("shipments.status")}</TableHead>
-              <TableHead>{t("shipments.driver")}</TableHead>
-              <TableHead>{t("shipments.route")}</TableHead>
-              <TableHead>{t("shipments.lastUpdate")}</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {shipments.length === 0 ? (
-              <TableRow>
-                <TableCell colSpan={5} className="text-center text-muted-foreground py-8">
-                  {shipmentsError ? t("shipments.errorLoad") : t("shipments.noResults")}
-                </TableCell>
-              </TableRow>
-            ) : (
-              shipments.map((shipment) => (
-                <TableRow key={shipment.id} className="cursor-pointer table-row-interactive">
-                  <TableCell>
-                    <Link
-                      href={`/dashboard/shipments/${shipment.id}`}
-                      className="font-medium text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300 hover:underline underline-offset-4"
-                    >
-                      {shipment.trackingId}
-                    </Link>
-                  </TableCell>
-                  <TableCell>
-                    <Badge className={getStatusColor(shipment.status)}>
-                      {shipment.status === "unassigned"
-                        ? t("status.unassigned")
-                        : shipment.status === "assigned"
-                          ? t("shipments.status.assigned")
-                          : shipment.status === "in-transit"
-                            ? t("status.inTransit")
-                            : shipment.status === "delivered"
-                              ? t("status.delivered")
-                              : t("shipments.status.cancelled")}
-                    </Badge>
-                  </TableCell>
-                  <TableCell>{getDriverName(shipment.driverId, shipment.driverName)}</TableCell>
-                  <TableCell className="max-w-xs truncate">
-                    {shipment.origin.city} -{">"} {shipment.destination.city}
-                  </TableCell>
-                  <TableCell className="text-muted-foreground">{formatDate(shipment.updatedAt)}</TableCell>
-                </TableRow>
-              ))
-            )}
-          </TableBody>
-        </Table>
-      </PageSurface>
-
-      <PageSurface className="p-4">
-        <DataPagination page={currentPage} pageSize={pageSize} totalCount={totalCount} onPageChange={setPage} disabled={shipmentsFetching} />
-      </PageSurface>
+      <Suspense fallback={<SectionLoader label={t("shipments.loading")} />}>
+        <ShipmentsTableContent 
+          searchTerm={searchTerm} 
+          statusFilter={statusFilter} 
+          driverFilter={driverFilter} 
+          page={page} 
+          setPage={setPage} 
+          pageSize={pageSize} 
+        />
+      </Suspense>
     </PageShell>
   )
 }

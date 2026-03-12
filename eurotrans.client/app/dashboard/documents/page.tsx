@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, Suspense } from "react"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -16,10 +16,17 @@ import { useI18n } from "@/components/providers/i18n-provider"
 import { useShipmentsPage } from "@/hooks/use-transport-data"
 import { DataPagination } from "@/components/ui/data-pagination"
 
-export default function DocumentsPage() {
-  const [searchTerm, setSearchTerm] = useState("")
-  const [page, setPage] = useState(1)
-  const pageSize = 10
+function DocumentsTableContent({ 
+  searchTerm, 
+  page, 
+  setPage, 
+  pageSize 
+}: { 
+  searchTerm: string, 
+  page: number, 
+  setPage: (p: number) => void, 
+  pageSize: number 
+}) {
   const debouncedSearchTerm = useDebouncedValue(searchTerm, 250)
   const { t } = useI18n()
 
@@ -36,6 +43,7 @@ export default function DocumentsPage() {
     page,
     pageSize,
   })
+  
   const shipments = shipmentsPage?.items ?? []
   const totalCount = shipmentsPage?.totalCount ?? 0
 
@@ -56,24 +64,7 @@ export default function DocumentsPage() {
   }
 
   return (
-    <PageShell>
-      <PageHeading title={t("documents.title")} description={t("documents.description")} />
-
-      <PageSurface className="p-4 bg-gradient-to-r from-card to-muted/30">
-        <div className="relative">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-          <Input
-            placeholder={t("documents.searchPlaceholder")}
-            value={searchTerm}
-            onChange={(e) => {
-              setSearchTerm(e.target.value)
-              setPage(1)
-            }}
-            className="h-10 pl-9 bg-background/90"
-          />
-        </div>
-      </PageSurface>
-
+    <>
       {shipments.length === 0 ? (
         <PageSurface className="panel-muted p-12 flex flex-col items-center justify-center min-h-[400px]">
           <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-primary/10">
@@ -135,7 +126,7 @@ export default function DocumentsPage() {
       )}
 
       {totalCount > 0 && (
-        <PageSurface className="p-6 surface-hover">
+        <PageSurface className="p-6 surface-hover mt-6">
           <div className="flex items-center gap-4">
             <Package className="h-8 w-8 text-primary" />
             <div>
@@ -146,9 +137,46 @@ export default function DocumentsPage() {
         </PageSurface>
       )}
 
-      <PageSurface className="p-4">
+      <PageSurface className="p-4 mt-6">
         <DataPagination page={page} pageSize={pageSize} totalCount={totalCount} onPageChange={setPage} disabled={isFetching} />
       </PageSurface>
+    </>
+  )
+}
+
+export default function DocumentsPage() {
+  const [searchTerm, setSearchTerm] = useState("")
+  const [page, setPage] = useState(1)
+  const pageSize = 10
+  const { t } = useI18n()
+
+  return (
+    <PageShell>
+      <PageHeading title={t("documents.title")} description={t("documents.description")} />
+
+      <PageSurface className="p-4 bg-gradient-to-r from-card to-muted/30">
+        <div className="relative">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+          <Input
+            placeholder={t("documents.searchPlaceholder")}
+            value={searchTerm}
+            onChange={(e) => {
+              setSearchTerm(e.target.value)
+              setPage(1)
+            }}
+            className="h-10 pl-9 bg-background/90"
+          />
+        </div>
+      </PageSurface>
+
+      <Suspense fallback={<SectionLoader label={t("documents.loading")} />}>
+        <DocumentsTableContent 
+          searchTerm={searchTerm} 
+          page={page} 
+          setPage={setPage} 
+          pageSize={pageSize} 
+        />
+      </Suspense>
     </PageShell>
   )
 }

@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, Suspense } from "react"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
@@ -36,11 +36,19 @@ import { toActionErrorMessage } from "@/lib/utils/error"
 import { useI18n } from "@/components/providers/i18n-provider"
 import { DataPagination } from "@/components/ui/data-pagination"
 
-export default function FleetPage() {
-  const [searchTerm, setSearchTerm] = useState("")
-  const [statusFilter, setStatusFilter] = useState<"all" | TruckType["status"]>("all")
-  const [page, setPage] = useState(1)
-  const pageSize = 10
+function FleetTableContent({
+  searchTerm,
+  statusFilter,
+  page,
+  setPage,
+  pageSize
+}: {
+  searchTerm: string,
+  statusFilter: "all" | TruckType["status"],
+  page: number,
+  setPage: (p: number) => void,
+  pageSize: number
+}) {
   const debouncedSearchTerm = useDebouncedValue(searchTerm, 250)
   const { data: trucksPage, isLoading, isFetching, error: queryError, refetch } = useTrucksPage({
     search: debouncedSearchTerm || undefined,
@@ -48,16 +56,16 @@ export default function FleetPage() {
     page,
     pageSize,
   })
+  
   const trucks = trucksPage?.items ?? []
   const totalCount = trucksPage?.totalCount ?? 0
   const { createTruck, updateTruck, deleteTruck } = useTruckMutations()
   const { toast } = useToast()
   const { t } = useI18n()
-  const [showCreateDialog, setShowCreateDialog] = useState(false)
+  
   const [showEditDialog, setShowEditDialog] = useState(false)
   const [showDeleteDialog, setShowDeleteDialog] = useState(false)
   const [selectedTruck, setSelectedTruck] = useState<TruckType | null>(null)
-
   const [formData, setFormData] = useState({
     plateNumber: "",
     model: "",
@@ -65,29 +73,22 @@ export default function FleetPage() {
     status: "available" as TruckType["status"],
   })
 
-  const handleCreate = async () => {
-    try {
-      await createTruck.mutateAsync({
-        plateNumber: formData.plateNumber,
-        model: formData.model,
-        capacity: Number(formData.capacity),
-        status: formData.status,
-      })
-      setShowCreateDialog(false)
-      setFormData({ plateNumber: "", model: "", capacity: "", status: "available" })
-      await refetch()
-      toast({
-        title: t("fleet.toast.createTitle"),
-        description: t("fleet.toast.createDescription"),
-      })
-    } catch (err) {
-      const message = toActionErrorMessage(err, t("fleet.toast.createErrorFallback"))
-      toast({
-        title: t("fleet.toast.createErrorTitle"),
-        description: message,
-        variant: "destructive",
-      })
+  const getStatusColor = (status: string) => {
+    const colors = {
+      available:
+        "bg-emerald-50 text-emerald-700 border border-emerald-200 dark:bg-emerald-500/10 dark:text-emerald-300 dark:border-emerald-400/30",
+      "in-use":
+        "bg-teal-50 text-teal-700 border border-teal-200 dark:bg-teal-500/10 dark:text-teal-300 dark:border-teal-400/30",
+      maintenance:
+        "bg-amber-50 text-amber-700 border border-amber-200 dark:bg-amber-500/10 dark:text-amber-300 dark:border-amber-400/30",
     }
+    return colors[status as keyof typeof colors] || colors.available
+  }
+
+  const getTruckStatusLabel = (status: TruckType["status"]) => {
+    if (status === "available") return t("fleet.status.available")
+    if (status === "in-use") return t("fleet.status.inUse")
+    return t("fleet.status.maintenance")
   }
 
   const handleEdit = async () => {
@@ -180,24 +181,6 @@ export default function FleetPage() {
     setShowDeleteDialog(true)
   }
 
-  const getStatusColor = (status: string) => {
-    const colors = {
-      available:
-        "bg-emerald-50 text-emerald-700 border border-emerald-200 dark:bg-emerald-500/10 dark:text-emerald-300 dark:border-emerald-400/30",
-      "in-use":
-        "bg-teal-50 text-teal-700 border border-teal-200 dark:bg-teal-500/10 dark:text-teal-300 dark:border-teal-400/30",
-      maintenance:
-        "bg-amber-50 text-amber-700 border border-amber-200 dark:bg-amber-500/10 dark:text-amber-300 dark:border-amber-400/30",
-    }
-    return colors[status as keyof typeof colors] || colors.available
-  }
-
-  const getTruckStatusLabel = (status: TruckType["status"]) => {
-    if (status === "available") return t("fleet.status.available")
-    if (status === "in-use") return t("fleet.status.inUse")
-    return t("fleet.status.maintenance")
-  }
-
   if (isLoading) {
     return <SectionLoader label={t("fleet.loading")} />
   }
@@ -215,49 +198,7 @@ export default function FleetPage() {
   }
 
   return (
-    <PageShell>
-      <PageHeader>
-        <PageHeading title={t("fleet.title")} description={t("fleet.description")} />
-        <Button onClick={() => setShowCreateDialog(true)}>
-          <Plus className="mr-2 h-4 w-4" />
-          {t("fleet.addTruck")}
-        </Button>
-      </PageHeader>
-
-      <PageSurface className="p-4 bg-gradient-to-r from-card to-muted/30">
-        <div className="flex flex-col gap-4 sm:flex-row sm:items-center">
-          <div className="relative flex-1">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-            <Input
-              value={searchTerm}
-              onChange={(e) => {
-                setSearchTerm(e.target.value)
-                setPage(1)
-              }}
-              placeholder={t("fleet.searchPlaceholder")}
-              className="h-10 pl-9 bg-background/90"
-            />
-          </div>
-          <Select
-            value={statusFilter}
-            onValueChange={(value) => {
-              setStatusFilter(value as "all" | TruckType["status"])
-              setPage(1)
-            }}
-          >
-            <SelectTrigger className="h-10 w-full sm:w-52 bg-background/90">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">{t("fleet.statusFilter.all")}</SelectItem>
-              <SelectItem value="available">{t("fleet.status.available")}</SelectItem>
-              <SelectItem value="in-use">{t("fleet.status.inUse")}</SelectItem>
-              <SelectItem value="maintenance">{t("fleet.status.maintenance")}</SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
-      </PageSurface>
-
+    <>
       <PageSurface className="table-shell">
         <Table>
           <TableHeader className="table-head-sticky">
@@ -300,73 +241,9 @@ export default function FleetPage() {
         </Table>
       </PageSurface>
 
-      <PageSurface className="p-4">
+      <PageSurface className="p-4 mt-6">
         <DataPagination page={page} pageSize={pageSize} totalCount={totalCount} onPageChange={setPage} disabled={isFetching} />
       </PageSurface>
-
-      <Dialog open={showCreateDialog} onOpenChange={setShowCreateDialog}>
-        <DialogContent className="panel">
-          <DialogHeader>
-            <DialogTitle>{t("fleet.dialog.createTitle")}</DialogTitle>
-            <DialogDescription>{t("fleet.dialog.createDescription")}</DialogDescription>
-          </DialogHeader>
-          <div className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="plateNumber">{t("fleet.form.plateNumber")}</Label>
-              <Input
-                id="plateNumber"
-                value={formData.plateNumber}
-                onChange={(e) => setFormData({ ...formData, plateNumber: e.target.value })}
-                placeholder={t("fleet.form.placeholder.plateNumber")}
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="model">{t("fleet.form.model")}</Label>
-              <Input
-                id="model"
-                value={formData.model}
-                onChange={(e) => setFormData({ ...formData, model: e.target.value })}
-                placeholder={t("fleet.form.placeholder.model")}
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="capacity">{t("fleet.form.capacity")}</Label>
-              <Input
-                id="capacity"
-                type="number"
-                value={formData.capacity}
-                onChange={(e) => setFormData({ ...formData, capacity: e.target.value })}
-                placeholder={t("fleet.form.placeholder.capacity")}
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="status">{t("fleet.form.status")}</Label>
-              <Select
-                value={formData.status}
-                onValueChange={(value) => setFormData({ ...formData, status: value as TruckType["status"] })}
-              >
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="available">{t("fleet.status.available")}</SelectItem>
-                  <SelectItem value="in-use">{t("fleet.status.inUse")}</SelectItem>
-                  <SelectItem value="maintenance">{t("fleet.status.maintenance")}</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setShowCreateDialog(false)} disabled={createTruck.isPending}>
-              {t("common.cancel")}
-            </Button>
-            <Button onClick={handleCreate} disabled={createTruck.isPending}>
-              {createTruck.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-              {createTruck.isPending ? t("fleet.action.creating") : t("fleet.action.create")}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
 
       <Dialog open={showEditDialog} onOpenChange={setShowEditDialog}>
         <DialogContent className="panel">
@@ -448,6 +325,170 @@ export default function FleetPage() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+    </>
+  )
+}
+
+export default function FleetPage() {
+  const [searchTerm, setSearchTerm] = useState("")
+  const [statusFilter, setStatusFilter] = useState<"all" | TruckType["status"]>("all")
+  const [page, setPage] = useState(1)
+  const pageSize = 10
+  const { t } = useI18n()
+  
+  const [showCreateDialog, setShowCreateDialog] = useState(false)
+  const { createTruck } = useTruckMutations()
+  const { toast } = useToast()
+  
+  const [formData, setFormData] = useState({
+    plateNumber: "",
+    model: "",
+    capacity: "",
+    status: "available" as TruckType["status"],
+  })
+
+  const handleCreate = async () => {
+    try {
+      await createTruck.mutateAsync({
+        plateNumber: formData.plateNumber,
+        model: formData.model,
+        capacity: Number(formData.capacity),
+        status: formData.status,
+      })
+      setShowCreateDialog(false)
+      setFormData({ plateNumber: "", model: "", capacity: "", status: "available" })
+      toast({
+        title: t("fleet.toast.createTitle"),
+        description: t("fleet.toast.createDescription"),
+      })
+      window.location.reload(); // Quick hack to refresh after create while avoiding complex prop drilling
+    } catch (err) {
+      const message = toActionErrorMessage(err, t("fleet.toast.createErrorFallback"))
+      toast({
+        title: t("fleet.toast.createErrorTitle"),
+        description: message,
+        variant: "destructive",
+      })
+    }
+  }
+
+  return (
+    <PageShell>
+      <PageHeader>
+        <PageHeading title={t("fleet.title")} description={t("fleet.description")} />
+        <Button onClick={() => setShowCreateDialog(true)}>
+          <Plus className="mr-2 h-4 w-4" />
+          {t("fleet.addTruck")}
+        </Button>
+      </PageHeader>
+
+      <PageSurface className="p-4 bg-gradient-to-r from-card to-muted/30">
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-center">
+          <div className="relative flex-1">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <Input
+              value={searchTerm}
+              onChange={(e) => {
+                setSearchTerm(e.target.value)
+                setPage(1)
+              }}
+              placeholder={t("fleet.searchPlaceholder")}
+              className="h-10 pl-9 bg-background/90"
+            />
+          </div>
+          <Select
+            value={statusFilter}
+            onValueChange={(value) => {
+              setStatusFilter(value as "all" | TruckType["status"])
+              setPage(1)
+            }}
+          >
+            <SelectTrigger className="h-10 w-full sm:w-52 bg-background/90">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">{t("fleet.statusFilter.all")}</SelectItem>
+              <SelectItem value="available">{t("fleet.status.available")}</SelectItem>
+              <SelectItem value="in-use">{t("fleet.status.inUse")}</SelectItem>
+              <SelectItem value="maintenance">{t("fleet.status.maintenance")}</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+      </PageSurface>
+
+      <Suspense fallback={<SectionLoader label={t("fleet.loading")} />}>
+        <FleetTableContent 
+          searchTerm={searchTerm} 
+          statusFilter={statusFilter} 
+          page={page} 
+          setPage={setPage} 
+          pageSize={pageSize} 
+        />
+      </Suspense>
+
+      <Dialog open={showCreateDialog} onOpenChange={setShowCreateDialog}>
+        <DialogContent className="panel">
+          <DialogHeader>
+            <DialogTitle>{t("fleet.dialog.createTitle")}</DialogTitle>
+            <DialogDescription>{t("fleet.dialog.createDescription")}</DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="plateNumber">{t("fleet.form.plateNumber")}</Label>
+              <Input
+                id="plateNumber"
+                value={formData.plateNumber}
+                onChange={(e) => setFormData({ ...formData, plateNumber: e.target.value })}
+                placeholder={t("fleet.form.placeholder.plateNumber")}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="model">{t("fleet.form.model")}</Label>
+              <Input
+                id="model"
+                value={formData.model}
+                onChange={(e) => setFormData({ ...formData, model: e.target.value })}
+                placeholder={t("fleet.form.placeholder.model")}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="capacity">{t("fleet.form.capacity")}</Label>
+              <Input
+                id="capacity"
+                type="number"
+                value={formData.capacity}
+                onChange={(e) => setFormData({ ...formData, capacity: e.target.value })}
+                placeholder={t("fleet.form.placeholder.capacity")}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="status">{t("fleet.form.status")}</Label>
+              <Select
+                value={formData.status}
+                onValueChange={(value) => setFormData({ ...formData, status: value as TruckType["status"] })}
+              >
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="available">{t("fleet.status.available")}</SelectItem>
+                  <SelectItem value="in-use">{t("fleet.status.inUse")}</SelectItem>
+                  <SelectItem value="maintenance">{t("fleet.status.maintenance")}</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowCreateDialog(false)} disabled={createTruck.isPending}>
+              {t("common.cancel")}
+            </Button>
+            <Button onClick={handleCreate} disabled={createTruck.isPending}>
+              {createTruck.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              {createTruck.isPending ? t("fleet.action.creating") : t("fleet.action.create")}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </PageShell>
   )
 }

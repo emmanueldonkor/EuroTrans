@@ -1,5 +1,6 @@
 "use client"
 
+import { Suspense } from "react"
 import { Card } from "@/components/ui/card"
 import { Package, TrendingUp, Users, Clock, ArrowUpRight } from "lucide-react"
 import { useAnalytics } from "@/hooks/use-transport-data"
@@ -9,7 +10,7 @@ import { Bar, BarChart, CartesianGrid, Line, LineChart, XAxis, YAxis } from "rec
 import { ChartContainer, ChartLegend, ChartLegendContent, ChartTooltip, ChartTooltipContent, type ChartConfig } from "@/components/ui/chart"
 import { useI18n } from "@/components/providers/i18n-provider"
 
-export default function AnalyticsPage() {
+function AnalyticsContent() {
   const { data: analytics, isLoading, error, refetch } = useAnalytics()
   const { t } = useI18n()
 
@@ -48,10 +49,7 @@ export default function AnalyticsPage() {
   }
 
   return (
-    <PageShell>
-      <PageHeading title={t("analytics.title")} description={t("analytics.description")} />
-
-      {/* KPI Cards */}
+    <>
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         <Card className="kpi-card">
           <div className="flex items-center gap-4">
@@ -118,7 +116,6 @@ export default function AnalyticsPage() {
         </Card>
       </div>
 
-      {/* Charts Placeholder */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <PageSurface className="p-6 surface-hover panel-muted">
           <h2 className="text-lg font-semibold mb-4">{t("analytics.shipmentsOverTimeTitle")}</h2>
@@ -174,7 +171,6 @@ export default function AnalyticsPage() {
         </PageSurface>
       </div>
 
-      {/* Additional Stats */}
       <PageSurface className="p-6 surface-hover">
         <h2 className="text-lg font-semibold mb-4">{t("analytics.performanceMetricsTitle")}</h2>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -196,6 +192,21 @@ export default function AnalyticsPage() {
           </div>
         </div>
       </PageSurface>
+    </>
+  )
+}
+
+export default function AnalyticsPage() {
+  const { t } = useI18n()
+
+  return (
+    <PageShell>
+      <PageHeading title={t("analytics.title")} description={t("analytics.description")} />
+
+      <Suspense fallback={<SectionLoader label={t("analytics.loading")} />}>
+        <AnalyticsContent />
+      </Suspense>
     </PageShell>
   )
 }
+

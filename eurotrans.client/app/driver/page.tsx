@@ -1,5 +1,6 @@
 "use client"
 
+import { Suspense } from "react"
 import { useRouter } from "next/navigation"
 import { Card } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
@@ -13,25 +14,24 @@ import { useDriverCurrentShipment, useShipmentMutations } from "@/hooks/use-tran
 import { PageErrorState, SectionLoader } from "@/components/ui/page-state"
 import { useI18n } from "@/components/providers/i18n-provider"
 
-export default function DriverHomePage() {
+function DriverHomeContent({ driverId }: { driverId?: string }) {
   const router = useRouter()
   const { toast } = useToast()
   const { t } = useI18n()
-  const { data: currentUser, isLoading: isUserLoading, error: userError } = useCurrentUser()
+  
   const {
     data: activeShipment,
     isLoading: isShipmentsLoading,
     error: shipmentsError,
     refetch,
   } = useDriverCurrentShipment({
-    enabled: currentUser?.role === "driver" && currentUser.driverProfileComplete,
-    driverId: currentUser?.employeeId,
+    enabled: !!driverId,
+    driverId,
   })
+  
   const { startShipment } = useShipmentMutations()
 
   const canStart = activeShipment ? canStartShipment(activeShipment) : false
-  const isLoading = isUserLoading || isShipmentsLoading
-  const error = userError ?? shipmentsError
 
   const handleStartJourney = async () => {
     if (!activeShipment) return
@@ -52,15 +52,15 @@ export default function DriverHomePage() {
     }
   }
 
-  if (isLoading) {
+  if (isShipmentsLoading) {
     return <SectionLoader label={t("driver.home.loadingAssignments")} />
   }
 
-  if (error) {
+  if (shipmentsError) {
     return (
       <PageErrorState
         title={t("driver.home.errorTitle")}
-        message={error instanceof Error ? error.message : t("driver.home.errorMessage")}
+        message={shipmentsError instanceof Error ? shipmentsError.message : t("driver.home.errorMessage")}
         onRetry={() => {
           void refetch()
         }}
@@ -68,17 +68,8 @@ export default function DriverHomePage() {
     )
   }
 
-  if (!currentUser || currentUser.role !== "driver") {
-    return <SectionLoader label={t("driver.home.redirecting")} />
-  }
-
   return (
-    <div className="max-w-lg mx-auto space-y-6">
-      <div>
-        <h1 className="text-3xl font-bold">{`${t("driver.greeting")}, ${currentUser.name.split(" ")[0]}`}</h1>
-        <p className="text-muted-foreground">{t("driver.home.welcomeBack")}</p>
-      </div>
-
+    <>
       {activeShipment ? (
         <Card className="panel p-6 space-y-6 surface-hover">
           <div className="flex items-start justify-between">
@@ -139,7 +130,7 @@ export default function DriverHomePage() {
         </Card>
       )}
 
-      <div className="grid grid-cols-2 gap-4">
+      <div className="grid grid-cols-2 gap-4 mt-6">
         <Card className="panel p-4 surface-hover">
           <p className="text-sm text-muted-foreground mb-1">{t("driver.home.status")}</p>
           <p className="text-lg font-bold">{t("employees.status.onDuty")}</p>
@@ -149,6 +140,53 @@ export default function DriverHomePage() {
           <p className="text-lg font-bold">{activeShipment ? "1" : "0"}</p>
         </Card>
       </div>
+    </>
+  )
+}
+
+export default function DriverHomePage() {
+  const { t } = useI18n()
+  const { data: currentUser, isLoading: isUserLoading, error: userError } = useCurrentUser()
+
+  if (isUserLoading) {
+    return <SectionLoader label={t("driver.home.loadingAssignments")} />
+  }
+
+  if (userError) {
+    return (
+      <PageErrorState
+        title={t("driver.home.errorTitle")}
+        message={userError instanceof Error ? userError.message : t("driver.home.errorMessage")}
+      />
+    )
+  }
+
+  if (!currentUser || currentUser.role !== "driver") {
+    return <SectionLoader label={t("driver.home.redirecting")} />
+  }
+
+  const isProfileComplete = currentUser.driverProfileComplete
+
+  return (
+    <div className="max-w-lg mx-auto space-y-6">
+      <div>
+        <h1 className="text-3xl font-bold">{`${t("driver.greeting")}, ${currentUser.name.split(" ")[0]}`}</h1>
+        <p className="text-muted-foreground">{t("driver.home.welcomeBack")}</p>
+      </div>
+
+      {isProfileComplete ? (
+        <Suspense fallback={<SectionLoader label={t("driver.home.loadingAssignments")} />}>
+          <DriverHomeContent driverId={currentUser.employeeId} />
+        </Suspense>
+      ) : (
+        <Card className="panel p-12 flex flex-col items-center justify-center text-center surface-hover">
+          <Package className="h-16 w-16 text-muted-foreground mb-4" />
+          <h3 className="text-lg font-medium mb-2">{t("driver.home.noActiveJobsTitle")}</h3>
+          <p className="text-sm text-muted-foreground max-w-sm">
+            Please complete your profile to view active assignments.
+          </p>
+        </Card>
+      )}
     </div>
   )
 }

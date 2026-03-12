@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, Suspense } from "react"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
@@ -27,11 +27,19 @@ import { useI18n } from "@/components/providers/i18n-provider"
 import { DataPagination } from "@/components/ui/data-pagination"
 import { useDebouncedValue } from "@/hooks/use-debounced-value"
 
-export default function EmployeesPage() {
-  const [searchTerm, setSearchTerm] = useState("")
-  const [statusFilter, setStatusFilter] = useState<"all" | Driver["status"]>("all")
-  const [page, setPage] = useState(1)
-  const pageSize = 10
+function EmployeesTableContent({
+  searchTerm,
+  statusFilter,
+  page,
+  setPage,
+  pageSize
+}: {
+  searchTerm: string,
+  statusFilter: "all" | Driver["status"],
+  page: number,
+  setPage: (p: number) => void,
+  pageSize: number
+}) {
   const debouncedSearchTerm = useDebouncedValue(searchTerm, 250)
   const { data: driversPage, isLoading, isFetching, error: queryError, refetch } = useDriversPage({
     search: debouncedSearchTerm || undefined,
@@ -39,11 +47,14 @@ export default function EmployeesPage() {
     page,
     pageSize,
   })
+  
   const drivers = driversPage?.items ?? []
   const totalCount = driversPage?.totalCount ?? 0
+  
   const { updateStatus } = useDriverMutations()
   const { toast } = useToast()
   const { t } = useI18n()
+  
   const [selectedDriver, setSelectedDriver] = useState<Driver | null>(null)
   const [showStatusDialog, setShowStatusDialog] = useState(false)
   const [newStatus, setNewStatus] = useState<"available" | "on-duty" | "off-duty">("available")
@@ -127,43 +138,7 @@ export default function EmployeesPage() {
   }
 
   return (
-    <PageShell>
-      <PageHeading title={t("employees.title")} description={t("employees.description")} />
-
-      <PageSurface className="p-4 bg-gradient-to-r from-card to-muted/30">
-        <div className="flex flex-col gap-4 sm:flex-row sm:items-center">
-          <div className="relative flex-1">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-            <Input
-              value={searchTerm}
-              onChange={(e) => {
-                setSearchTerm(e.target.value)
-                setPage(1)
-              }}
-              placeholder={t("employees.searchPlaceholder")}
-              className="h-10 pl-9 bg-background/90"
-            />
-          </div>
-          <Select
-            value={statusFilter}
-            onValueChange={(value) => {
-              setStatusFilter(value as "all" | Driver["status"])
-              setPage(1)
-            }}
-          >
-            <SelectTrigger className="h-10 w-full sm:w-52 bg-background/90">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">{t("employees.statusFilter.all")}</SelectItem>
-              <SelectItem value="available">{t("employees.status.available")}</SelectItem>
-              <SelectItem value="on-duty">{t("employees.status.onDuty")}</SelectItem>
-              <SelectItem value="off-duty">{t("employees.status.offDuty")}</SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
-      </PageSurface>
-
+    <>
       <PageSurface className="table-shell">
         <Table>
           <TableHeader className="table-head-sticky">
@@ -208,7 +183,7 @@ export default function EmployeesPage() {
         </Table>
       </PageSurface>
 
-      <PageSurface className="p-4">
+      <PageSurface className="p-4 mt-6">
         <DataPagination page={page} pageSize={pageSize} totalCount={totalCount} onPageChange={setPage} disabled={isFetching} />
       </PageSurface>
 
@@ -263,6 +238,64 @@ export default function EmployeesPage() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+    </>
+  )
+}
+
+export default function EmployeesPage() {
+  const [searchTerm, setSearchTerm] = useState("")
+  const [statusFilter, setStatusFilter] = useState<"all" | Driver["status"]>("all")
+  const [page, setPage] = useState(1)
+  const pageSize = 10
+  const { t } = useI18n()
+
+  return (
+    <PageShell>
+      <PageHeading title={t("employees.title")} description={t("employees.description")} />
+
+      <PageSurface className="p-4 bg-gradient-to-r from-card to-muted/30">
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-center">
+          <div className="relative flex-1">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <Input
+              value={searchTerm}
+              onChange={(e) => {
+                setSearchTerm(e.target.value)
+                setPage(1)
+              }}
+              placeholder={t("employees.searchPlaceholder")}
+              className="h-10 pl-9 bg-background/90"
+            />
+          </div>
+          <Select
+            value={statusFilter}
+            onValueChange={(value) => {
+              setStatusFilter(value as "all" | Driver["status"])
+              setPage(1)
+            }}
+          >
+            <SelectTrigger className="h-10 w-full sm:w-52 bg-background/90">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">{t("employees.statusFilter.all")}</SelectItem>
+              <SelectItem value="available">{t("employees.status.available")}</SelectItem>
+              <SelectItem value="on-duty">{t("employees.status.onDuty")}</SelectItem>
+              <SelectItem value="off-duty">{t("employees.status.offDuty")}</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+      </PageSurface>
+
+      <Suspense fallback={<SectionLoader label={t("employees.loading")} />}>
+        <EmployeesTableContent 
+          searchTerm={searchTerm} 
+          statusFilter={statusFilter} 
+          page={page} 
+          setPage={setPage} 
+          pageSize={pageSize} 
+        />
+      </Suspense>
     </PageShell>
   )
 }

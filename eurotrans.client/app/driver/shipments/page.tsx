@@ -1,6 +1,6 @@
 "use client"
 
-import { useCallback, useMemo } from "react"
+import { useCallback, useMemo, Suspense } from "react"
 import Link from "next/link"
 import { Card } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
@@ -13,9 +13,9 @@ import { PageErrorState, SectionLoader } from "@/components/ui/page-state"
 import { useI18n } from "@/components/providers/i18n-provider"
 import { useInfiniteScroll } from "@/hooks/use-infinite-scroll"
 
-export default function DriverShipmentsPage() {
+function DriverShipmentsContent() {
   const { t } = useI18n()
-  const { data: currentUser, isLoading: isUserLoading } = useCurrentUser()
+
   const {
     data,
     isLoading,
@@ -39,7 +39,7 @@ export default function DriverShipmentsPage() {
     onLoadMore: loadMore,
   })
 
-  if (isUserLoading || isLoading) {
+  if (isLoading) {
     return <SectionLoader label={t("shipments.loading")} />
   }
 
@@ -55,6 +55,67 @@ export default function DriverShipmentsPage() {
     )
   }
 
+  if (shipments.length === 0) {
+    return (
+      <Card className="panel p-12 flex flex-col items-center justify-center text-center surface-hover">
+        <Package className="h-16 w-16 text-muted-foreground mb-4" />
+        <h3 className="text-lg font-medium mb-2">{t("driver.shipments.emptyTitle")}</h3>
+        <p className="text-sm text-muted-foreground">{t("driver.shipments.emptyDescription")}</p>
+      </Card>
+    )
+  }
+
+  return (
+    <div className="space-y-4">
+      {shipments.map((shipment) => (
+        <Link key={shipment.id} href={`/driver/shipments/${shipment.id}`} className="block">
+          <Card className="panel p-4 motion-smooth hover:bg-muted/40 hover:shadow-md">
+            <div className="space-y-3">
+              <div className="flex items-start justify-between gap-2">
+                <div>
+                  <p className="font-semibold">{shipment.trackingId}</p>
+                  <p className="text-sm text-muted-foreground mt-1">{shipment.cargo.description}</p>
+                </div>
+                <Badge className={getStatusColor(shipment.status)}>{getStatusLabel(shipment.status, t)}</Badge>
+              </div>
+
+              <div className="text-sm text-muted-foreground">
+                <p>
+                  {shipment.origin.city} -{">"} {shipment.destination.city}
+                </p>
+                <p className="text-xs mt-1">
+                  {t("map.updatedLabel")}: {formatDate(shipment.updatedAt)}
+                </p>
+              </div>
+            </div>
+          </Card>
+        </Link>
+      ))}
+
+      {(hasNextPage || isFetchingNextPage) && (
+        <div ref={loadMoreRef} className="flex items-center justify-center py-4 text-sm text-muted-foreground">
+          {isFetchingNextPage ? (
+            <span className="inline-flex items-center gap-2">
+              <Loader2 className="h-4 w-4 animate-spin" />
+              {t("driver.shipments.loadingMore")}
+            </span>
+          ) : (
+            t("driver.shipments.scrollMore")
+          )}
+        </div>
+      )}
+    </div>
+  )
+}
+
+export default function DriverShipmentsPage() {
+  const { t } = useI18n()
+  const { data: currentUser, isLoading: isUserLoading } = useCurrentUser()
+
+  if (isUserLoading) {
+    return <SectionLoader label={t("shipments.loading")} />
+  }
+
   if (!currentUser || currentUser.role !== "driver") {
     return <SectionLoader label={t("driver.home.redirecting")} />
   }
@@ -66,53 +127,9 @@ export default function DriverShipmentsPage() {
         <p className="text-muted-foreground">{t("driver.shipments.description")}</p>
       </div>
 
-      {shipments.length === 0 ? (
-        <Card className="panel p-12 flex flex-col items-center justify-center text-center surface-hover">
-          <Package className="h-16 w-16 text-muted-foreground mb-4" />
-          <h3 className="text-lg font-medium mb-2">{t("driver.shipments.emptyTitle")}</h3>
-          <p className="text-sm text-muted-foreground">{t("driver.shipments.emptyDescription")}</p>
-        </Card>
-      ) : (
-        <div className="space-y-4">
-          {shipments.map((shipment) => (
-            <Link key={shipment.id} href={`/driver/shipments/${shipment.id}`} className="block">
-              <Card className="panel p-4 motion-smooth hover:bg-muted/40 hover:shadow-md">
-                <div className="space-y-3">
-                  <div className="flex items-start justify-between gap-2">
-                    <div>
-                      <p className="font-semibold">{shipment.trackingId}</p>
-                      <p className="text-sm text-muted-foreground mt-1">{shipment.cargo.description}</p>
-                    </div>
-                    <Badge className={getStatusColor(shipment.status)}>{getStatusLabel(shipment.status, t)}</Badge>
-                  </div>
-
-                  <div className="text-sm text-muted-foreground">
-                    <p>
-                      {shipment.origin.city} -{">"} {shipment.destination.city}
-                    </p>
-                    <p className="text-xs mt-1">
-                      {t("map.updatedLabel")}: {formatDate(shipment.updatedAt)}
-                    </p>
-                  </div>
-                </div>
-              </Card>
-            </Link>
-          ))}
-
-          {(hasNextPage || isFetchingNextPage) && (
-            <div ref={loadMoreRef} className="flex items-center justify-center py-4 text-sm text-muted-foreground">
-              {isFetchingNextPage ? (
-                <span className="inline-flex items-center gap-2">
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                  {t("driver.shipments.loadingMore")}
-                </span>
-              ) : (
-                t("driver.shipments.scrollMore")
-              )}
-            </div>
-          )}
-        </div>
-      )}
+      <Suspense fallback={<SectionLoader label={t("shipments.loading")} />}>
+        <DriverShipmentsContent />
+      </Suspense>
     </div>
   )
 }
