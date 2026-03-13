@@ -49,5 +49,9 @@ public class TruckConfiguration : IEntityTypeConfiguration<Truck>
         builder.Property(t => t.RowVersion)
             .IsConcurrencyToken()
             .IsRequired();
+
+        // Performance Indices
+        builder.HasIndex(t => t.Status);
+        builder.HasIndex(t => t.IsActive);
     }
 }

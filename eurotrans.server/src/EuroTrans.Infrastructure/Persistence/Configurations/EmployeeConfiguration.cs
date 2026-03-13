@@ -55,5 +55,9 @@ public class EmployeeConfiguration : IEntityTypeConfiguration<Employee>
             .HasColumnName("created_at")
             .IsRequired();
 
+        // Performance Indices
+        builder.HasIndex(e => e.Role);
+        builder.HasIndex(e => e.IsActive);
+
     }
 }

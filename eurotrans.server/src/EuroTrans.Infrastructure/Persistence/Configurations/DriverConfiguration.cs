@@ -37,5 +37,8 @@ public class DriverConfiguration : IEntityTypeConfiguration<Driver>
         builder.Property(d => d.RowVersion)
            .IsConcurrencyToken()
            .IsRequired();
+
+        // Performance Indices
+        builder.HasIndex(d => d.Status);
     }
 }

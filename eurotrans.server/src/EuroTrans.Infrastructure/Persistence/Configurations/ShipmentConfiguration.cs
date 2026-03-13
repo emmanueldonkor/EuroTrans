@@ -144,6 +144,12 @@ public class ShipmentConfiguration : IEntityTypeConfiguration<Shipment>
             .IsConcurrencyToken()
             .IsRequired();
 
+        // Performance Indices
+        builder.HasIndex(s => s.Status);
+        builder.HasIndex(s => s.CreatedAtUtc);
+        builder.HasIndex(s => s.DriverId);
+        builder.HasIndex(s => s.TruckId);
+
     }
 
 }
