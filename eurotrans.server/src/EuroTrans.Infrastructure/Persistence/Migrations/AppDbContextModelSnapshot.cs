@@ -50,6 +50,8 @@ namespace EuroTrans.Infrastructure.Persistence.Migrations
 
                     b.HasKey("Id");
 
+                    b.HasIndex("Status");
+
                     b.ToTable("drivers", (string)null);
                 });
 
@@ -106,6 +108,10 @@ namespace EuroTrans.Infrastructure.Persistence.Migrations
 
                     b.HasIndex("Auth0UserId")
                         .IsUnique();
+
+                    b.HasIndex("IsActive");
+
+                    b.HasIndex("Role");
 
                     b.ToTable("employees", (string)null);
 
@@ -251,9 +257,13 @@ namespace EuroTrans.Infrastructure.Persistence.Migrations
 
                     b.HasKey("Id");
 
+                    b.HasIndex("CreatedAtUtc");
+
                     b.HasIndex("DriverId")
                         .IsUnique()
                         .HasFilter("driver_id IS NOT NULL AND status IN ('Assigned', 'InTransit')");
+
+                    b.HasIndex("Status");
 
                     b.HasIndex("TrackingId")
                         .IsUnique();
@@ -309,8 +319,12 @@ namespace EuroTrans.Infrastructure.Persistence.Migrations
 
                     b.HasKey("Id");
 
+                    b.HasIndex("IsActive");
+
                     b.HasIndex("PlateNumber")
                         .IsUnique();
+
+                    b.HasIndex("Status");
 
                     b.ToTable("trucks", (string)null);
                 });

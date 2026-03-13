@@ -24,15 +24,31 @@ public class AnalyticsRepository : IAnalyticsRepository
         var shipments = db.Shipments.AsNoTracking();
         var drivers = db.Drivers.AsNoTracking();
 
-        var totalShipments = await shipments.CountAsync(ct);
-        var activeShipments = await shipments.CountAsync(
-            shipment => shipment.Status == ShipmentStatus.Assigned || shipment.Status == ShipmentStatus.InTransit,
-            ct);
-        var deliveredShipments = await shipments.CountAsync(
-            shipment => shipment.Status == ShipmentStatus.Delivered,
-            ct);
-        var activeDrivers = await drivers.CountAsync(driver => driver.Status == DriverStatus.OnDuty, ct);
-        var availableDrivers = await drivers.CountAsync(driver => driver.Status == DriverStatus.Available, ct);
+        var shipmentStats = await shipments
+            .GroupBy(s => 1)
+            .Select(g => new
+            {
+                Total = g.Count(),
+                Active = g.Count(s => s.Status == ShipmentStatus.Assigned || s.Status == ShipmentStatus.InTransit),
+                Delivered = g.Count(s => s.Status == ShipmentStatus.Delivered)
+            })
+            .FirstOrDefaultAsync(ct);
+
+        var totalShipments = shipmentStats?.Total ?? 0;
+        var activeShipments = shipmentStats?.Active ?? 0;
+        var deliveredShipments = shipmentStats?.Delivered ?? 0;
+
+        var driverStats = await drivers
+            .GroupBy(d => 1)
+            .Select(g => new
+            {
+                Active = g.Count(d => d.Status == DriverStatus.OnDuty),
+                Available = g.Count(d => d.Status == DriverStatus.Available)
+            })
+            .FirstOrDefaultAsync(ct);
+
+        var activeDrivers = driverStats?.Active ?? 0;
+        var availableDrivers = driverStats?.Available ?? 0;
 
         var shipmentsOverTime = await shipments
             .Where(shipment => shipment.CreatedAtUtc >= fromUtc && shipment.CreatedAtUtc < toUtcExclusive)
@@ -49,15 +65,12 @@ public class AnalyticsRepository : IAnalyticsRepository
             })
             .ToListAsync(ct);
 
-        var workloadRows = await (
-            from shipment in shipments
-            join employee in db.Employees.AsNoTracking() on shipment.DriverId equals (Guid?)employee.Id into employees
-            from employee in employees.DefaultIfEmpty()
-            where shipment.Status == ShipmentStatus.Assigned || shipment.Status == ShipmentStatus.InTransit
-            select new
+        var workloadRows = await shipments
+            .Where(s => s.Status == ShipmentStatus.Assigned || s.Status == ShipmentStatus.InTransit)
+            .Select(s => new
             {
-                DriverName = employee != null ? employee.Name : "Unassigned",
-                shipment.Status,
+                DriverName = s.Driver != null ? s.Driver.Employee.Name : "Unassigned",
+                s.Status
             })
             .ToListAsync(ct);
 
