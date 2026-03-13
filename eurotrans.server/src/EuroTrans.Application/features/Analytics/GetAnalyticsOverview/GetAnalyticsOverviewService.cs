@@ -32,7 +32,7 @@ public class GetAnalyticsOverviewService
 
         return cache.GetOrCreateAsync(
             key,
-            QueryCacheTtls.Shipments,
+            QueryCacheTtls.Analytics,
             async token =>
             {
                 var todayUtc = clock.UtcNow.Date;

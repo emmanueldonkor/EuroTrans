@@ -14,20 +14,21 @@ import { useDriverCurrentShipment, useShipmentMutations } from "@/hooks/use-tran
 import { PageErrorState, SectionLoader } from "@/components/ui/page-state"
 import { useI18n } from "@/components/providers/i18n-provider"
 
-function DriverHomeContent({ driverId }: { driverId?: string }) {
+function DriverHomeContent({
+  shipmentResult,
+}: {
+  shipmentResult: ReturnType<typeof useDriverCurrentShipment>
+}) {
   const router = useRouter()
   const { toast } = useToast()
   const { t } = useI18n()
-  
+
   const {
     data: activeShipment,
     isLoading: isShipmentsLoading,
     error: shipmentsError,
     refetch,
-  } = useDriverCurrentShipment({
-    enabled: !!driverId,
-    driverId,
-  })
+  } = shipmentResult
   
   const { startShipment } = useShipmentMutations()
 
@@ -147,6 +148,8 @@ function DriverHomeContent({ driverId }: { driverId?: string }) {
 export default function DriverHomePage() {
   const { t } = useI18n()
   const { data: currentUser, isLoading: isUserLoading, error: userError } = useCurrentUser()
+  // Fire in parallel with useCurrentUser — both start on mount, no waterfall
+  const shipmentResult = useDriverCurrentShipment()
 
   if (isUserLoading) {
     return <SectionLoader label={t("driver.home.loadingAssignments")} />
@@ -176,7 +179,7 @@ export default function DriverHomePage() {
 
       {isProfileComplete ? (
         <Suspense fallback={<SectionLoader label={t("driver.home.loadingAssignments")} />}>
-          <DriverHomeContent driverId={currentUser.employeeId} />
+          <DriverHomeContent shipmentResult={shipmentResult} />
         </Suspense>
       ) : (
         <Card className="panel p-12 flex flex-col items-center justify-center text-center surface-hover">

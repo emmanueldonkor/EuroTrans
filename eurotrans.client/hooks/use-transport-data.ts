@@ -26,7 +26,7 @@ export function useDriverCurrentShipment(
     options?: { enabled?: boolean; driverId?: string },
 ) {
     return useQuery({
-        queryKey: ["shipments", "driver-current", options?.driverId ?? "_"],
+        queryKey: ["shipments", "driver-current"],
         enabled: options?.enabled ?? true,
         queryFn: () => api.getCurrentDriverShipment(),
         staleTime: 30_000,

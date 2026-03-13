@@ -8,11 +8,11 @@ namespace EuroTrans.Infrastructure.Repositories;
 
 public class AnalyticsRepository : IAnalyticsRepository
 {
-    private readonly AppDbContext db;
+    private readonly IDbContextFactory<AppDbContext> dbFactory;
 
-    public AnalyticsRepository(AppDbContext db)
+    public AnalyticsRepository(IDbContextFactory<AppDbContext> dbFactory)
     {
-        this.db = db;
+        this.dbFactory = dbFactory;
     }
 
     public async Task<AnalyticsOverviewQueryResult> GetOverviewAsync(
@@ -21,10 +21,14 @@ public class AnalyticsRepository : IAnalyticsRepository
         int workloadLimit,
         CancellationToken ct = default)
     {
-        var shipments = db.Shipments.AsNoTracking();
-        var drivers = db.Drivers.AsNoTracking();
+        // Create separate contexts — EF Core does not allow concurrent queries on the same instance
+        await using var ctx1 = await dbFactory.CreateDbContextAsync(ct);
+        await using var ctx2 = await dbFactory.CreateDbContextAsync(ct);
+        await using var ctx3 = await dbFactory.CreateDbContextAsync(ct);
+        await using var ctx4 = await dbFactory.CreateDbContextAsync(ct);
+        await using var ctx5 = await dbFactory.CreateDbContextAsync(ct);
 
-        var shipmentStats = await shipments
+        var shipmentStatsTask = ctx1.Shipments.AsNoTracking()
             .GroupBy(s => 1)
             .Select(g => new
             {
@@ -34,11 +38,7 @@ public class AnalyticsRepository : IAnalyticsRepository
             })
             .FirstOrDefaultAsync(ct);
 
-        var totalShipments = shipmentStats?.Total ?? 0;
-        var activeShipments = shipmentStats?.Active ?? 0;
-        var deliveredShipments = shipmentStats?.Delivered ?? 0;
-
-        var driverStats = await drivers
+        var driverStatsTask = ctx2.Drivers.AsNoTracking()
             .GroupBy(d => 1)
             .Select(g => new
             {
@@ -47,62 +47,53 @@ public class AnalyticsRepository : IAnalyticsRepository
             })
             .FirstOrDefaultAsync(ct);
 
-        var activeDrivers = driverStats?.Active ?? 0;
-        var availableDrivers = driverStats?.Available ?? 0;
-
-        var shipmentsOverTime = await shipments
-            .Where(shipment => shipment.CreatedAtUtc >= fromUtc && shipment.CreatedAtUtc < toUtcExclusive)
-            .GroupBy(shipment => shipment.CreatedAtUtc.Date)
-            .Select(group => new AnalyticsShipmentTrendPoint(group.Key, group.Count()))
+        var shipmentsOverTimeTask = ctx3.Shipments.AsNoTracking()
+            .Where(s => s.CreatedAtUtc >= fromUtc && s.CreatedAtUtc < toUtcExclusive)
+            .GroupBy(s => s.CreatedAtUtc.Date)
+            .Select(g => new AnalyticsShipmentTrendPoint(g.Key, g.Count()))
             .ToListAsync(ct);
 
-        var deliveryDurations = await shipments
-            .Where(shipment => shipment.StartedAtUtc.HasValue && shipment.DeliveredAtUtc.HasValue)
-            .Select(shipment => new
-            {
-                StartedAtUtc = shipment.StartedAtUtc!.Value,
-                DeliveredAtUtc = shipment.DeliveredAtUtc!.Value,
-            })
-            .ToListAsync(ct);
-
-        var workloadRows = await shipments
-            .Where(s => s.Status == ShipmentStatus.Assigned || s.Status == ShipmentStatus.InTransit)
+        var deliveryDurationsTask = ctx4.Shipments.AsNoTracking()
+            .Where(s => s.StartedAtUtc.HasValue && s.DeliveredAtUtc.HasValue)
             .Select(s => new
             {
-                DriverName = s.Driver != null ? s.Driver.Employee.Name : "Unassigned",
-                s.Status
+                StartedAtUtc = s.StartedAtUtc!.Value,
+                DeliveredAtUtc = s.DeliveredAtUtc!.Value,
             })
             .ToListAsync(ct);
+
+        var driverWorkloadTask = ctx5.Shipments.AsNoTracking()
+            .Where(s => s.Status == ShipmentStatus.Assigned || s.Status == ShipmentStatus.InTransit)
+            .GroupBy(s => s.Driver != null ? s.Driver.Employee.Name : "Unassigned")
+            .Select(g => new AnalyticsDriverWorkloadPoint(
+                g.Key,
+                g.Count(s => s.Status == ShipmentStatus.Assigned),
+                g.Count(s => s.Status == ShipmentStatus.InTransit),
+                g.Count()))
+            .OrderByDescending(item => item.Total)
+            .ThenBy(item => item.DriverName)
+            .Take(workloadLimit)
+            .ToListAsync(ct);
+
+        await Task.WhenAll(shipmentStatsTask, driverStatsTask, shipmentsOverTimeTask, deliveryDurationsTask, driverWorkloadTask);
+
+        var shipmentStats = await shipmentStatsTask;
+        var driverStats = await driverStatsTask;
+        var shipmentsOverTime = await shipmentsOverTimeTask;
+        var deliveryDurations = await deliveryDurationsTask;
+        var driverWorkload = await driverWorkloadTask;
 
         var averageDeliveryHours = deliveryDurations.Count == 0
             ? (double?)null
             : deliveryDurations.Average(item => (item.DeliveredAtUtc - item.StartedAtUtc).TotalHours);
 
-        var driverWorkload = workloadRows
-            .GroupBy(item => item.DriverName)
-            .Select(group =>
-            {
-                var assigned = group.Count(item => item.Status == ShipmentStatus.Assigned);
-                var inTransit = group.Count(item => item.Status == ShipmentStatus.InTransit);
-
-                return new AnalyticsDriverWorkloadPoint(
-                    DriverName: group.Key,
-                    Assigned: assigned,
-                    InTransit: inTransit,
-                    Total: assigned + inTransit);
-            })
-            .OrderByDescending(item => item.Total)
-            .ThenBy(item => item.DriverName)
-            .Take(workloadLimit)
-            .ToList();
-
         return new AnalyticsOverviewQueryResult(
-            TotalShipments: totalShipments,
-            ActiveShipments: activeShipments,
-            DeliveredShipments: deliveredShipments,
+            TotalShipments: shipmentStats?.Total ?? 0,
+            ActiveShipments: shipmentStats?.Active ?? 0,
+            DeliveredShipments: shipmentStats?.Delivered ?? 0,
             AverageDeliveryHours: averageDeliveryHours,
-            ActiveDrivers: activeDrivers,
-            AvailableDrivers: availableDrivers,
+            ActiveDrivers: driverStats?.Active ?? 0,
+            AvailableDrivers: driverStats?.Available ?? 0,
             ShipmentsOverTime: shipmentsOverTime,
             DriverWorkloadDistribution: driverWorkload);
     }

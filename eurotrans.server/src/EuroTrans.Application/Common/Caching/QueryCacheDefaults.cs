@@ -9,6 +9,7 @@ public static class QueryCacheScopes
 
 public static class QueryCacheTtls
 {
+    public static readonly TimeSpan Analytics = TimeSpan.FromMinutes(5);
     public static readonly TimeSpan Shipments = TimeSpan.FromSeconds(60);
     public static readonly TimeSpan ShipmentsDetails = TimeSpan.FromSeconds(30);
     public static readonly TimeSpan Drivers = TimeSpan.FromSeconds(60);

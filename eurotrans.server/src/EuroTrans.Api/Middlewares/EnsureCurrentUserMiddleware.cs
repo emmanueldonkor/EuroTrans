@@ -57,6 +57,8 @@ public class EnsureCurrentUserMiddleware
         }
 
         cache.Set(cacheKey, true, CacheDuration);
+        // Prime the employee-id cache so CurrentEmployeeProvider skips its own DB lookup
+        cache.Set($"employee-id:{auth0UserId}", ensureResult.Value, CacheDuration);
         await next(context);
     }
 

@@ -16,6 +16,9 @@ public static class CoreServiceCollectionExtensions
         services.AddDbContext<AppDbContext>(options =>
             options.UseNpgsql(configuration.GetConnectionString("Default")));
 
+        services.AddDbContextFactory<AppDbContext>(options =>
+            options.UseNpgsql(configuration.GetConnectionString("Default")), ServiceLifetime.Scoped);
+
         services.AddApplication()
             .AddInfrastructure();
 

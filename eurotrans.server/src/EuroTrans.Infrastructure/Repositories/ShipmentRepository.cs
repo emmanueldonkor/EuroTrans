@@ -53,8 +53,6 @@ public class ShipmentRepository : IShipmentRepository
             .AsNoTracking()
             .Where(s => s.DriverId == driverId)
             .Where(s => s.Status == ShipmentStatus.InTransit || s.Status == ShipmentStatus.Assigned)
-            .OrderBy(s => s.Status == ShipmentStatus.InTransit ? 0 : 1)
-            .ThenByDescending(s => s.UpdatedAtUtc ?? s.CreatedAtUtc)
             .Select(s => new CurrentDriverShipmentQueryItem(
                 s.Id,
                 s.TrackingId,

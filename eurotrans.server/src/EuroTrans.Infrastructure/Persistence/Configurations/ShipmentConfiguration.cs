@@ -150,6 +150,11 @@ public class ShipmentConfiguration : IEntityTypeConfiguration<Shipment>
         builder.HasIndex(s => s.DriverId);
         builder.HasIndex(s => s.TruckId);
 
+        // Composite indices for common query patterns
+        builder.HasIndex(s => new { s.Status, s.CreatedAtUtc });
+        builder.HasIndex(s => new { s.StartedAtUtc, s.DeliveredAtUtc })
+            .HasFilter("started_at IS NOT NULL AND delivered_at IS NOT NULL");
+
     }
 
 }
