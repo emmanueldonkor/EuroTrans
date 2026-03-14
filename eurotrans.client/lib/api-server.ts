@@ -235,14 +235,22 @@ export const apiServer = {
   async getShipmentsPage(filters?: {
     status?: ShipmentStatus
     driverId?: string
+    startDate?: string
+    endDate?: string
     search?: string
+    hasProofOfDelivery?: boolean
     page?: number
     pageSize?: number
   }): Promise<PagedResult<Shipment>> {
     const params = new URLSearchParams()
     if (filters?.status) params.set("status", toShipmentApiStatus(filters.status))
     if (filters?.driverId) params.set("driverId", filters.driverId)
+    if (filters?.startDate) params.set("startDate", filters.startDate)
+    if (filters?.endDate) params.set("endDate", filters.endDate)
     if (filters?.search) params.set("search", filters.search)
+    if (typeof filters?.hasProofOfDelivery === "boolean") {
+      params.set("hasProofOfDelivery", String(filters.hasProofOfDelivery))
+    }
     if (filters?.page) params.set("page", String(filters.page))
     if (filters?.pageSize) params.set("pageSize", String(filters.pageSize))
 

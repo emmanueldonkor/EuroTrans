@@ -2,6 +2,7 @@ import { dehydrate, HydrationBoundary } from "@tanstack/react-query"
 import { getQueryClient } from "@/lib/get-query-client"
 import { apiServer } from "@/lib/api-server"
 import { DriverShipmentsClient } from "./shipments-client"
+import type { PagedResult, Shipment } from "@/lib/types"
 
 export default async function DriverShipmentsPage() {
   const queryClient = getQueryClient()
@@ -16,7 +17,7 @@ export default async function DriverShipmentsPage() {
           page: pageParam,
           pageSize,
         }),
-      getNextPageParam: (lastPage) => {
+      getNextPageParam: (lastPage: PagedResult<Shipment>) => {
         const totalPages = Math.max(1, Math.ceil(lastPage.totalCount / Math.max(lastPage.pageSize, 1)))
         return lastPage.page < totalPages ? lastPage.page + 1 : undefined
       },

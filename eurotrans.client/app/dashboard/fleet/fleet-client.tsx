@@ -59,7 +59,7 @@ export function FleetTableContent({
   
   const trucks = trucksPage?.items ?? []
   const totalCount = trucksPage?.totalCount ?? 0
-  const { createTruck, updateTruck, deleteTruck } = useTruckMutations()
+  const { updateTruck, deleteTruck } = useTruckMutations()
   const { toast } = useToast()
   const { t } = useI18n()
   
