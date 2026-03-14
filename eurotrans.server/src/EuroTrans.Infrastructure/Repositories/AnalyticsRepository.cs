@@ -21,14 +21,10 @@ public class AnalyticsRepository : IAnalyticsRepository
         int workloadLimit,
         CancellationToken ct = default)
     {
-        // Create separate contexts — EF Core does not allow concurrent queries on the same instance
-        await using var ctx1 = await dbFactory.CreateDbContextAsync(ct);
-        await using var ctx2 = await dbFactory.CreateDbContextAsync(ct);
-        await using var ctx3 = await dbFactory.CreateDbContextAsync(ct);
-        await using var ctx4 = await dbFactory.CreateDbContextAsync(ct);
-        await using var ctx5 = await dbFactory.CreateDbContextAsync(ct);
+        // Single context to avoid connection spikes on smaller Postgres tiers.
+        await using var ctx = await dbFactory.CreateDbContextAsync(ct);
 
-        var shipmentStatsTask = ctx1.Shipments.AsNoTracking()
+        var shipmentStats = await ctx.Shipments.AsNoTracking()
             .GroupBy(s => 1)
             .Select(g => new
             {
@@ -38,7 +34,7 @@ public class AnalyticsRepository : IAnalyticsRepository
             })
             .FirstOrDefaultAsync(ct);
 
-        var driverStatsTask = ctx2.Drivers.AsNoTracking()
+        var driverStats = await ctx.Drivers.AsNoTracking()
             .GroupBy(d => 1)
             .Select(g => new
             {
@@ -47,13 +43,13 @@ public class AnalyticsRepository : IAnalyticsRepository
             })
             .FirstOrDefaultAsync(ct);
 
-        var shipmentsOverTimeTask = ctx3.Shipments.AsNoTracking()
+        var shipmentsOverTime = await ctx.Shipments.AsNoTracking()
             .Where(s => s.CreatedAtUtc >= fromUtc && s.CreatedAtUtc < toUtcExclusive)
             .GroupBy(s => s.CreatedAtUtc.Date)
             .Select(g => new AnalyticsShipmentTrendPoint(g.Key, g.Count()))
             .ToListAsync(ct);
 
-        var deliveryDurationsTask = ctx4.Shipments.AsNoTracking()
+        var deliveryDurations = await ctx.Shipments.AsNoTracking()
             .Where(s => s.StartedAtUtc.HasValue && s.DeliveredAtUtc.HasValue)
             .Select(s => new
             {
@@ -62,7 +58,7 @@ public class AnalyticsRepository : IAnalyticsRepository
             })
             .ToListAsync(ct);
 
-        var driverWorkloadTask = ctx5.Shipments.AsNoTracking()
+        var driverWorkload = await ctx.Shipments.AsNoTracking()
             .Where(s => s.Status == ShipmentStatus.Assigned || s.Status == ShipmentStatus.InTransit)
             .GroupBy(s => s.Driver != null ? s.Driver.Employee.Name : "Unassigned")
             .Select(g => new AnalyticsDriverWorkloadPoint(
@@ -74,14 +70,6 @@ public class AnalyticsRepository : IAnalyticsRepository
             .ThenBy(item => item.DriverName)
             .Take(workloadLimit)
             .ToListAsync(ct);
-
-        await Task.WhenAll(shipmentStatsTask, driverStatsTask, shipmentsOverTimeTask, deliveryDurationsTask, driverWorkloadTask);
-
-        var shipmentStats = await shipmentStatsTask;
-        var driverStats = await driverStatsTask;
-        var shipmentsOverTime = await shipmentsOverTimeTask;
-        var deliveryDurations = await deliveryDurationsTask;
-        var driverWorkload = await driverWorkloadTask;
 
         var averageDeliveryHours = deliveryDurations.Count == 0
             ? (double?)null
