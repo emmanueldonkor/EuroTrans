@@ -18,10 +18,14 @@ export default async function DashboardLayout({ children }: { children: React.Re
   }
 
   const queryClient = getQueryClient()
-  await queryClient.prefetchQuery({
-    queryKey: ["current-user"],
-    queryFn: () => apiServer.getCurrentUserContext(),
-  })
+  try {
+    await queryClient.prefetchQuery({
+      queryKey: ["current-user"],
+      queryFn: () => apiServer.getCurrentUserContext(),
+    })
+  } catch {
+    // Allow client to handle session errors or retries.
+  }
 
   return (
     <HydrationBoundary state={dehydrate(queryClient)}>

@@ -7,16 +7,20 @@ export default async function DocumentsPage() {
   const queryClient = getQueryClient()
   const pageSize = 10
 
-  await queryClient.prefetchQuery({
-    queryKey: ["shipments", "page", { status: "delivered", hasProofOfDelivery: true, page: 1, pageSize }],
-    queryFn: () =>
-      apiServer.getShipmentsPage({
-        status: "delivered",
-        hasProofOfDelivery: true,
-        page: 1,
-        pageSize,
-      }),
-  })
+  try {
+    await queryClient.prefetchQuery({
+      queryKey: ["shipments", "page", { status: "delivered", hasProofOfDelivery: true, page: 1, pageSize }],
+      queryFn: () =>
+        apiServer.getShipmentsPage({
+          status: "delivered",
+          hasProofOfDelivery: true,
+          page: 1,
+          pageSize,
+        }),
+    })
+  } catch {
+    // Allow client to handle session errors or retries.
+  }
 
   return (
     <HydrationBoundary state={dehydrate(queryClient)}>
