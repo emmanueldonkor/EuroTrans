@@ -148,7 +148,10 @@ function DriverHomeContent({
 export function DriverClient() {
   const { t } = useI18n()
   const { data: currentUser, isLoading: isUserLoading, error: userError } = useCurrentUser()
-  const shipmentResult = useDriverCurrentShipment()
+  const shipmentResult = useDriverCurrentShipment({
+    enabled: currentUser?.role === "driver" && currentUser.driverProfileComplete,
+    driverId: currentUser?.employeeId,
+  })
 
   if (isUserLoading) {
     return <SectionLoader label={t("driver.home.loadingAssignments")} />

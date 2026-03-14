@@ -3,20 +3,17 @@ import { getQueryClient } from "@/lib/get-query-client"
 import { apiServer } from "@/lib/api-server"
 import { DriverClient } from "./driver-client"
 
-export default async function DriverHomePage() {
+export default async function DriverPage() {
   const queryClient = getQueryClient()
 
-  // Prefetch both current user details and their active shipment in parallel on the server
-  await Promise.all([
-    queryClient.prefetchQuery({
-      queryKey: ["current-user"],
-      queryFn: () => apiServer.getCurrentUserContext(),
-    }),
-    queryClient.prefetchQuery({
+  try {
+    await queryClient.prefetchQuery({
       queryKey: ["shipments", "driver-current"],
       queryFn: () => apiServer.getCurrentDriverShipment(),
-    }),
-  ])
+    })
+  } catch {
+    // Allow client side to handle session errors or retries.
+  }
 
   return (
     <HydrationBoundary state={dehydrate(queryClient)}>
