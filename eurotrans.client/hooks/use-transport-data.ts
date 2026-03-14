@@ -16,7 +16,7 @@ export function useShipments(filters?: {
         queryKey: ["shipments", filters],
         queryFn: () => api.getShipments(filters),
         enabled: options?.enabled ?? true,
-        staleTime: 60_000,
+        staleTime: 120_000,
         gcTime: 5 * 60_000,
         placeholderData: (previousData) => previousData,
     })
@@ -29,7 +29,7 @@ export function useDriverCurrentShipment(
         queryKey: ["shipments", "driver-current"],
         enabled: options?.enabled ?? true,
         queryFn: () => api.getCurrentDriverShipment(),
-        staleTime: 30_000,
+        staleTime: 45_000,
         gcTime: 5 * 60_000,
     })
 }
@@ -61,7 +61,7 @@ export function useInfiniteShipments(
             return lastPage.page < totalPages ? lastPage.page + 1 : undefined
         },
         enabled: options?.enabled ?? true,
-        staleTime: 60_000,
+        staleTime: 120_000,
         gcTime: 5 * 60_000,
     })
 }
@@ -80,7 +80,7 @@ export function useShipmentsPage(filters?: {
         queryKey: ["shipments", "page", filters],
         queryFn: () => api.getShipmentsPage(filters),
         enabled: options?.enabled ?? true,
-        staleTime: 60_000,
+        staleTime: 120_000,
         gcTime: 5 * 60_000,
         placeholderData: (previousData) => previousData,
     })
@@ -177,7 +177,7 @@ export function useDrivers() {
     return useQuery({
         queryKey: ["drivers"],
         queryFn: () => api.getDrivers(),
-        staleTime: 45_000,
+        staleTime: 120_000,
         gcTime: 10 * 60_000,
     })
 }
@@ -186,7 +186,7 @@ export function useDriverOptions() {
     return useQuery({
         queryKey: ["drivers", "options"],
         queryFn: () => api.getDriverOptions(),
-        staleTime: 45_000,
+        staleTime: 120_000,
         gcTime: 10 * 60_000,
     })
 }
@@ -200,7 +200,7 @@ export function useDriversPage(filters?: {
     return useQuery({
         queryKey: ["drivers", "page", filters],
         queryFn: () => api.getDriversPage(filters),
-        staleTime: 45_000,
+        staleTime: 120_000,
         gcTime: 10 * 60_000,
         placeholderData: (previousData) => previousData,
     })
@@ -211,7 +211,7 @@ export function useDriver(id: string) {
         queryKey: ["driver", id],
         queryFn: () => api.getDriver(id),
         enabled: !!id,
-        staleTime: 30_000,
+        staleTime: 60_000,
         gcTime: 10 * 60_000,
     })
 }
@@ -237,7 +237,7 @@ export function useTrucks() {
     return useQuery({
         queryKey: ["trucks"],
         queryFn: () => api.getTrucks(),
-        staleTime: 45_000,
+        staleTime: 120_000,
         gcTime: 10 * 60_000,
     })
 }
@@ -246,7 +246,7 @@ export function useTruckOptions() {
     return useQuery({
         queryKey: ["trucks", "options"],
         queryFn: () => api.getTruckOptions(),
-        staleTime: 45_000,
+        staleTime: 120_000,
         gcTime: 10 * 60_000,
     })
 }
@@ -260,7 +260,7 @@ export function useTrucksPage(filters?: {
     return useQuery({
         queryKey: ["trucks", "page", filters],
         queryFn: () => api.getTrucksPage(filters),
-        staleTime: 45_000,
+        staleTime: 120_000,
         gcTime: 10 * 60_000,
         placeholderData: (previousData) => previousData,
     })
@@ -271,7 +271,7 @@ export function useTruck(id: string) {
         queryKey: ["truck", id],
         queryFn: () => api.getTruck(id),
         enabled: !!id,
-        staleTime: 30_000,
+        staleTime: 60_000,
         gcTime: 10 * 60_000,
     })
 }
@@ -341,8 +341,7 @@ export function useAnalytics() {
     return useQuery({
         queryKey: ["analytics"],
         queryFn: () => api.getAnalytics(),
-        staleTime: 60_000,
+        staleTime: 5 * 60_000,
         gcTime: 10 * 60_000,
     })
 }
-

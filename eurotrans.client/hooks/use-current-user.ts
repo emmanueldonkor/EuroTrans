@@ -7,8 +7,8 @@ export function useCurrentUser() {
   return useQuery({
     queryKey: ["current-user"],
     queryFn: () => api.getCurrentUserContext(),
-    staleTime: 5 * 60 * 1000,
-    gcTime: 15 * 60 * 1000,
+    staleTime: 15 * 60 * 1000,
+    gcTime: 30 * 60 * 1000,
     refetchOnWindowFocus: false,
     refetchOnReconnect: false,
   })
