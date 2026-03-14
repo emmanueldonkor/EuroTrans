@@ -2,11 +2,13 @@ import { auth0 } from "@/lib/auth0"
 import type {
   Driver,
   DriverOption,
+  LiveMapPin,
   Shipment,
   PagedResult,
   ShipmentStatus,
   CurrentUserContext,
   UserRole,
+  Truck,
 } from "./types"
 
 const BACKEND_BASE_URL = process.env.EUROTRANS_API_BASE_URL ?? process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://localhost:5002"
@@ -60,6 +62,37 @@ interface ApiDriverOption {
   status: string
 }
 
+interface ApiLivePin {
+  shipmentId: string
+  trackingId: string
+  driverName: string
+  cargo: string
+  status: string
+  latitude: number
+  longitude: number
+  lastUpdateUtc: string
+  isStale: boolean
+}
+
+interface ApiTruck {
+  id: string
+  plateNumber: string
+  model: string
+  capacity: number
+  status: string
+}
+
+interface ApiAnalytics {
+  totalShipments: number
+  activeShipments: number
+  deliveredShipments: number
+  activeDrivers: number
+  availableDrivers: number
+  avgDeliveryTime: string
+  shipmentsOverTime: Array<{ label: string; count: number }>
+  driverWorkloadDistribution: Array<{ driverName: string; assigned: number; inTransit: number }>
+}
+
 interface ApiPagedResponse<T> {
   items: T[]
   totalCount: number
@@ -92,6 +125,23 @@ function mapShipmentStatus(status: string): ShipmentStatus {
   return "unassigned"
 }
 
+function mapLivePin(item: ApiLivePin): LiveMapPin {
+  return {
+    id: item.shipmentId,
+    shipmentId: item.shipmentId,
+    trackingId: item.trackingId,
+    driverName: item.driverName,
+    cargo: item.cargo,
+    status: mapShipmentStatus(item.status),
+    position: {
+      lat: item.latitude,
+      lng: item.longitude,
+    },
+    lastUpdate: item.lastUpdateUtc,
+    isStale: item.isStale,
+  }
+}
+
 function toShipmentApiStatus(status: ShipmentStatus): string {
   switch (status) {
     case "unassigned":
@@ -114,6 +164,19 @@ function mapDriverStatus(status: string): Driver["status"] {
   if (normalized === "onduty" || normalized === "on-duty") return "on-duty"
   if (normalized === "offduty" || normalized === "off-duty") return "off-duty"
   return "available"
+}
+
+function mapTruckStatus(status: string): Truck["status"] {
+  const normalized = String(status).toLowerCase()
+  if (normalized === "inuse" || normalized === "in-use") return "in-use"
+  if (normalized === "maintenance") return "maintenance"
+  return "available"
+}
+
+function toTruckApiStatus(status: string): string {
+  if (status === "in-use") return "InUse"
+  if (status === "maintenance") return "Maintenance"
+  return "Available"
 }
 
 // --- Request Wrapper ---
@@ -278,5 +341,91 @@ export const apiServer = {
       phone: driver.phone ?? undefined,
       status: mapDriverStatus(driver.status),
     }))
+  },
+
+  async getDriversPage(filters?: {
+    search?: string
+    status?: Driver["status"]
+    page?: number
+    pageSize?: number
+  }): Promise<PagedResult<Driver>> {
+    const params = new URLSearchParams()
+    if (filters?.search) params.set("search", filters.search)
+    if (filters?.status) params.set("status", filters.status === "on-duty" ? "OnDuty" : filters.status === "off-duty" ? "OffDuty" : "Available")
+    if (filters?.page) params.set("page", String(filters.page))
+    if (filters?.pageSize) params.set("pageSize", String(filters.pageSize))
+
+    const query = params.toString()
+    const response = await requestServer<ApiPagedResponse<{
+      employeeId: string
+      name: string
+      email: string
+      phone?: string | null
+      licenseNumber?: string | null
+      status: string
+    }>>(`/api/drivers${query ? `?${query}` : ""}`)
+
+    return {
+      items: (response.items ?? []).map((d) => ({
+        id: d.employeeId,
+        name: d.name,
+        email: d.email,
+        phone: d.phone ?? undefined,
+        licenseNumber: d.licenseNumber ?? undefined,
+        status: mapDriverStatus(d.status),
+      })),
+      totalCount: response.totalCount ?? 0,
+      page: response.page ?? 1,
+      pageSize: response.pageSize ?? (response.items?.length ?? 0),
+    }
+  },
+
+  async getTrucksPage(filters?: {
+    search?: string
+    status?: string
+    page?: number
+    pageSize?: number
+  }): Promise<PagedResult<Truck>> {
+    const params = new URLSearchParams()
+    if (filters?.search) params.set("search", filters.search)
+    if (filters?.status && filters.status !== "all") params.set("status", toTruckApiStatus(filters.status))
+    if (filters?.page) params.set("page", String(filters.page))
+    if (filters?.pageSize) params.set("pageSize", String(filters.pageSize))
+
+    const query = params.toString()
+    const response = await requestServer<ApiPagedResponse<ApiTruck>>(`/api/trucks${query ? `?${query}` : ""}`)
+
+    return {
+      items: (response.items ?? []).map((t) => ({
+        id: t.id,
+        plateNumber: t.plateNumber,
+        model: t.model,
+        capacity: t.capacity,
+        status: mapTruckStatus(t.status),
+      })),
+      totalCount: response.totalCount ?? 0,
+      page: response.page ?? 1,
+      pageSize: response.pageSize ?? (response.items?.length ?? 0),
+    }
+  },
+
+  async getLiveMapPinsPage(filters?: { page?: number; pageSize?: number }): Promise<PagedResult<LiveMapPin>> {
+    const params = new URLSearchParams()
+    if (filters?.page) params.set("page", String(filters.page))
+    if (filters?.pageSize) params.set("pageSize", String(filters.pageSize))
+
+    const query = params.toString()
+    const response = await requestServer<ApiPagedResponse<ApiLivePin>>(`/api/shipments/live-pins${query ? `?${query}` : ""}`)
+
+    return {
+      items: (response.items ?? []).map(mapLivePin),
+      totalCount: response.totalCount ?? 0,
+      page: response.page ?? 1,
+      pageSize: response.pageSize ?? (response.items?.length ?? 0),
+    }
+  },
+
+  async getAnalytics(): Promise<ApiAnalytics> {
+    return requestServer<ApiAnalytics>("/api/analytics/overview")
   },
 }
