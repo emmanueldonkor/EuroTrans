@@ -1,6 +1,6 @@
 # EuroTrans
 
-[![Watch EuroTrans Walkthrough](https://img.youtube.com/vi/YOUTUBE_VIDEO_ID/hqdefault.jpg)](https://www.youtube.com/watch?v=MmRokfI9Ilw)
+[![Watch EuroTrans Walkthrough](docs/portfolio/screenshots/Thumbnail-eurotrans.png)](https://www.youtube.com/watch?v=MmRokfI9Ilw)
 
 **Walkthrough video:**  
 `https://www.youtube.com/watch?v=MmRokfI9Ilw`
