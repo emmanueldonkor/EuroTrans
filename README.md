@@ -1,9 +1,9 @@
 # EuroTrans
 
-<!--[![Watch EuroTrans Walkthrough](https://img.youtube.com/vi/YOUTUBE_VIDEO_ID/hqdefault.jpg)](https://www.youtube.com/watch?v=YOUTUBE_VIDEO_ID)
+[![Watch EuroTrans Walkthrough](https://img.youtube.com/vi/YOUTUBE_VIDEO_ID/hqdefault.jpg)](https://www.youtube.com/watch?v=MmRokfI9Ilw)
 
 **Walkthrough video:**  
-`https://www.youtube.com/watch?v=YOUTUBE_VIDEO_ID`-->
+`https://www.youtube.com/watch?v=MmRokfI9Ilw`
 
 EuroTrans is a full-stack logistics platform for shipment operations, driver workflows, fleet management, and live shipment tracking.
 
