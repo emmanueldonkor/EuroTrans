@@ -8,8 +8,7 @@
 EuroTrans is a full-stack logistics platform for shipment operations, driver workflows, fleet management, and live shipment tracking.
 
 ## Quick View
-- Frontend (prod): `https://eurotrans.vercel.app`
-- Backend base URL (prod): set by your deployment target
+- Live Demo: `https://eurotrans.vercel.app`
 - Health checks: `/health/live`, `/health/ready`
 - API versioning: `?api-version=1.0` or header `x-api-version: 1.0`
 - Architecture style: Clean Architecture + Vertical Slice (backend)
