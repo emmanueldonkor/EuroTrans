@@ -1,0 +1,30 @@
+services:
+  - type: web
+    name: eurotrans-api
+    runtime: dotnet
+    rootDir: eurotrans.server
+    buildCommand: dotnet restore EuroTrans.sln && dotnet publish src/EuroTrans.Api/EuroTrans.Api.csproj -c Release -o out
+    startCommand: dotnet out/EuroTrans.Api.dll --urls http://0.0.0.0:$PORT
+    healthCheckPath: /health/live
+    autoDeploy: true
+    envVars:
+      - key: ASPNETCORE_ENVIRONMENT
+        value: Production
+      - key: ASPNETCORE_FORWARDEDHEADERS_ENABLED
+        value: "true"
+      - key: Database__DisableAutoMigrate
+        value: "true"
+      - key: ConnectionStrings__Default
+        sync: false
+      - key: Auth0__Domain
+        sync: false
+      - key: Auth0__Audience
+        sync: false
+      - key: Cors__AllowedOrigins__0
+        value: https://eurotrans.vercel.app
+      - key: Cors__AllowedOrigins__1
+        value: http://localhost:3000
+      - key: AzureStorage__ConnectionString
+        sync: false
+      - key: AzureStorage__Container
+        sync: false
