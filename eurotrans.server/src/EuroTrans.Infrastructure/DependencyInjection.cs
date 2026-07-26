@@ -16,6 +16,7 @@ public static class DependencyInjection
 {
     public static IServiceCollection AddInfrastructure(this IServiceCollection services)
     {
+        services.AddHttpClient();
         services.AddScoped<IUnitOfWork, UnitOfWork>();
         services.AddScoped<IAnalyticsRepository, AnalyticsRepository>();
         services.AddScoped<IShipmentRepository, ShipmentRepository>();
@@ -24,6 +25,7 @@ public static class DependencyInjection
         services.AddScoped<IDateTimeProvider, DateTimeProvider>();
         services.AddSingleton<IQueryCache, MemoryQueryCache>();
         services.AddSingleton<BlobContainerClientProvider>();
+        services.AddSingleton<SupabasePodService>();
         services.AddSingleton<IPodService, PodService>();
         services.AddScoped<ITrackingIdGenerator, TrackingIdGenerator>();
         return services;

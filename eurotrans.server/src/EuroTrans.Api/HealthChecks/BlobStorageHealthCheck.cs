@@ -6,16 +6,23 @@ namespace EuroTrans.Api.HealthChecks;
 public sealed class BlobStorageHealthCheck : IHealthCheck
 {
     private readonly BlobContainerClientProvider containerProvider;
+    private readonly SupabasePodService supabasePodService;
 
-    public BlobStorageHealthCheck(BlobContainerClientProvider containerProvider)
+    public BlobStorageHealthCheck(
+        BlobContainerClientProvider containerProvider,
+        SupabasePodService supabasePodService)
     {
         this.containerProvider = containerProvider;
+        this.supabasePodService = supabasePodService;
     }
 
     public async Task<HealthCheckResult> CheckHealthAsync(
         HealthCheckContext context,
         CancellationToken cancellationToken = default)
     {
+        if (supabasePodService.IsConfigured)
+            return HealthCheckResult.Healthy("Supabase storage configured.");
+
         var container = containerProvider.TryGetClient();
         if (container is null)
             return HealthCheckResult.Degraded("Blob storage is not configured.");

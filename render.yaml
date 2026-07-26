@@ -24,7 +24,11 @@ services:
         value: https://eurotrans.vercel.app
       - key: Cors__AllowedOrigins__1
         value: http://localhost:3000
-      - key: AzureStorage__ConnectionString
+      - key: SupabaseStorage__Url
         sync: false
-      - key: AzureStorage__Container
+      - key: SupabaseStorage__Bucket
+        sync: false
+      - key: SupabaseStorage__ServiceRoleKey
+        sync: false
+      - key: SupabaseStorage__PublicBaseUrl
         sync: false

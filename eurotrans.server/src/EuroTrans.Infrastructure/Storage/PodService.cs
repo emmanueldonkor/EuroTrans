@@ -5,16 +5,23 @@ namespace EuroTrans.Infrastructure.Storage;
 
 public class PodService : IPodService
 {
-    private readonly BlobContainerClientProvider containerProvider;
+    private readonly BlobContainerClientProvider blobContainerProvider;
+    private readonly SupabasePodService supabasePodService;
 
-    public PodService(BlobContainerClientProvider containerProvider)
+    public PodService(
+        BlobContainerClientProvider blobContainerProvider,
+        SupabasePodService supabasePodService)
     {
-        this.containerProvider = containerProvider;
+        this.blobContainerProvider = blobContainerProvider;
+        this.supabasePodService = supabasePodService;
     }
 
     public async Task<string> UploadAsync(Stream fileStream, string fileName, string contentType)
     {
-        var container = await containerProvider.GetRequiredAsync();
+        if (supabasePodService.IsConfigured)
+            return await supabasePodService.UploadAsync(fileStream, fileName, contentType);
+
+        var container = await blobContainerProvider.GetRequiredAsync();
         var finalName = $"{Guid.NewGuid()}_{fileName}";
         var blobClient = container.GetBlobClient(finalName);
 
@@ -31,10 +38,19 @@ public class PodService : IPodService
         if (string.IsNullOrWhiteSpace(fileUrl))
             return;
 
+        if (supabasePodService.IsConfigured && supabasePodService.CanHandleUrl(fileUrl))
+        {
+            await supabasePodService.DeleteAsync(fileUrl, ct);
+            return;
+        }
+
+        if (!blobContainerProvider.IsConfigured)
+            return;
+
         if (!Uri.TryCreate(fileUrl, UriKind.Absolute, out var uri))
             return;
 
-        var container = await containerProvider.GetRequiredAsync(ct);
+        var container = await blobContainerProvider.GetRequiredAsync(ct);
         var blobPath = uri.AbsolutePath.TrimStart('/');
         var containerPrefix = $"{container.Name}/";
         if (blobPath.StartsWith(containerPrefix, StringComparison.OrdinalIgnoreCase))
