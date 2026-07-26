@@ -12,5 +12,9 @@ WORKDIR /app
 
 COPY --from=build /app/publish .
 
+# Render's shared Linux hosts can exhaust inotify watchers. Production doesn't need
+# appsettings hot reload, so disable it before the host creates file watchers.
+ENV DOTNET_HOSTBUILDER__RELOADCONFIGONCHANGE=false
+
 # Render provides PORT at runtime.
 ENTRYPOINT ["sh", "-c", "dotnet EuroTrans.Api.dll --urls http://0.0.0.0:${PORT:-10000}"]
